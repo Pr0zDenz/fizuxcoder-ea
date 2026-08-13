@@ -22,6 +22,13 @@
       "when": 1786621909285,
       "tag": "0002_wide_rogue",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1786627921861,
+      "tag": "0003_funny_red_skull",
+      "breakpoints": true
     }
   ]
 }

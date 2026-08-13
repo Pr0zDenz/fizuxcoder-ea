@@ -5,7 +5,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { createToyyibPayBill } from "./toyyibpay";
-import { attachProviderBill, beginPaymentOrder, claimPermanentBillPayment, getCatalog, getCustomerLibrary, getCustomerOrderStatus, getSecureFileForCustomer, packageStorageKey, removePendingOrder, safeFileName } from "./paymentPortal";
+import { attachProviderBill, beginPaymentOrder, bindCustomerMt5Account, claimPermanentBillPayment, getCatalog, getCustomerLibrary, getCustomerOrderStatus, getSecureFileForCustomer, packageStorageKey, removePendingOrder, safeFileName } from "./paymentPortal";
 import { storageGetSignedUrl, storagePut } from "./storage";
 import { getDb } from "./db";
 import { productFiles } from "../drizzle/schema";
@@ -62,6 +62,14 @@ export const appRouter = router({
     claimPurchase: protectedProcedure.input(z.object({ productId: z.string().min(1), receiptNo: z.string().min(4).max(128) })).mutation(async ({ ctx, input }) => {
       if (!ctx.user.email) throw new TRPCError({ code: "BAD_REQUEST", message: "Your portal account needs an email address before a payment can be claimed" });
       return claimPermanentBillPayment({ userId: ctx.user.id, userEmail: ctx.user.email, productId: input.productId, receiptNo: input.receiptNo });
+    }),
+    bindMt5Account: protectedProcedure.input(z.object({ productId: z.string().min(1), accountNumber: z.string().regex(/^\d{1,20}$/, "Enter a valid numeric MT5 account number") })).mutation(async ({ ctx, input }) => {
+      if (!ctx.user.email) throw new TRPCError({ code: "BAD_REQUEST", message: "Your portal account needs an email address before an MT5 account can be bound" });
+      try {
+        return await bindCustomerMt5Account({ userId: ctx.user.id, userEmail: ctx.user.email, productId: input.productId, accountNumber: input.accountNumber });
+      } catch (error) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: error instanceof Error ? error.message : "Unable to bind this MT5 account" });
+      }
     }),
     download: protectedProcedure.input(z.object({ fileId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
       const file = await getSecureFileForCustomer({ userId: ctx.user.id, fileId: input.fileId });

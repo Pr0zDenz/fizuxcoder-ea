@@ -37,3 +37,18 @@
 - [ ] Check the published browser request path during checkout-control interaction to confirm the former mutation endpoint is not called.
 - [x] Add a signed-in receipt-claim flow that verifies a completed permanent-bill payment before granting the matching product entitlement.
 - [ ] Verify xtr0zen@gmail.com can claim an eligible completed payment and download the matching protected package without administrator bypass.
+- [x] Review the supplied MasterServer.py architecture and existing subscriber/licence data flow.
+- [x] Add a ToyyibPay form-data callback endpoint that verifies the signed settlement before altering licence data.
+- [x] Map active ToyyibPay bill codes to Gemini Bot and 3S Universal licence policies, including monthly access expiry.
+- [x] Test duplicate, invalid-signature, failed, and successful settlement cases without registering false licences.
+- [x] Document the public callback URL and ToyyibPay dashboard configuration required for live automatic licence activation.
+- [x] Confirm the Master Server callback architecture for automatic licence activation.
+- [x] Add deterministic duplicate-callback and failed-settlement tests for the Master Server licence processor.
+- [ ] Verify an actual completed ToyyibPay payment creates the pending Master Server licence record and can then be claimed and bound by its authenticated customer.
+- [x] Add customer MT5 account binding and authenticated replacement of the previously bound account.
+- [x] Synchronize each new or replaced MT5 account binding to the Master Server licence data without exposing payment secrets.
+- [x] Verify that re-binding revokes the old MT5 account’s access and enables only the replacement account.
+- [x] Configure the public ngrok Master Server endpoint and keep its authtoken only in private server deployment configuration.
+- [x] Configure the confirmed portal-to-Master-Server shared key in both private server environments.
+- [x] Replace the live MasterServer.py with the patched build so the public ngrok target exposes POST /payment_success and POST /license/bind.
+- [x] Restart the live Master Server with TOYYIBPAY_USER_SECRET_KEY present so its deployed payment callback can verify settlements.

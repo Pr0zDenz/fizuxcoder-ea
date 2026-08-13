@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { entitlements, paymentOrders, productFiles, products } from "../drizzle/schema";
 import { getDb } from "./db";
+import { bindMasterServerLicence } from "./masterServer";
 import { callbackAmountToSen, getSuccessfulBillTransactions } from "./toyyibpay";
 
 export const PRODUCT_IDS = {
@@ -126,8 +127,34 @@ export async function getCustomerLibrary(userId: number) {
       await db.update(entitlements).set({ status: "expired" }).where(eq(entitlements.id, entitlement.id));
     }
     const files = active ? await db.select({ id: productFiles.id, displayName: productFiles.displayName, fileName: productFiles.fileName }).from(productFiles).where(eq(productFiles.productId, product.id)) : [];
-    return { productId: product.id, productName: product.name, billingCycle: product.billingCycle, status: active ? "active" as const : "expired" as const, expiresAt: entitlement.expiresAt, files };
+    return { productId: product.id, productName: product.name, billingCycle: product.billingCycle, status: active ? "active" as const : "expired" as const, expiresAt: entitlement.expiresAt, mt5AccountNumber: entitlement.mt5AccountNumber, mt5BoundAt: entitlement.mt5BoundAt, files };
   }));
+}
+
+export async function bindCustomerMt5Account(input: { userId: number; userEmail: string; productId: string; accountNumber: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  const record = (await db.select({ entitlement: entitlements, product: products })
+    .from(entitlements)
+    .innerJoin(products, eq(entitlements.productId, products.id))
+    .where(and(eq(entitlements.userId, input.userId), eq(entitlements.productId, input.productId)))
+    .limit(1))[0];
+  const now = new Date();
+  const isActive = record?.entitlement.status === "active" && (!record.entitlement.expiresAt || record.entitlement.expiresAt > now);
+  if (!record || !isActive) throw new Error("An active verified purchase is required before an MT5 account can be bound");
+
+  const binding = await bindMasterServerLicence({
+    email: input.userEmail,
+    productId: input.productId,
+    accountNumber: input.accountNumber,
+  });
+  await db.update(entitlements).set({ mt5AccountNumber: binding.account_number, mt5BoundAt: now }).where(eq(entitlements.id, record.entitlement.id));
+  return {
+    productName: record.product.name,
+    accountNumber: binding.account_number,
+    replacedAccount: binding.replaced_account ?? null,
+    expiry: binding.expiry ?? null,
+  };
 }
 
 export async function getCustomerOrderStatus(userId: number, externalReference: string) {

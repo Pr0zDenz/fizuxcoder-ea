@@ -67,6 +67,8 @@ export const entitlements = mysqlTable("entitlements", {
   status: mysqlEnum("status", ["active", "expired", "revoked"]).notNull().default("active"),
   startsAt: timestamp("startsAt").defaultNow().notNull(),
   expiresAt: timestamp("expiresAt"),
+  mt5AccountNumber: varchar("mt5AccountNumber", { length: 20 }),
+  mt5BoundAt: timestamp("mt5BoundAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, table => [
