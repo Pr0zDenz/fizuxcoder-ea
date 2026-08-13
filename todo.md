@@ -29,3 +29,4 @@
 - [ ] Verify on the published portal that each buyer-facing checkout control opens the correct ToyyibPay page without a JSON parsing error.
 - [x] Remove the unused mutation-based checkout call from the customer portal until server-created bills are fully revalidated.
 - [ ] Capture the real published dynamic-bill response before re-enabling server-created checkout.
+- [ ] Force and verify a new production build artifact so the published domain serves the direct-payment portal release.
