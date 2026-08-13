@@ -35,6 +35,7 @@ export const products = mysqlTable("products", {
   currency: varchar("currency", { length: 8 }).notNull().default("MYR"),
   billingCycle: mysqlEnum("billingCycle", ["lifetime", "monthly"]).notNull(),
   active: mysqlEnum("active", ["yes", "no"]).notNull().default("yes"),
+  isTest: mysqlEnum("isTest", ["yes", "no"]).notNull().default("no"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

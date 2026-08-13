@@ -45,6 +45,13 @@
 - [x] Confirm the Master Server callback architecture for automatic licence activation.
 - [x] Add deterministic duplicate-callback and failed-settlement tests for the Master Server licence processor.
 - [ ] Verify an actual completed ToyyibPay payment creates the pending Master Server licence record and can then be claimed and bound by its authenticated customer.
+- [ ] Create an isolated RM1 ToyyibPay test bill and test-only entitlement path that cannot unlock either production EA package.
+- [ ] Verify the RM1 test bill callback, receipt claim, protected test delivery, MT5 binding, and re-binding flow end-to-end.
+- [ ] Create an isolated ToyyibPay sandbox test product, callback configuration, and entitlement path that cannot unlock either production EA package.
+- [ ] Verify the ToyyibPay sandbox bill callback, receipt claim, test-only delivery, MT5 binding, and re-binding flow end-to-end.
+- [ ] Configure the supplied live RM1 Gemini test bill and its test-only entitlement policy without exposing production EA files or licences.
+- [ ] Verify the live RM1 test bill callback, receipt claim, test-only delivery, MT5 binding, and re-binding flow end-to-end.
+- [ ] Add a protected test-only download artifact to the RM1 product and verify it cannot expose production EA files.
 - [x] Validate the injected Gemini Bot dummy entitlement by binding and then replacing only the authorized dummy MT5 account through the public Master Server.
 - [x] Add customer MT5 account binding and authenticated replacement of the previously bound account.
 - [x] Synchronize each new or replaced MT5 account binding to the Master Server licence data without exposing payment secrets.

@@ -1,14 +1,15 @@
 import { COOKIE_NAME } from "@shared/const";
 import { TRPCError } from "@trpc/server";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { createToyyibPayBill } from "./toyyibpay";
-import { attachProviderBill, beginPaymentOrder, bindCustomerMt5Account, claimPermanentBillPayment, getCatalog, getCustomerLibrary, getCustomerOrderStatus, getSecureFileForCustomer, packageStorageKey, removePendingOrder, safeFileName } from "./paymentPortal";
+import { attachProviderBill, beginPaymentOrder, bindCustomerMt5Account, claimPermanentBillPayment, getCatalog, getCustomerLibrary, getCustomerOrderStatus, getSecureFileForCustomer, getTestCatalog, packageStorageKey, removePendingOrder, safeFileName } from "./paymentPortal";
 import { storageGetSignedUrl, storagePut } from "./storage";
 import { getDb } from "./db";
-import { productFiles } from "../drizzle/schema";
+import { productFiles, products } from "../drizzle/schema";
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -25,6 +26,46 @@ export const appRouter = router({
   }),
   catalog: router({
     list: publicProcedure.query(() => getCatalog()),
+  }),
+  test: router({
+    catalog: adminProcedure.query(() => getTestCatalog()),
+    prepareLiveProduct: adminProcedure.mutation(async () => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database is unavailable" });
+      const product = {
+        id: "test-gemini-bot-ea",
+        name: "Gemini Bot EA — RM1 Live Test",
+        description: "Owner-only end-to-end payment, entitlement, MT5 binding, and protected-download validation. No production EA package is included.",
+        categoryCode: "fifiylvf",
+        priceSen: 100,
+        originalPriceSen: null,
+        currency: "MYR",
+        billingCycle: "monthly" as const,
+        active: "yes" as const,
+        isTest: "yes" as const,
+      };
+      await db.insert(products).values(product).onDuplicateKeyUpdate({
+        set: {
+          name: product.name,
+          description: product.description,
+          categoryCode: product.categoryCode,
+          priceSen: product.priceSen,
+          originalPriceSen: product.originalPriceSen,
+          currency: product.currency,
+          billingCycle: product.billingCycle,
+          active: product.active,
+          isTest: product.isTest,
+        },
+      });
+      const existingFile = await db.select({ id: productFiles.id }).from(productFiles).where(eq(productFiles.productId, product.id)).limit(1);
+      if (!existingFile.length) {
+        const fileName = "FizuxCoder_RM1_Test_Receipt.txt";
+        const content = Buffer.from("FizuxCoder RM1 live payment test\n\nThis protected test-only artifact confirms that payment verification, entitlement activation, MT5 binding, and signed delivery are working. It is not an EA package and does not grant production EA access.\n", "utf-8");
+        const uploaded = await storagePut(packageStorageKey(product.id, fileName), content, "text/plain; charset=utf-8");
+        await db.insert(productFiles).values({ productId: product.id, displayName: "RM1 live test receipt", fileName, storageKey: uploaded.key, contentType: "text/plain; charset=utf-8" });
+      }
+      return { name: product.name };
+    }),
   }),
   checkout: router({
     createBill: protectedProcedure.input(z.object({ productId: z.string().min(1), phone: z.string().max(30).optional() })).mutation(async ({ ctx, input }) => {

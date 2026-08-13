@@ -9,16 +9,19 @@ import { callbackAmountToSen, getSuccessfulBillTransactions } from "./toyyibpay"
 export const PRODUCT_IDS = {
   threeS: "3s-universal-ea",
   gemini: "gemini-bot-ea",
+  geminiLiveTest: "test-gemini-bot-ea",
 } as const;
 
 export const DIRECT_TOYYIBPAY_LINKS: Record<string, string> = {
   "gemini-bot-ea": "https://toyyibpay.com/t1rvxbft",
   "3s-universal-ea": "https://toyyibpay.com/3-Serangkai-EA",
+  "test-gemini-bot-ea": "https://toyyibpay.com/TEST-Gemini-Bot-EA",
 };
 
 const DIRECT_TOYYIBPAY_BILL_CODES: Record<string, string> = {
   "gemini-bot-ea": "t1rvxbft",
   "3s-universal-ea": "3-Serangkai-EA",
+  "test-gemini-bot-ea": "TEST-Gemini-Bot-EA",
 };
 
 export function getRequestOrigin(req: { protocol?: string; get: (name: string) => string | undefined; headers: Record<string, unknown> }) {
@@ -40,7 +43,21 @@ export async function getCatalog() {
     originalPriceSen: products.originalPriceSen,
     currency: products.currency,
     billingCycle: products.billingCycle,
-  }).from(products).where(eq(products.active, "yes"));
+  }).from(products).where(and(eq(products.active, "yes"), eq(products.isTest, "no")));
+  return catalog.map(product => ({ ...product, directCheckoutUrl: DIRECT_TOYYIBPAY_LINKS[product.id] }));
+}
+
+export async function getTestCatalog() {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  const catalog = await db.select({
+    id: products.id,
+    name: products.name,
+    description: products.description,
+    priceSen: products.priceSen,
+    currency: products.currency,
+    billingCycle: products.billingCycle,
+  }).from(products).where(and(eq(products.active, "yes"), eq(products.isTest, "yes")));
   return catalog.map(product => ({ ...product, directCheckoutUrl: DIRECT_TOYYIBPAY_LINKS[product.id] }));
 }
 

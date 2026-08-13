@@ -18,12 +18,15 @@ export default function Portal() {
   const returnedOrder = typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("order");
   const catalog = trpc.catalog.list.useQuery();
   const library = trpc.portal.library.useQuery(undefined, { enabled: isAuthenticated });
+  const testCatalog = trpc.test.catalog.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
   const returnedOrderStatus = trpc.portal.orderStatus.useQuery({ externalReference: returnedOrder ?? "pending" }, { enabled: isAuthenticated && Boolean(returnedOrder) });
   const [adminProductId, setAdminProductId] = useState("gemini-bot-ea");
   const [adminMessage, setAdminMessage] = useState("");
   const [claimProductId, setClaimProductId] = useState("gemini-bot-ea");
   const [claimReceiptNo, setClaimReceiptNo] = useState("");
   const [claimMessage, setClaimMessage] = useState("");
+  const [testReceiptNo, setTestReceiptNo] = useState("");
+  const [testMessage, setTestMessage] = useState("");
   const [mt5AccountNumbers, setMt5AccountNumbers] = useState<Record<string, string>>({});
   const [mt5Messages, setMt5Messages] = useState<Record<string, string>>({});
   const download = trpc.portal.download.useMutation({
@@ -43,6 +46,21 @@ export default function Portal() {
       library.refetch();
     },
     onError: error => setClaimMessage(error.message),
+  });
+  const prepareLiveTest = trpc.test.prepareLiveProduct.useMutation({
+    onSuccess: ({ name }) => {
+      setTestMessage(`${name} is ready. It is hidden from public purchase options and contains only a protected test receipt file.`);
+      testCatalog.refetch();
+    },
+    onError: error => setTestMessage(error.message),
+  });
+  const claimTestPurchase = trpc.portal.claimPurchase.useMutation({
+    onSuccess: ({ productName }) => {
+      setTestMessage(`${productName} receipt is verified. Bind a dummy MT5 account in your library to complete the isolated test.`);
+      setTestReceiptNo("");
+      library.refetch();
+    },
+    onError: error => setTestMessage(error.message),
   });
   const bindMt5Account = trpc.portal.bindMt5Account.useMutation({
     onSuccess: ({ productName, accountNumber, replacedAccount }, variables) => {
@@ -127,6 +145,11 @@ export default function Portal() {
           </div>
         </section>
 
+        {user?.role === "admin" && <section className="border-t border-[#17201f]/12 bg-[#17201f] px-5 py-16 text-[#f4f0e8] lg:px-10">
+          <div className="mx-auto max-w-[1280px] rounded-[1.5rem] border border-[#e5a631]/50 bg-white/5 p-7 shadow-[7px_7px_0_#e5a631] lg:p-9">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-[.14em] text-[#e5a631]">Owner-only live payment test</p>
+            <div className="mt-4 grid gap-7 lg:grid-cols-[.9fr_1.1fr] lg:items-end"><div><h2 className="font-display text-4xl tracking-[-.05em]">RM1 test bench.</h2><p className="mt-4 max-w-xl text-sm leading-7 text-[#c7d1cb]">This creates a hidden test product for the supplied RM1 permanent bill. It is excluded from public purchase cards, has a one-day Master Server licence policy, and carries only a protected text receipt—never a production EA file.</p></div>{testCatalog.data?.[0] ? <div><p className="font-mono text-[10px] uppercase tracking-[.12em] text-[#e5a631]">Ready: {testCatalog.data[0].name} · {formatPrice(testCatalog.data[0].priceSen, testCatalog.data[0].currency)}</p><div className="mt-4 flex flex-col gap-3 sm:flex-row"><a href={testCatalog.data[0].directCheckoutUrl} target="_blank" rel="noreferrer" className="button-primary !bg-[#e5a631] !text-[#17201f]">Open RM1 test bill <ArrowRight size={16} /></a><form className="flex min-w-0 flex-1 gap-2" onSubmit={event => { event.preventDefault(); if (testReceiptNo.trim()) claimTestPurchase.mutate({ productId: testCatalog.data![0].id, receiptNo: testReceiptNo.trim() }); }}><input value={testReceiptNo} onChange={event => setTestReceiptNo(event.target.value)} placeholder="Test invoice / settlement reference" className="h-11 min-w-0 flex-1 rounded-xl border border-white/20 bg-white px-3 text-sm text-[#17201f] outline-none focus:border-[#e5a631]" /><button type="submit" disabled={!testReceiptNo.trim() || claimTestPurchase.isPending} className="button-outline !border-[#e5a631]/70 !text-[#f4f0e8] disabled:opacity-50">{claimTestPurchase.isPending ? <Loader2 className="animate-spin" size={16} /> : "Verify"}</button></form></div></div> : <button type="button" onClick={() => prepareLiveTest.mutate()} disabled={prepareLiveTest.isPending} className="button-primary !bg-[#e5a631] !text-[#17201f]">{prepareLiveTest.isPending ? <Loader2 className="animate-spin" size={16} /> : "Prepare isolated RM1 test"}</button>}</div>{testMessage && <p className="mt-5 rounded-xl border border-[#e5a631]/30 bg-white/10 p-3 text-sm leading-6 text-[#f4f0e8]">{testMessage}</p>}</div>
+        </section>}
         {user?.role === "admin" && <section className="border-t border-[#17201f]/12 bg-[#fbf9f4] px-5 py-16 lg:px-10">
           <div className="mx-auto grid max-w-[1280px] gap-8 lg:grid-cols-[.75fr_1.25fr]">
             <div><p className="font-mono text-[10px] font-bold uppercase tracking-[.14em] text-[#0e716e]">Owner-only release desk</p><h2 className="mt-3 font-display text-4xl tracking-[-.05em]">Add a protected package file.</h2><p className="mt-5 max-w-sm text-sm leading-7 text-[#586662]">Upload a new `.ex5` release to the selected product library. Only customers with an active verified entitlement receive a signed download link.</p></div>
