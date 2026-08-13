@@ -9,15 +9,16 @@ function formatPrice(priceSen: number, currency: string) {
   return new Intl.NumberFormat("en-MY", { style: "currency", currency: currency === "MYR" ? "MYR" : currency, maximumFractionDigits: 0 }).format(priceSen / 100);
 }
 
+function formatSaving(originalPriceSen: number | null, priceSen: number, currency: string) {
+  return originalPriceSen && originalPriceSen > priceSen ? formatPrice(originalPriceSen - priceSen, currency) : null;
+}
+
 export default function Portal() {
   const { user, loading, isAuthenticated, logout } = useAuth();
   const returnedOrder = typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("order");
   const catalog = trpc.catalog.list.useQuery();
   const library = trpc.portal.library.useQuery(undefined, { enabled: isAuthenticated });
   const returnedOrderStatus = trpc.portal.orderStatus.useQuery({ externalReference: returnedOrder ?? "pending" }, { enabled: isAuthenticated && Boolean(returnedOrder) });
-  const startCheckout = trpc.checkout.createBill.useMutation({
-    onSuccess: ({ checkoutUrl }) => window.location.assign(checkoutUrl),
-  });
   const [adminProductId, setAdminProductId] = useState("gemini-bot-ea");
   const [adminMessage, setAdminMessage] = useState("");
   const download = trpc.portal.download.useMutation({
@@ -30,14 +31,6 @@ export default function Portal() {
     },
     onError: error => setAdminMessage(error.message),
   });
-
-  const beginCheckout = (productId: string) => {
-    if (!isAuthenticated) {
-      startLogin();
-      return;
-    }
-    startCheckout.mutate({ productId });
-  };
 
   const uploadRelease = async (file: File) => {
     const base64 = await new Promise<string>((resolve, reject) => {
@@ -76,7 +69,7 @@ export default function Portal() {
           <div className="relative mx-auto max-w-[1280px]">
             <p className="font-mono text-[10px] font-bold uppercase tracking-[.15em] text-[#e5a631]">FizuxCoder / customer access</p>
             <h1 className="mt-5 max-w-4xl font-display text-[clamp(3.2rem,7vw,6.6rem)] leading-[.86] tracking-[-.065em]">Own the setup.<br /><em className="font-normal text-[#0eafa7]">Keep the access.</em></h1>
-            <p className="mt-7 max-w-2xl text-lg leading-8 text-[#c7d1cb]">Secure checkout creates a ToyyibPay bill for the selected package. Once the signed payment callback is confirmed, your eligible downloads appear in this library.</p>
+            <p className="mt-7 max-w-2xl text-lg leading-8 text-[#c7d1cb]">Secure checkout opens the verified ToyyibPay payment page for the selected package. Sign in to retain an account record for post-payment access and future release delivery.</p>
             <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 font-mono text-[10px] uppercase tracking-[.12em] text-[#adbbb4]"><span>Signed payment callback</span><span className="text-[#e5a631]">•</span><span>Account-bound access</span><span className="text-[#e5a631]">•</span><span>Protected package links</span></div>
           </div>
         </section>
@@ -92,11 +85,10 @@ export default function Portal() {
                 <article key={product.id} className="flex flex-col rounded-[2rem] border border-[#17201f]/15 bg-[#fbf9f4] p-7 shadow-[9px_9px_0_#d8d0c2] lg:p-9">
                   <div className="flex items-start justify-between gap-5"><div><p className="font-mono text-[10px] font-bold uppercase tracking-[.13em] text-[#0e716e]">{product.billingCycle === "lifetime" ? "Lifetime promo" : "Monthly access"}</p><h3 className="mt-4 font-display text-4xl leading-none tracking-[-.05em]">{product.name}</h3></div><ShieldCheck className="shrink-0 text-[#e5a631]" size={31} /></div>
                   <p className="mt-6 flex-1 text-[.96rem] leading-7 text-[#576560]">{product.description}</p>
-                  <div className="mt-8 flex flex-col gap-5 border-t border-[#17201f]/10 pt-6 sm:flex-row sm:items-end sm:justify-between"><div><p className="font-display text-4xl tracking-[-.05em]">{formatPrice(product.priceSen, product.currency)}</p><p className="mt-1 font-mono text-[10px] uppercase tracking-[.1em] text-[#66736f]">{product.billingCycle === "monthly" ? "per month · renewal required" : "one-time lifetime promo"}</p></div><button type="button" disabled={startCheckout.isPending} onClick={() => beginCheckout(product.id)} className="button-primary disabled:cursor-wait disabled:opacity-60">{startCheckout.isPending ? <Loader2 className="animate-spin" size={15} /> : <><span>{isAuthenticated ? "Secure checkout" : "Sign in to purchase"}</span><ArrowRight size={16} /></>}</button></div>
+                  <div className="mt-8 flex flex-col gap-5 border-t border-[#17201f]/10 pt-6 sm:flex-row sm:items-end sm:justify-between"><div>{product.originalPriceSen && <p className="font-mono text-sm font-medium text-[#8d6c53] line-through">Was {formatPrice(product.originalPriceSen, product.currency)}</p>}<p className="mt-1 font-display text-4xl tracking-[-.05em]">{formatPrice(product.priceSen, product.currency)}</p><div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 font-mono text-[10px] uppercase tracking-[.1em] text-[#66736f]"><span>{product.billingCycle === "monthly" ? "per month · renewal required" : "one-time lifetime promo"}</span>{formatSaving(product.originalPriceSen, product.priceSen, product.currency) && <strong className="text-[#0e716e]">Save {formatSaving(product.originalPriceSen, product.priceSen, product.currency)}</strong>}</div></div><a href={product.directCheckoutUrl} target="_blank" rel="noreferrer" className="button-primary"><span>Pay securely</span><ArrowRight size={16} /></a></div>
                 </article>
               ))}
             </div>
-            {startCheckout.error && <p className="mt-6 rounded-xl border border-red-500/25 bg-red-50 p-4 text-sm leading-6 text-red-700">{startCheckout.error.message}</p>}
           </div>
         </section>
 

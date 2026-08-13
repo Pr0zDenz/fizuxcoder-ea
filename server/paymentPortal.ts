@@ -9,6 +9,11 @@ export const PRODUCT_IDS = {
   gemini: "gemini-bot-ea",
 } as const;
 
+const DIRECT_TOYYIBPAY_LINKS: Record<string, string> = {
+  "gemini-bot-ea": "https://toyyibpay.com/t1rvxbft",
+  "3s-universal-ea": "https://toyyibpay.com/3-Serangkai-EA",
+};
+
 export function getRequestOrigin(req: { protocol?: string; get: (name: string) => string | undefined; headers: Record<string, unknown> }) {
   const forwardedProto = req.headers["x-forwarded-proto"];
   const protocol = typeof forwardedProto === "string" ? forwardedProto.split(",")[0] : req.protocol ?? "https";
@@ -20,14 +25,16 @@ export function getRequestOrigin(req: { protocol?: string; get: (name: string) =
 export async function getCatalog() {
   const db = await getDb();
   if (!db) throw new Error("Database is unavailable");
-  return db.select({
+  const catalog = await db.select({
     id: products.id,
     name: products.name,
     description: products.description,
     priceSen: products.priceSen,
+    originalPriceSen: products.originalPriceSen,
     currency: products.currency,
     billingCycle: products.billingCycle,
   }).from(products).where(eq(products.active, "yes"));
+  return catalog.map(product => ({ ...product, directCheckoutUrl: DIRECT_TOYYIBPAY_LINKS[product.id] }));
 }
 
 export async function beginPaymentOrder(input: { userId: number; productId: string }) {

@@ -8,6 +8,13 @@
       "when": 1786618344831,
       "tag": "0000_great_whirlwind",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1786619910057,
+      "tag": "0001_noisy_warbound",
+      "breakpoints": true
     }
   ]
 }

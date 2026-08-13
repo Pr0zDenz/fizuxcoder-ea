@@ -18,3 +18,14 @@
 - [x] Ingest the supplied Gemini and 3S `.ex5` package files into protected storage with product-specific metadata.
 - [x] Add owner-only package-upload controls so future EA and indicator updates can be delivered securely.
 - [x] Validate both active ToyyibPay categories, signed callback logic, protected-package registration, production build, and desktop/mobile portal views.
+- [ ] Capture and safely surface ToyyibPay’s dynamic-bill creation error response instead of a generic missing-BillCode message.
+- [ ] Ensure dynamically generated return and callback URLs use the published public domain rather than preview or local-host values.
+- [ ] Revalidate the dynamic-bill flow after publication and document the required first live-payment test.
+- [x] Show verified original prices, sale prices, and savings for both EA products in the customer portal.
+- [x] Update the Gemini Bot server-side price to the confirmed RM450 monthly promotional amount.
+- [x] Add the confirmed 3S Universal and Gemini Bot ToyyibPay payment links as direct checkout fallbacks.
+- [x] Diagnose and remove the published checkout JSON parsing failure caused by an HTML response.
+- [x] Route buyer checkout controls through the verified direct ToyyibPay links while keeping post-payment access messaging accurate.
+- [ ] Verify on the published portal that each buyer-facing checkout control opens the correct ToyyibPay page without a JSON parsing error.
+- [x] Remove the unused mutation-based checkout call from the customer portal until server-created bills are fully revalidated.
+- [ ] Capture the real published dynamic-bill response before re-enabling server-created checkout.

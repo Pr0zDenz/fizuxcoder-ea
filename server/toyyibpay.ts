@@ -47,6 +47,14 @@ function getFirstRecord(payload: unknown): Record<string, unknown> {
   return record as Record<string, unknown>;
 }
 
+function describeToyyibPayBillResponse(payload: unknown) {
+  const record = typeof payload === "object" && payload !== null && !Array.isArray(payload) ? payload as Record<string, unknown> : {};
+  const fields = ["status", "code", "error", "message", "reason", "Description"]
+    .map(key => record[key])
+    .filter(value => typeof value === "string" && value.trim()) as string[];
+  return fields.length ? fields.join(" · ") : "ToyyibPay returned an unrecognised bill response";
+}
+
 /** Read-only health check against ToyyibPay; it never creates or changes a bill. */
 export async function getToyyibPayCategory(categoryCode: string): Promise<ToyyibPayCategory> {
   const body = new FormData();
@@ -64,7 +72,7 @@ export async function createToyyibPayBill(input: CreateBillInput): Promise<strin
     categoryCode: input.categoryCode,
     billName: input.billName.slice(0, 30).replace(/[^a-zA-Z0-9 _]/g, " "),
     billDescription: input.billDescription.slice(0, 100).replace(/[^a-zA-Z0-9 _]/g, " "),
-    billPriceSetting: "1",
+    billPriceSetting: "0",
     billPayorInfo: "1",
     billAmount: String(input.amountSen),
     billReturnUrl: input.returnUrl,
@@ -81,10 +89,18 @@ export async function createToyyibPayBill(input: CreateBillInput): Promise<strin
   for (const [key, value] of Object.entries(fields)) body.append(key, value);
 
   const response = await fetch(`${TOYYIBPAY_API_BASE}/createBill`, { method: "POST", body });
-  if (!response.ok) throw new Error(`ToyyibPay bill creation failed with HTTP ${response.status}`);
-  const result = getFirstRecord(await response.json());
+  const rawResponse = await response.text();
+  let payload: unknown;
+  try {
+    payload = JSON.parse(rawResponse);
+  } catch {
+    const responseKind = rawResponse.trimStart().startsWith("<") ? "an HTML page" : "a non-JSON response";
+    throw new Error(`ToyyibPay bill creation returned ${responseKind} (HTTP ${response.status})`);
+  }
+  if (!response.ok) throw new Error(`ToyyibPay bill creation failed with HTTP ${response.status}: ${describeToyyibPayBillResponse(payload)}`);
+  const result = getFirstRecord(payload);
   const billCode = result.BillCode;
-  if (typeof billCode !== "string" || !billCode) throw new Error("ToyyibPay did not return a BillCode");
+  if (typeof billCode !== "string" || !billCode) throw new Error(`ToyyibPay did not return a BillCode: ${describeToyyibPayBillResponse(payload)}`);
   return billCode;
 }
 

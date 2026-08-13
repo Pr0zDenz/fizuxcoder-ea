@@ -31,6 +31,7 @@ export const products = mysqlTable("products", {
   description: text("description").notNull(),
   categoryCode: varchar("categoryCode", { length: 32 }).notNull(),
   priceSen: int("priceSen").notNull(),
+  originalPriceSen: int("originalPriceSen"),
   currency: varchar("currency", { length: 8 }).notNull().default("MYR"),
   billingCycle: mysqlEnum("billingCycle", ["lifetime", "monthly"]).notNull(),
   active: mysqlEnum("active", ["yes", "no"]).notNull().default("yes"),
