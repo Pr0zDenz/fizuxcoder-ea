@@ -54,6 +54,7 @@
 - [ ] Add a protected test-only download artifact to the RM1 product and verify it cannot expose production EA files.
 - [ ] Replace the manual RM1 permanent-bill link with an owner-only API-created one-time test bill carrying the Master Server callback URL.
 - [ ] Diagnose and safely surface the HTML response returned by ToyyibPay when the callback-enabled RM1 dynamic test bill is created.
+- [ ] Capture the live ToyyibPay createBill HTTP status, redirect target, content type, and sanitized response marker to select a compatible fallback.
 - [x] Configure the hidden RM1 test product to use the verified active Gemini billing category `x42sivvj` while retaining the test-only entitlement policy.
 - [x] Validate the injected Gemini Bot dummy entitlement by binding and then replacing only the authorized dummy MT5 account through the public Master Server.
 - [x] Add customer MT5 account binding and authenticated replacement of the previously bound account.

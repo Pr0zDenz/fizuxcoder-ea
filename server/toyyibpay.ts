@@ -75,7 +75,6 @@ export async function getToyyibPayCategory(categoryCode: string): Promise<Toyyib
 }
 
 export async function createToyyibPayBill(input: CreateBillInput): Promise<string> {
-  const body = new FormData();
   const fields: Record<string, string> = {
     userSecretKey: requireToyyibPaySecret(),
     categoryCode: input.categoryCode,
@@ -95,16 +94,27 @@ export async function createToyyibPayBill(input: CreateBillInput): Promise<strin
     billPaymentChannel: "0",
     billExpiryDays: "1",
   };
-  for (const [key, value] of Object.entries(fields)) body.append(key, value);
-
-  const response = await fetch(`${TOYYIBPAY_API_BASE}/createBill`, { method: "POST", body });
+  const body = new URLSearchParams(fields);
+  const response = await fetch(`${TOYYIBPAY_API_BASE}/createBill`, {
+    method: "POST",
+    headers: {
+      "Accept": "application/json, text/plain, */*",
+      "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+      "User-Agent": "FizuxCoder-Licensing/1.0",
+    },
+    body,
+    redirect: "manual",
+  });
   const rawResponse = await response.text();
   let payload: unknown;
   try {
     payload = JSON.parse(rawResponse);
   } catch {
     const responseKind = rawResponse.trimStart().startsWith("<") ? "an HTML page" : "a non-JSON response";
-    throw new Error(`ToyyibPay bill creation returned ${responseKind} (HTTP ${response.status})`);
+    const contentType = response.headers.get("content-type") ?? "unknown";
+    const redirectTarget = response.headers.get("location");
+    const redirectNote = redirectTarget ? `; redirect target: ${new URL(redirectTarget, TOYYIBPAY_API_BASE).origin}` : "";
+    throw new Error(`ToyyibPay bill creation returned ${responseKind} (HTTP ${response.status}, content type: ${contentType}${redirectNote})`);
   }
   if (!response.ok) throw new Error(`ToyyibPay bill creation failed with HTTP ${response.status}: ${describeToyyibPayBillResponse(payload)}`);
   const result = getFirstRecord(payload);
