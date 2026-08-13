@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 
 const brokerUrl = "https://trk.pepperstonepartners.com/SH1TD";
-const geminiPurchaseUrl = "https://toyyibpay.com/t1rvxbft";
+const geminiPurchaseUrl = "/portal";
 
 const products = {
   gemini: {
@@ -149,12 +149,13 @@ export default function Home() {
             <a href="#systems" className="nav-link">Systems</a>
             <a href="#matrix" className="nav-link">Matrix</a>
             <a href="#protocol" className="nav-link">Setup protocol</a>
+            <a href="/portal" className="nav-link">Customer portal</a>
             <a href="#disclosure" className="nav-link">Risk notes</a>
           </nav>
 
           <div className="hidden lg:block">
-            <a href="#broker" className="button-primary button-small">
-              Broker setup <ArrowUpRight size={15} />
+            <a href="/portal" className="button-primary button-small">
+              Customer portal <ArrowUpRight size={15} />
             </a>
           </div>
           <button
