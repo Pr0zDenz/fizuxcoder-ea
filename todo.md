@@ -45,6 +45,7 @@
 - [x] Confirm the Master Server callback architecture for automatic licence activation.
 - [x] Add deterministic duplicate-callback and failed-settlement tests for the Master Server licence processor.
 - [ ] Verify an actual completed ToyyibPay payment creates the pending Master Server licence record and can then be claimed and bound by its authenticated customer.
+- [x] Validate the injected Gemini Bot dummy entitlement by binding and then replacing only the authorized dummy MT5 account through the public Master Server.
 - [x] Add customer MT5 account binding and authenticated replacement of the previously bound account.
 - [x] Synchronize each new or replaced MT5 account binding to the Master Server licence data without exposing payment secrets.
 - [x] Verify that re-binding revokes the old MT5 account’s access and enables only the replacement account.
