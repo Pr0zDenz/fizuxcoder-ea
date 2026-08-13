@@ -1,0 +1,11 @@
+{
+  "task_kind": "new-document",
+  "output": "pdf",
+  "signals": [],
+  "hard_constraints": ["marketing brochure", "contains external registration and payment links", "includes risk disclosure"],
+  "content_features": {
+    "code_blocks": 0,
+    "defined_terms": 3,
+    "portrait_images": 3
+  }
+}

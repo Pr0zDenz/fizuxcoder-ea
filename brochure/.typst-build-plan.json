@@ -1,0 +1,26 @@
+{
+  "base": {
+    "auto_apply": true,
+    "conflict_group": "document-base",
+    "id": "report-entry",
+    "kind": "asset",
+    "ownership": "global",
+    "path": "assets/report-entry.typ",
+    "reason": "General professional document fallback.",
+    "status": "ready"
+  },
+  "catalog_version": "2026-07-17-affiliated-formats-v3",
+  "channel": "typst-pdf",
+  "confirmation_candidates": [],
+  "enhancements": [],
+  "exclusions": [],
+  "fingerprint": "sha256:feaad9910e809372b840abe43ea07f82b2ecebc131eec8e42e4ce56a7b9adb8f",
+  "next_action": "minimal-compile-preflight",
+  "optional_idea": null,
+  "question": null,
+  "reused": false,
+  "schema_version": 1,
+  "state": "ready",
+  "style_owner": "report-entry",
+  "typst_version": "typst 0.15.1 (9dfd3a08)"
+}
