@@ -15,13 +15,11 @@ export const PRODUCT_IDS = {
 export const DIRECT_TOYYIBPAY_LINKS: Record<string, string> = {
   "gemini-bot-ea": "https://toyyibpay.com/t1rvxbft",
   "3s-universal-ea": "https://toyyibpay.com/3-Serangkai-EA",
-  "test-gemini-bot-ea": "https://toyyibpay.com/TEST-Gemini-Bot-EA",
 };
 
 const DIRECT_TOYYIBPAY_BILL_CODES: Record<string, string> = {
   "gemini-bot-ea": "t1rvxbft",
   "3s-universal-ea": "3-Serangkai-EA",
-  "test-gemini-bot-ea": "TEST-Gemini-Bot-EA",
 };
 
 export function getRequestOrigin(req: { protocol?: string; get: (name: string) => string | undefined; headers: Record<string, unknown> }) {
@@ -58,16 +56,16 @@ export async function getTestCatalog() {
     currency: products.currency,
     billingCycle: products.billingCycle,
   }).from(products).where(and(eq(products.active, "yes"), eq(products.isTest, "yes")));
-  return catalog.map(product => ({ ...product, directCheckoutUrl: DIRECT_TOYYIBPAY_LINKS[product.id] }));
+  return catalog.map(product => ({ ...product, directCheckoutUrl: undefined }));
 }
 
-export async function beginPaymentOrder(input: { userId: number; productId: string }) {
+export async function beginPaymentOrder(input: { userId: number; productId: string; referencePrefix?: string }) {
   const db = await getDb();
   if (!db) throw new Error("Database is unavailable");
   const product = (await db.select().from(products).where(eq(products.id, input.productId)).limit(1))[0];
   if (!product || product.active !== "yes") throw new Error("This product is not currently available");
   const id = nanoid(18);
-  const externalReference = `FZ-${nanoid(14).toUpperCase()}`;
+  const externalReference = `${input.referencePrefix ?? "FZ"}-${nanoid(14).toUpperCase()}`;
   await db.insert(paymentOrders).values({
     id,
     userId: input.userId,
@@ -111,7 +109,7 @@ export async function recordPaymentCallback(input: {
     const product = (await db.select().from(products).where(eq(products.id, order.productId)).limit(1))[0];
     if (!product) throw new Error("Order product is unavailable");
     const now = new Date();
-    const expiresAt = product.billingCycle === "monthly" ? new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) : null;
+    const expiresAt = product.isTest === "yes" ? new Date(now.getTime() + 24 * 60 * 60 * 1000) : product.billingCycle === "monthly" ? new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) : null;
     await db.update(paymentOrders).set({ status: "paid", providerRefNo: input.refNo, paidAmountSen: input.amountSen, paidAt: now }).where(eq(paymentOrders.id, order.id));
     await db.insert(entitlements).values({
       userId: order.userId,
@@ -186,8 +184,16 @@ export async function claimPermanentBillPayment(input: { userId: number; userEma
   const db = await getDb();
   if (!db) throw new Error("Database is unavailable");
   const product = (await db.select().from(products).where(eq(products.id, input.productId)).limit(1))[0];
-  const billCode = DIRECT_TOYYIBPAY_BILL_CODES[input.productId];
-  if (!product || !billCode || product.active !== "yes") throw new Error("This package is not currently available for payment claiming");
+  let billCode = DIRECT_TOYYIBPAY_BILL_CODES[input.productId];
+  let dynamicTestOrder: { id: string } | undefined;
+  if (!product || product.active !== "yes") throw new Error("This package is not currently available for payment claiming");
+  if (product.isTest === "yes") {
+    const pending = await db.select({ id: paymentOrders.id, providerBillCode: paymentOrders.providerBillCode }).from(paymentOrders).where(and(eq(paymentOrders.userId, input.userId), eq(paymentOrders.productId, product.id), eq(paymentOrders.status, "pending"))).limit(1);
+    if (!pending.length || !pending[0].providerBillCode) throw new Error("Create a callback-enabled RM1 test bill before verifying its receipt");
+    dynamicTestOrder = { id: pending[0].id };
+    billCode = pending[0].providerBillCode;
+  }
+  if (!billCode) throw new Error("This package is not currently available for payment claiming");
 
   const receiptNo = input.receiptNo.trim();
   const transactions = await getSuccessfulBillTransactions(billCode);
@@ -203,20 +209,24 @@ export async function claimPermanentBillPayment(input: { userId: number; userEma
   if (alreadyClaimed.length) throw new Error("This ToyyibPay receipt has already been claimed");
 
   const now = new Date();
-  const orderId = nanoid(18);
-  const expiresAt = product.billingCycle === "monthly" ? new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) : null;
-  await db.insert(paymentOrders).values({
-    id: orderId,
-    userId: input.userId,
-    productId: product.id,
-    externalReference: `CLAIM-${nanoid(14).toUpperCase()}`,
-    providerBillCode: billCode,
-    providerRefNo: invoiceNo,
-    status: "paid",
-    expectedAmountSen: product.priceSen,
-    paidAmountSen: amountSen,
-    paidAt: now,
-  });
+  const orderId = dynamicTestOrder?.id ?? nanoid(18);
+  const expiresAt = product.isTest === "yes" ? new Date(now.getTime() + 24 * 60 * 60 * 1000) : product.billingCycle === "monthly" ? new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) : null;
+  if (dynamicTestOrder) {
+    await db.update(paymentOrders).set({ providerRefNo: invoiceNo, status: "paid", paidAmountSen: amountSen, paidAt: now }).where(eq(paymentOrders.id, orderId));
+  } else {
+    await db.insert(paymentOrders).values({
+      id: orderId,
+      userId: input.userId,
+      productId: product.id,
+      externalReference: `CLAIM-${nanoid(14).toUpperCase()}`,
+      providerBillCode: billCode,
+      providerRefNo: invoiceNo,
+      status: "paid",
+      expectedAmountSen: product.priceSen,
+      paidAmountSen: amountSen,
+      paidAt: now,
+    });
+  }
   await db.insert(entitlements).values({
     userId: input.userId,
     productId: product.id,

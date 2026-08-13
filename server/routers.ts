@@ -6,7 +6,8 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { createToyyibPayBill } from "./toyyibpay";
-import { attachProviderBill, beginPaymentOrder, bindCustomerMt5Account, claimPermanentBillPayment, getCatalog, getCustomerLibrary, getCustomerOrderStatus, getSecureFileForCustomer, getTestCatalog, packageStorageKey, removePendingOrder, safeFileName } from "./paymentPortal";
+import { attachProviderBill, beginPaymentOrder, bindCustomerMt5Account, claimPermanentBillPayment, getCatalog, getCustomerLibrary, getCustomerOrderStatus, getRequestOrigin, getSecureFileForCustomer, getTestCatalog, packageStorageKey, removePendingOrder, safeFileName } from "./paymentPortal";
+import { getMasterServerPaymentCallbackUrl } from "./masterServer";
 import { storageGetSignedUrl, storagePut } from "./storage";
 import { getDb } from "./db";
 import { productFiles, products } from "../drizzle/schema";
@@ -65,6 +66,29 @@ export const appRouter = router({
         await db.insert(productFiles).values({ productId: product.id, displayName: "RM1 live test receipt", fileName, storageKey: uploaded.key, contentType: "text/plain; charset=utf-8" });
       }
       return { name: product.name };
+    }),
+    createLiveCheckout: adminProcedure.mutation(async ({ ctx }) => {
+      if (!ctx.user.email) throw new TRPCError({ code: "BAD_REQUEST", message: "Your owner account needs an email address before creating a test bill" });
+      const pending = await beginPaymentOrder({ userId: ctx.user.id, productId: "test-gemini-bot-ea", referencePrefix: "FZTEST" });
+      try {
+        const origin = getRequestOrigin(ctx.req);
+        const billCode = await createToyyibPayBill({
+          categoryCode: pending.product.categoryCode,
+          billName: "FizuxCoder RM1 Test",
+          billDescription: "FizuxCoder licence test",
+          amountSen: pending.product.priceSen,
+          returnUrl: `${origin}/portal`,
+          callbackUrl: getMasterServerPaymentCallbackUrl(),
+          externalReference: pending.externalReference,
+          payerName: ctx.user.name ?? "FizuxCoder owner test",
+          payerEmail: ctx.user.email,
+        });
+        await attachProviderBill(pending.orderId, billCode);
+        return { checkoutUrl: `https://toyyibpay.com/${billCode}` };
+      } catch (error) {
+        await removePendingOrder(pending.orderId);
+        throw new TRPCError({ code: "BAD_GATEWAY", message: error instanceof Error ? error.message : "Unable to create the RM1 test bill" });
+      }
     }),
   }),
   checkout: router({

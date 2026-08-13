@@ -19,6 +19,11 @@ function requiredMasterServerConfig() {
   return { baseUrl, syncKey };
 }
 
+export function getMasterServerPaymentCallbackUrl() {
+  const { baseUrl } = requiredMasterServerConfig();
+  return `${baseUrl}/payment_success`;
+}
+
 function messageFromPayload(payload: unknown) {
   if (payload && typeof payload === "object" && "message" in payload && typeof payload.message === "string") {
     return payload.message;
