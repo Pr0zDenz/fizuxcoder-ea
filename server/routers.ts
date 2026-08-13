@@ -37,7 +37,7 @@ export const appRouter = router({
         id: "test-gemini-bot-ea",
         name: "Gemini Bot EA — RM1 Live Test",
         description: "Owner-only end-to-end payment, entitlement, MT5 binding, and protected-download validation. No production EA package is included.",
-        categoryCode: "fifiylvf",
+        categoryCode: "x42sivvj",
         priceSen: 100,
         originalPriceSen: null,
         currency: "MYR",
@@ -69,6 +69,9 @@ export const appRouter = router({
     }),
     createLiveCheckout: adminProcedure.mutation(async ({ ctx }) => {
       if (!ctx.user.email) throw new TRPCError({ code: "BAD_REQUEST", message: "Your owner account needs an email address before creating a test bill" });
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database is unavailable" });
+      await db.update(products).set({ categoryCode: "x42sivvj" }).where(eq(products.id, "test-gemini-bot-ea"));
       const pending = await beginPaymentOrder({ userId: ctx.user.id, productId: "test-gemini-bot-ea", referencePrefix: "FZTEST" });
       try {
         const origin = getRequestOrigin(ctx.req);
