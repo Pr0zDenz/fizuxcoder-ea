@@ -11,3 +11,7 @@
 The supplied Gemini payment link (`t1rvxbft`) opens the active **Gemini Bot EA** ToyyibPay checkout and displays RM450.00. The supplied 3S payment link (`3-Serangkai-EA`) opens the active **3 Serangkai EA** ToyyibPay checkout and displays RM2,999.00. Both pages were inspected without entering customer details or submitting a payment.
 
 The first published-portal check immediately after the direct-checkout release still returned the previous portal interface; the release needs cache-propagation confirmation before the buyer-facing control validation can be marked complete.
+
+Subsequent cache-busted published portal verification confirmed the current direct-payment release is active. It displays the verified original prices, promotional prices, and savings, and the buyer controls resolve directly to the active 3S (`3-Serangkai-EA`) and Gemini (`t1rvxbft`) ToyyibPay pages without invoking the former mutation endpoint.
+
+The published portal exposes buyer controls as plain direct anchors—rather than mutation buttons—to `https://toyyibpay.com/3-Serangkai-EA` and `https://toyyibpay.com/t1rvxbft`. Following the 3S control in the browser initiated an external navigation attempt; re-opening the cache-busted portal confirmed the direct-anchor implementation remained intact. No payment details were entered and no transaction was submitted during verification.

@@ -5,7 +5,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { createToyyibPayBill } from "./toyyibpay";
-import { attachProviderBill, beginPaymentOrder, getCatalog, getCustomerLibrary, getCustomerOrderStatus, getSecureFileForCustomer, packageStorageKey, removePendingOrder, safeFileName } from "./paymentPortal";
+import { attachProviderBill, beginPaymentOrder, claimPermanentBillPayment, getCatalog, getCustomerLibrary, getCustomerOrderStatus, getSecureFileForCustomer, packageStorageKey, removePendingOrder, safeFileName } from "./paymentPortal";
 import { storageGetSignedUrl, storagePut } from "./storage";
 import { getDb } from "./db";
 import { productFiles } from "../drizzle/schema";
@@ -59,6 +59,10 @@ export const appRouter = router({
   portal: router({
     library: protectedProcedure.query(({ ctx }) => getCustomerLibrary(ctx.user.id)),
     orderStatus: protectedProcedure.input(z.object({ externalReference: z.string().min(5).max(64) })).query(({ ctx, input }) => getCustomerOrderStatus(ctx.user.id, input.externalReference)),
+    claimPurchase: protectedProcedure.input(z.object({ productId: z.string().min(1), receiptNo: z.string().min(4).max(128) })).mutation(async ({ ctx, input }) => {
+      if (!ctx.user.email) throw new TRPCError({ code: "BAD_REQUEST", message: "Your portal account needs an email address before a payment can be claimed" });
+      return claimPermanentBillPayment({ userId: ctx.user.id, userEmail: ctx.user.email, productId: input.productId, receiptNo: input.receiptNo });
+    }),
     download: protectedProcedure.input(z.object({ fileId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
       const file = await getSecureFileForCustomer({ userId: ctx.user.id, fileId: input.fileId });
       return { url: await storageGetSignedUrl(file.storageKey), fileName: file.fileName };

@@ -3,15 +3,21 @@ import { and, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { entitlements, paymentOrders, productFiles, products } from "../drizzle/schema";
 import { getDb } from "./db";
+import { callbackAmountToSen, getSuccessfulBillTransactions } from "./toyyibpay";
 
 export const PRODUCT_IDS = {
   threeS: "3s-universal-ea",
   gemini: "gemini-bot-ea",
 } as const;
 
-const DIRECT_TOYYIBPAY_LINKS: Record<string, string> = {
+export const DIRECT_TOYYIBPAY_LINKS: Record<string, string> = {
   "gemini-bot-ea": "https://toyyibpay.com/t1rvxbft",
   "3s-universal-ea": "https://toyyibpay.com/3-Serangkai-EA",
+};
+
+const DIRECT_TOYYIBPAY_BILL_CODES: Record<string, string> = {
+  "gemini-bot-ea": "t1rvxbft",
+  "3s-universal-ea": "3-Serangkai-EA",
 };
 
 export function getRequestOrigin(req: { protocol?: string; get: (name: string) => string | undefined; headers: Record<string, unknown> }) {
@@ -130,6 +136,52 @@ export async function getCustomerOrderStatus(userId: number, externalReference: 
   const order = (await db.select({ order: paymentOrders, product: products }).from(paymentOrders).innerJoin(products, eq(paymentOrders.productId, products.id)).where(and(eq(paymentOrders.userId, userId), eq(paymentOrders.externalReference, externalReference))).limit(1))[0];
   if (!order) return null;
   return { productName: order.product.name, status: order.order.status, failureReason: order.order.failureReason, paidAt: order.order.paidAt };
+}
+
+export async function claimPermanentBillPayment(input: { userId: number; userEmail: string; productId: string; receiptNo: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  const product = (await db.select().from(products).where(eq(products.id, input.productId)).limit(1))[0];
+  const billCode = DIRECT_TOYYIBPAY_BILL_CODES[input.productId];
+  if (!product || !billCode || product.active !== "yes") throw new Error("This package is not currently available for payment claiming");
+
+  const receiptNo = input.receiptNo.trim();
+  const transactions = await getSuccessfulBillTransactions(billCode);
+  const transaction = transactions.find(item => item.billpaymentStatus === "1" && (item.billpaymentInvoiceNo === receiptNo || item.SettlementReferenceNo === receiptNo));
+  if (!transaction) throw new Error("No successful payment was found for that ToyyibPay receipt number");
+  if (!transaction.billEmail || transaction.billEmail.trim().toLowerCase() !== input.userEmail.trim().toLowerCase()) {
+    throw new Error("The ToyyibPay receipt email must match the email of the signed-in portal account");
+  }
+  const amountSen = callbackAmountToSen(transaction.billpaymentAmount);
+  if (amountSen !== product.priceSen) throw new Error("The confirmed payment amount does not match this package");
+  const invoiceNo = transaction.billpaymentInvoiceNo ?? receiptNo;
+  const alreadyClaimed = await db.select({ id: paymentOrders.id }).from(paymentOrders).where(eq(paymentOrders.providerRefNo, invoiceNo)).limit(1);
+  if (alreadyClaimed.length) throw new Error("This ToyyibPay receipt has already been claimed");
+
+  const now = new Date();
+  const orderId = nanoid(18);
+  const expiresAt = product.billingCycle === "monthly" ? new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) : null;
+  await db.insert(paymentOrders).values({
+    id: orderId,
+    userId: input.userId,
+    productId: product.id,
+    externalReference: `CLAIM-${nanoid(14).toUpperCase()}`,
+    providerBillCode: billCode,
+    providerRefNo: invoiceNo,
+    status: "paid",
+    expectedAmountSen: product.priceSen,
+    paidAmountSen: amountSen,
+    paidAt: now,
+  });
+  await db.insert(entitlements).values({
+    userId: input.userId,
+    productId: product.id,
+    mostRecentOrderId: orderId,
+    status: "active",
+    startsAt: now,
+    expiresAt,
+  }).onDuplicateKeyUpdate({ set: { mostRecentOrderId: orderId, status: "active", startsAt: now, expiresAt } });
+  return { productName: product.name, billingCycle: product.billingCycle };
 }
 
 export async function getSecureFileForCustomer(input: { userId: number; fileId: number }) {

@@ -33,6 +33,15 @@ export type CreateBillInput = {
   payerPhone?: string;
 };
 
+export type ToyyibPayBillTransaction = {
+  billEmail?: string;
+  billpaymentStatus?: string;
+  billpaymentAmount?: string;
+  billpaymentInvoiceNo?: string;
+  SettlementReferenceNo?: string;
+  billPaymentDate?: string;
+};
+
 function requireToyyibPaySecret() {
   const secret = process.env.TOYYIBPAY_USER_SECRET_KEY;
   if (!secret) throw new Error("TOYYIBPAY_USER_SECRET_KEY is not configured");
@@ -102,6 +111,24 @@ export async function createToyyibPayBill(input: CreateBillInput): Promise<strin
   const billCode = result.BillCode;
   if (typeof billCode !== "string" || !billCode) throw new Error(`ToyyibPay did not return a BillCode: ${describeToyyibPayBillResponse(payload)}`);
   return billCode;
+}
+
+/** Retrieves successful transactions for one permanent bill. The caller must still match receipt and email before granting access. */
+export async function getSuccessfulBillTransactions(billCode: string): Promise<ToyyibPayBillTransaction[]> {
+  const body = new FormData();
+  body.append("billCode", billCode);
+  body.append("billpaymentStatus", "1");
+  const response = await fetch(`${TOYYIBPAY_API_BASE}/getBillTransactions`, { method: "POST", body });
+  const rawResponse = await response.text();
+  let payload: unknown;
+  try {
+    payload = JSON.parse(rawResponse);
+  } catch {
+    const responseKind = rawResponse.trimStart().startsWith("<") ? "an HTML page" : "a non-JSON response";
+    throw new Error(`ToyyibPay transaction lookup returned ${responseKind} (HTTP ${response.status})`);
+  }
+  if (!response.ok || !Array.isArray(payload)) throw new Error("ToyyibPay transaction lookup did not return a transaction list");
+  return payload as ToyyibPayBillTransaction[];
 }
 
 export function verifyToyyibPayCallback(callback: ToyyibPayCallback): boolean {

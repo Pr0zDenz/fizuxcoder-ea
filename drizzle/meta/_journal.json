@@ -15,6 +15,13 @@
       "when": 1786619910057,
       "tag": "0001_noisy_warbound",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1786621909285,
+      "tag": "0002_wide_rogue",
+      "breakpoints": true
     }
   ]
 }

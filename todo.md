@@ -26,7 +26,14 @@
 - [x] Add the confirmed 3S Universal and Gemini Bot ToyyibPay payment links as direct checkout fallbacks.
 - [x] Diagnose and remove the published checkout JSON parsing failure caused by an HTML response.
 - [x] Route buyer checkout controls through the verified direct ToyyibPay links while keeping post-payment access messaging accurate.
-- [ ] Verify on the published portal that each buyer-facing checkout control opens the correct ToyyibPay page without a JSON parsing error.
+- [x] Verify on the published portal that each buyer-facing checkout control opens the correct ToyyibPay page without a JSON parsing error.
 - [x] Remove the unused mutation-based checkout call from the customer portal until server-created bills are fully revalidated.
 - [ ] Capture the real published dynamic-bill response before re-enabling server-created checkout.
-- [ ] Force and verify a new production build artifact so the published domain serves the direct-payment portal release.
+- [x] Force and verify a new production build artifact so the published domain serves the direct-payment portal release.
+- [x] Reconcile the supplied active ToyyibPay permanent-bill and category records against the portal’s direct-payment configuration.
+- [x] Grant xtr0zen@gmail.com the administrator role after confirming that account exists in the portal user table.
+- [ ] Verify the designated administrator can see the owner release controls and test post-payment package download access.
+- [ ] Follow each published buyer checkout control end-to-end and confirm it reaches the correct ToyyibPay payment page without a JSON parsing error.
+- [ ] Check the published browser request path during checkout-control interaction to confirm the former mutation endpoint is not called.
+- [x] Add a signed-in receipt-claim flow that verifies a completed permanent-bill payment before granting the matching product entitlement.
+- [ ] Verify xtr0zen@gmail.com can claim an eligible completed payment and download the matching protected package without administrator bypass.

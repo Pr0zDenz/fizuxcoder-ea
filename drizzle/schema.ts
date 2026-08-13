@@ -55,6 +55,7 @@ export const paymentOrders = mysqlTable("paymentOrders", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, table => [
   uniqueIndex("paymentOrders_externalReference_unique").on(table.externalReference),
+  uniqueIndex("paymentOrders_providerRefNo_unique").on(table.providerRefNo),
   index("paymentOrders_user_status_idx").on(table.userId, table.status),
 ]);
 
