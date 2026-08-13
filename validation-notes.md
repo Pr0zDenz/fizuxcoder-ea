@@ -9,3 +9,5 @@
 ## Direct Payment Link Verification
 
 The supplied Gemini payment link (`t1rvxbft`) opens the active **Gemini Bot EA** ToyyibPay checkout and displays RM450.00. The supplied 3S payment link (`3-Serangkai-EA`) opens the active **3 Serangkai EA** ToyyibPay checkout and displays RM2,999.00. Both pages were inspected without entering customer details or submitting a payment.
+
+The first published-portal check immediately after the direct-checkout release still returned the previous portal interface; the release needs cache-propagation confirmation before the buyer-facing control validation can be marked complete.
