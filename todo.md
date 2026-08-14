@@ -57,6 +57,7 @@
 - [ ] Capture the live ToyyibPay createBill HTTP status, redirect target, content type, and sanitized response marker to select a compatible fallback.
 - [ ] Verify the deployed server-side ToyyibPay proxy returns a clean bill-creation response before another RM1 checkout attempt.
 - [x] Add an owner-only non-creating ToyyibPay request inspector that exposes only sanitized provider response metadata and JSON fields.
+- [ ] Trace and correct the published owner-inspector request that is receiving HTML before its sanitized JSON response can be displayed.
 - [x] Configure the hidden RM1 test product to use the verified active Gemini billing category `x42sivvj` while retaining the test-only entitlement policy.
 - [x] Validate the injected Gemini Bot dummy entitlement by binding and then replacing only the authorized dummy MT5 account through the public Master Server.
 - [x] Add customer MT5 account binding and authenticated replacement of the previously bound account.

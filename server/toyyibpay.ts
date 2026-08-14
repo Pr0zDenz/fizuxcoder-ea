@@ -73,10 +73,8 @@ function describeToyyibPayBillResponse(payload: unknown) {
 
 /** Read-only health check against ToyyibPay; it never creates or changes a bill. */
 export async function getToyyibPayCategory(categoryCode: string): Promise<ToyyibPayCategory> {
-  const body = new FormData();
-  body.append("userSecretKey", requireToyyibPaySecret());
-  body.append("categoryCode", categoryCode);
-  const response = await fetch(`${TOYYIBPAY_API_BASE}/getCategoryDetails`, { method: "POST", body });
+  const body = new URLSearchParams({ userSecretKey: requireToyyibPaySecret(), categoryCode });
+  const response = await fetch(`${TOYYIBPAY_API_BASE}/getCategoryDetails`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8", "Accept": "application/json" }, body });
   if (!response.ok) throw new Error(`ToyyibPay category validation failed with HTTP ${response.status}`);
   return getFirstRecord(await response.json()) as ToyyibPayCategory;
 }
@@ -140,12 +138,17 @@ export async function inspectToyyibPayCreateBill(categoryCode: string): Promise<
     billName: "",
     billAmount: "",
   });
-  const response = await fetch(`${TOYYIBPAY_API_BASE}/createBill`, {
-    method: "POST",
-    headers: { "Accept": "application/json, text/plain, */*", "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8", "User-Agent": "FizuxCoder-Licensing/1.0" },
-    body,
-    redirect: "manual",
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${TOYYIBPAY_API_BASE}/createBill`, {
+      method: "POST",
+      headers: { "Accept": "application/json, text/plain, */*", "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8", "User-Agent": "FizuxCoder-Licensing/1.0" },
+      body,
+      redirect: "manual",
+    });
+  } catch {
+    return { httpStatus: 0, contentType: "unavailable", responseKind: "other", payload: "ToyyibPay request could not be completed (network details withheld)" };
+  }
   const raw = await response.text();
   const contentType = response.headers.get("content-type") ?? "unknown";
   try {
@@ -158,10 +161,8 @@ export async function inspectToyyibPayCreateBill(categoryCode: string): Promise<
 
 /** Retrieves successful transactions for one permanent bill. The caller must still match receipt and email before granting access. */
 export async function getSuccessfulBillTransactions(billCode: string): Promise<ToyyibPayBillTransaction[]> {
-  const body = new FormData();
-  body.append("billCode", billCode);
-  body.append("billpaymentStatus", "1");
-  const response = await fetch(`${TOYYIBPAY_API_BASE}/getBillTransactions`, { method: "POST", body });
+  const body = new URLSearchParams({ billCode, billpaymentStatus: "1" });
+  const response = await fetch(`${TOYYIBPAY_API_BASE}/getBillTransactions`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8", "Accept": "application/json" }, body });
   const rawResponse = await response.text();
   let payload: unknown;
   try {
