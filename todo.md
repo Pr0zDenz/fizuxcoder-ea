@@ -59,7 +59,9 @@
 - [x] Add an owner-only non-creating ToyyibPay request inspector that exposes only sanitized provider response metadata and JSON fields.
 - [x] Trace and correct the published owner-inspector request that is receiving HTML before its sanitized JSON response can be displayed.
 - [ ] Capture and compare sanitized createBill diagnostics for the actual RM1 payload against the successful non-creating inspection payload.
-- [x] Verify the VPS ngrok tunnel remains reachable while the Master Server listens locally on port 5000.
+- [ ] Verify the VPS ngrok tunnel remains reachable while the Master Server listens locally on port 5000.
+- [x] Replace the fragile RM1 tRPC initiation request with a server-owned owner-only route that always returns structured JSON diagnostics and preserves callback-enabled bill creation.
+- [ ] Add a deterministic callback-preserving fallback for RM1 test payment initiation if dynamic bill creation cannot return a usable bill code.
 - [x] Configure the hidden RM1 test product to use the verified active Gemini billing category `x42sivvj` while retaining the test-only entitlement policy.
 - [x] Validate the injected Gemini Bot dummy entitlement by binding and then replacing only the authorized dummy MT5 account through the public Master Server.
 - [x] Add customer MT5 account binding and authenticated replacement of the previously bound account.
