@@ -5,7 +5,7 @@ import { z } from "zod";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
-import { createToyyibPayBill } from "./toyyibpay";
+import { createToyyibPayBill, inspectToyyibPayCreateBill } from "./toyyibpay";
 import { attachProviderBill, beginPaymentOrder, bindCustomerMt5Account, claimPermanentBillPayment, getCatalog, getCustomerLibrary, getCustomerOrderStatus, getRequestOrigin, getSecureFileForCustomer, getTestCatalog, packageStorageKey, removePendingOrder, safeFileName } from "./paymentPortal";
 import { getMasterServerPaymentCallbackUrl } from "./masterServer";
 import { storageGetSignedUrl, storagePut } from "./storage";
@@ -67,6 +67,7 @@ export const appRouter = router({
       }
       return { name: product.name };
     }),
+    inspectProvider: adminProcedure.query(async () => inspectToyyibPayCreateBill("x42sivvj")),
     createLiveCheckout: adminProcedure.mutation(async ({ ctx }) => {
       if (!ctx.user.email) throw new TRPCError({ code: "BAD_REQUEST", message: "Your owner account needs an email address before creating a test bill" });
       const db = await getDb();

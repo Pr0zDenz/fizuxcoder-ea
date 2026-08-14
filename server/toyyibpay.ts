@@ -42,6 +42,13 @@ export type ToyyibPayBillTransaction = {
   billPaymentDate?: string;
 };
 
+export type ToyyibPayInspection = {
+  httpStatus: number;
+  contentType: string;
+  responseKind: "json" | "html" | "other";
+  payload: unknown;
+};
+
 function requireToyyibPaySecret() {
   const secret = process.env.TOYYIBPAY_USER_SECRET_KEY;
   if (!secret) throw new Error("TOYYIBPAY_USER_SECRET_KEY is not configured");
@@ -121,6 +128,32 @@ export async function createToyyibPayBill(input: CreateBillInput): Promise<strin
   const billCode = result.BillCode;
   if (typeof billCode !== "string" || !billCode) throw new Error(`ToyyibPay did not return a BillCode: ${describeToyyibPayBillResponse(payload)}`);
   return billCode;
+}
+
+/** Sends deliberately incomplete fields so ToyyibPay validates the request without creating a bill. */
+export async function inspectToyyibPayCreateBill(categoryCode: string): Promise<ToyyibPayInspection> {
+  const body = new URLSearchParams({
+    userSecretKey: requireToyyibPaySecret(),
+    categoryCode,
+    billPriceSetting: "0",
+    billPayorInfo: "1",
+    billName: "",
+    billAmount: "",
+  });
+  const response = await fetch(`${TOYYIBPAY_API_BASE}/createBill`, {
+    method: "POST",
+    headers: { "Accept": "application/json, text/plain, */*", "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8", "User-Agent": "FizuxCoder-Licensing/1.0" },
+    body,
+    redirect: "manual",
+  });
+  const raw = await response.text();
+  const contentType = response.headers.get("content-type") ?? "unknown";
+  try {
+    return { httpStatus: response.status, contentType, responseKind: "json", payload: JSON.parse(raw) as unknown };
+  } catch {
+    const responseKind = raw.trimStart().startsWith("<") ? "html" : "other";
+    return { httpStatus: response.status, contentType, responseKind, payload: responseKind === "html" ? "HTML response (body withheld)" : "Non-JSON response (body withheld)" };
+  }
 }
 
 /** Retrieves successful transactions for one permanent bill. The caller must still match receipt and email before granting access. */
