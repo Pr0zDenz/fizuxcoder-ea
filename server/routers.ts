@@ -70,11 +70,13 @@ export const appRouter = router({
     inspectProvider: adminProcedure.query(async () => inspectToyyibPayCreateBill("x42sivvj")),
     createLiveCheckout: adminProcedure.mutation(async ({ ctx }) => {
       if (!ctx.user.email) throw new TRPCError({ code: "BAD_REQUEST", message: "Your owner account needs an email address before creating a test bill" });
-      const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database is unavailable" });
-      await db.update(products).set({ categoryCode: "x42sivvj" }).where(eq(products.id, "test-gemini-bot-ea"));
-      const pending = await beginPaymentOrder({ userId: ctx.user.id, productId: "test-gemini-bot-ea", referencePrefix: "FZTEST" });
+      let pending: Awaited<ReturnType<typeof beginPaymentOrder>> | undefined;
       try {
+        const db = await getDb();
+        if (!db) throw new Error("Database is unavailable");
+        await db.update(products).set({ categoryCode: "x42sivvj" }).where(eq(products.id, "test-gemini-bot-ea"));
+        const order = await beginPaymentOrder({ userId: ctx.user.id, productId: "test-gemini-bot-ea", referencePrefix: "FZTEST" });
+        pending = order;
         const origin = getRequestOrigin(ctx.req);
         const billCode = await createToyyibPayBill({
           categoryCode: pending.product.categoryCode,
@@ -90,7 +92,7 @@ export const appRouter = router({
         await attachProviderBill(pending.orderId, billCode);
         return { checkoutUrl: `https://toyyibpay.com/${billCode}` };
       } catch (error) {
-        await removePendingOrder(pending.orderId);
+        if (pending) await removePendingOrder(pending.orderId);
         throw new TRPCError({ code: "BAD_GATEWAY", message: error instanceof Error ? error.message : "Unable to create the RM1 test bill" });
       }
     }),
