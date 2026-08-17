@@ -167,14 +167,36 @@ export async function getSuccessfulBillTransactions(billCode: string): Promise<T
   const body = new URLSearchParams({ billCode, billpaymentStatus: "1" });
   const response = await fetch(`${TOYYIBPAY_API_BASE}/getBillTransactions`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8", "Accept": "application/json" }, body });
   const rawResponse = await response.text();
+  // ToyyibPay may prefix JSON with a UTF-8 BOM. Strip only standard leading
+  // whitespace/BOM framing; HTML and other non-JSON content still fail closed.
+  const normalizedResponse = rawResponse.replace(/^\uFEFF/, "").trimStart();
   let payload: unknown;
   try {
-    payload = JSON.parse(rawResponse);
+    payload = JSON.parse(normalizedResponse);
   } catch {
-    const responseKind = rawResponse.trimStart().startsWith("<") ? "an HTML page" : "a non-JSON response";
-    throw new Error(`ToyyibPay transaction lookup returned ${responseKind} (HTTP ${response.status})`);
+    const responseKind = normalizedResponse.startsWith("<") ? "an HTML page" : "a non-JSON response";
+    const contentType = response.headers.get("content-type") ?? "unknown";
+    console.warn("[ToyyibPay transaction lookup]", {
+      billCode,
+      httpStatus: response.status,
+      contentType,
+      bytes: Buffer.byteLength(rawResponse),
+      startsWithHtml: normalizedResponse.startsWith("<"),
+      validTransactionArray: false,
+    });
+    throw new Error(`ToyyibPay transaction lookup returned ${responseKind} (HTTP ${response.status}, content type: ${contentType})`);
   }
-  if (!response.ok || !Array.isArray(payload)) throw new Error("ToyyibPay transaction lookup did not return a transaction list");
+  if (!response.ok || !Array.isArray(payload)) {
+    console.warn("[ToyyibPay transaction lookup]", {
+      billCode,
+      httpStatus: response.status,
+      contentType: response.headers.get("content-type") ?? "unknown",
+      bytes: Buffer.byteLength(rawResponse),
+      startsWithHtml: normalizedResponse.startsWith("<"),
+      validTransactionArray: false,
+    });
+    throw new Error("ToyyibPay transaction lookup did not return a transaction list");
+  }
   return payload as ToyyibPayBillTransaction[];
 }
 

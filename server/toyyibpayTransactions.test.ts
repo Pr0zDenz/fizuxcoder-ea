@@ -15,6 +15,12 @@ describe("ToyyibPay permanent-bill transaction lookup", () => {
     await expect(getSuccessfulBillTransactions("t1rvxbft")).rejects.toThrow("HTML page");
   });
 
+  it("accepts a valid transaction list prefixed by a UTF-8 byte-order mark", async () => {
+    const expected = [{ billpaymentStatus: "1", billpaymentInvoiceNo: "TP-RM1-VERIFIED", billEmail: "xtr0zen@gmail.com", billpaymentAmount: "1.00" }];
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(`\uFEFF${JSON.stringify(expected)}`, { status: 200, headers: { "content-type": "text/plain" } })));
+    await expect(getSuccessfulBillTransactions("TEST-Gemini-Bot-EA")).resolves.toEqual(expected);
+  });
+
   it("submits the callback-enabled RM1 bill fields as URL-encoded data and retains a provider validation message", async () => {
     const priorSecret = process.env.TOYYIBPAY_USER_SECRET_KEY;
     process.env.TOYYIBPAY_USER_SECRET_KEY = "test-secret";

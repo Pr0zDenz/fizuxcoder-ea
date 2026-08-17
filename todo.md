@@ -73,6 +73,12 @@
 - [ ] Capture the second published RM1 initiation provider response and distinguish portal configuration failure from Master Server callback configuration.
 - [x] Inspect the supplied `TEST-Gemini-Bot-EA` ToyyibPay URL and determine whether its settled payment can be securely verified as the isolated RM1 test product.
 - [x] Add an owner-only permanent-bill RM1 fallback that verifies the supplied `TEST-Gemini-Bot-EA` receipt by email and exact amount, unlocks only the test receipt file, and does not claim automatic callback support.
+- [ ] Capture and safely parse the live non-JSON ToyyibPay transaction-lookup response before retrying the verified RM1 fallback receipt claim.
+- [ ] Capture sanitized transaction-response metadata from the published portal runtime for the RM1 fallback receipt, including content type, byte count, response class, and JSON-array validity.
+- [ ] Retry the verified RM1 fallback receipt claim on the deployed portal after production-runtime diagnostics are available and confirm entitlement creation.
+- [ ] Confirm the observed `/payment_success` 400 is an unsigned-callback rejection and that it did not alter any production or test licence record.
+- [x] Add a non-destructive `/payment_success` verification that snapshots relevant licence or pending-payment state before and after an unsigned callback and proves no state changed.
+- [x] Document the invalid `/payment_success` code path that exits before any subscriber or pending-licence write occurs.
 - [x] Configure the hidden RM1 test product to use the verified active Gemini billing category `x42sivvj` while retaining the test-only entitlement policy.
 - [x] Validate the injected Gemini Bot dummy entitlement by binding and then replacing only the authorized dummy MT5 account through the public Master Server.
 - [x] Add customer MT5 account binding and authenticated replacement of the previously bound account.
