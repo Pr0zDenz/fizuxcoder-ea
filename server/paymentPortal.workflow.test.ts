@@ -10,7 +10,7 @@ vi.mock("./toyyibpay", () => ({
   getSuccessfulBillTransactions: successfulTransactionsMock,
 }));
 
-import { bindCustomerMt5Account, claimPermanentBillPayment, getCustomerLibrary, getSecureFileForCustomer, recordPaymentCallback } from "./paymentPortal";
+import { bindCustomerMt5Account, claimPermanentBillPayment, createNoChargeTestPurchase, getCustomerLibrary, getSecureFileForCustomer, recordPaymentCallback } from "./paymentPortal";
 
 type MockState = {
   order: Record<string, unknown>;
@@ -143,5 +143,38 @@ describe("isolated RM1 portal workflow mock", () => {
     expect(successfulTransactionsMock).toHaveBeenCalledWith("TEST-Gemini-Bot-EA");
     expect(createdOrder).toMatchObject({ productId: "test-gemini-bot-ea", providerBillCode: "TEST-Gemini-Bot-EA", providerRefNo: "TP-RM1-VERIFIED", expectedAmountSen: 100, status: "paid" });
     expect(createdEntitlement).toMatchObject({ productId: "test-gemini-bot-ea", status: "active" });
+  });
+
+  it("creates an owner-only no-charge simulation without calling the payment provider or touching a production product", async () => {
+    const product = { id: "test-gemini-bot-ea", name: "Gemini Bot EA — RM1 Live Test", priceSen: 100, billingCycle: "monthly", isTest: "yes", active: "yes" };
+    let simulatedOrder: Record<string, unknown> | undefined;
+    let simulatedEntitlement: Record<string, unknown> | undefined;
+    const simulationDb = {
+      select: () => ({ from: (table: unknown) => ({ where: () => queryResult(table === products ? [product] : []) }) }),
+      insert: (table: unknown) => ({
+        values: (values: Record<string, unknown>) => {
+          if (table === paymentOrders) {
+            simulatedOrder = values;
+            return Promise.resolve();
+          }
+          if (table === entitlements) {
+            simulatedEntitlement = values;
+            return { onDuplicateKeyUpdate: async () => undefined };
+          }
+          return Promise.resolve();
+        },
+      }),
+    };
+    getDbMock.mockResolvedValue(simulationDb);
+
+    const result = await createNoChargeTestPurchase({ userId: 42 });
+
+    expect(result).toMatchObject({ productName: product.name, noCharge: true, providerSettlement: false });
+    expect(simulatedOrder).toMatchObject({ userId: 42, productId: "test-gemini-bot-ea", providerBillCode: "SIMULATED-NO-CHARGE", status: "paid", expectedAmountSen: 100, paidAmountSen: 0 });
+    expect(simulatedOrder?.externalReference).toMatch(/^SIM-NOCHARGE-/);
+    expect(simulatedOrder?.providerRefNo).toBe(simulatedOrder?.externalReference);
+    expect(simulatedOrder?.failureReason).toContain("SIMULATED_NO_CHARGE_OWNER_TEST");
+    expect(simulatedEntitlement).toMatchObject({ userId: 42, productId: "test-gemini-bot-ea", status: "active" });
+    expect(successfulTransactionsMock).not.toHaveBeenCalled();
   });
 });

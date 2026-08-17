@@ -63,7 +63,11 @@
 - [x] Replace the fragile RM1 tRPC initiation request with a server-owned owner-only route that always returns structured JSON diagnostics and preserves callback-enabled bill creation.
 - [ ] Add a deterministic callback-preserving fallback for RM1 test payment initiation if dynamic bill creation cannot return a usable bill code.
 - [x] Provide complete source-code export guidance and document the server, database, storage, OAuth, and secret prerequisites for self-hosting.
-- [ ] Support the user’s chosen custom-link path through either Manus custom-domain configuration or external-host deployment guidance.
+- [x] Support the user’s chosen custom-link path through either Manus custom-domain configuration or external-host deployment guidance; user chose to retain `fizuxea-jxctlods.manus.space` for now.
+- [x] Confirm the permanent ToyyibPay bill plus verified receipt-claim flow as the selected production payment path; defer the separate API-created dynamic-bill callback experiment.
+- [ ] Run an owner-only, no-charge production-like purchase test that is explicitly simulated and cannot be mistaken for a ToyyibPay settlement or unlock production EA files.
+- [x] Add an owner-only simulated purchase action that creates a clearly labeled test-only paid order without calling ToyyibPay or unlocking production EA files.
+- [x] Add regression coverage proving the simulated purchase flow is test-only, non-provider, and restricted to the protected RM1 test receipt.
 - [x] Run an isolated mock test covering settlement acceptance, portal entitlement, MT5 binding, re-binding, and protected test-only delivery without production-data changes.
 - [x] Add a portal-side mock test that a verified test payment creates an active entitlement and makes the test product visible in the customer library.
 - [x] Add an isolated chained mock test for settlement or claim → entitlement → MT5 bind and re-bind → protected test-file download.

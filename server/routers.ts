@@ -6,7 +6,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { createToyyibPayBill, inspectToyyibPayCreateBill } from "./toyyibpay";
-import { attachProviderBill, beginPaymentOrder, bindCustomerMt5Account, claimPermanentBillPayment, getCatalog, getCustomerLibrary, getCustomerOrderStatus, getRequestOrigin, getSecureFileForCustomer, getTestCatalog, packageStorageKey, removePendingOrder, safeFileName } from "./paymentPortal";
+import { attachProviderBill, beginPaymentOrder, bindCustomerMt5Account, claimPermanentBillPayment, createNoChargeTestPurchase, getCatalog, getCustomerLibrary, getCustomerOrderStatus, getRequestOrigin, getSecureFileForCustomer, getTestCatalog, packageStorageKey, removePendingOrder, safeFileName } from "./paymentPortal";
 import { getMasterServerPaymentCallbackUrl } from "./masterServer";
 import { storageGetSignedUrl, storagePut } from "./storage";
 import { getDb } from "./db";
@@ -30,6 +30,7 @@ export const appRouter = router({
   }),
   test: router({
     catalog: adminProcedure.query(() => getTestCatalog()),
+    simulateNoChargePurchase: adminProcedure.mutation(async ({ ctx }) => createNoChargeTestPurchase({ userId: ctx.user.id })),
     prepareLiveProduct: adminProcedure.mutation(async () => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database is unavailable" });

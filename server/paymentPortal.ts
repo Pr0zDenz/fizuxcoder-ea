@@ -79,6 +79,42 @@ export async function beginPaymentOrder(input: { userId: number; productId: stri
   return { orderId: id, externalReference, product };
 }
 
+export async function createNoChargeTestPurchase(input: { userId: number }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  const product = (await db.select().from(products).where(eq(products.id, PRODUCT_IDS.geminiLiveTest)).limit(1))[0];
+  if (!product || product.active !== "yes" || product.isTest !== "yes") throw new Error("The isolated test product is not available");
+
+  const now = new Date();
+  const orderId = nanoid(18);
+  const simulationReference = `SIM-NOCHARGE-${nanoid(14).toUpperCase()}`;
+  const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  await db.insert(paymentOrders).values({
+    id: orderId,
+    userId: input.userId,
+    productId: product.id,
+    externalReference: simulationReference,
+    providerBillCode: "SIMULATED-NO-CHARGE",
+    providerRefNo: simulationReference,
+    status: "paid",
+    expectedAmountSen: product.priceSen,
+    paidAmountSen: 0,
+    failureReason: "SIMULATED_NO_CHARGE_OWNER_TEST: no ToyyibPay request or settlement occurred",
+    paidAt: now,
+  });
+  await db.insert(entitlements).values({
+    userId: input.userId,
+    productId: product.id,
+    mostRecentOrderId: orderId,
+    status: "active",
+    startsAt: now,
+    expiresAt,
+  }).onDuplicateKeyUpdate({
+    set: { mostRecentOrderId: orderId, status: "active", startsAt: now, expiresAt },
+  });
+  return { productName: product.name, simulationReference, expiresAt, noCharge: true as const, providerSettlement: false as const };
+}
+
 export async function attachProviderBill(orderId: string, billCode: string) {
   const db = await getDb();
   if (!db) throw new Error("Database is unavailable");
