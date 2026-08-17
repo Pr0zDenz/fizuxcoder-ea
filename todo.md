@@ -62,11 +62,14 @@
 - [ ] Verify the VPS ngrok tunnel remains reachable while the Master Server listens locally on port 5000.
 - [x] Replace the fragile RM1 tRPC initiation request with a server-owned owner-only route that always returns structured JSON diagnostics and preserves callback-enabled bill creation.
 - [ ] Add a deterministic callback-preserving fallback for RM1 test payment initiation if dynamic bill creation cannot return a usable bill code.
-- [ ] Provide complete source-code export guidance and document the server, database, storage, OAuth, and secret prerequisites for self-hosting.
+- [x] Provide complete source-code export guidance and document the server, database, storage, OAuth, and secret prerequisites for self-hosting.
 - [ ] Support the user’s chosen custom-link path through either Manus custom-domain configuration or external-host deployment guidance.
 - [x] Run an isolated mock test covering settlement acceptance, portal entitlement, MT5 binding, re-binding, and protected test-only delivery without production-data changes.
 - [x] Add a portal-side mock test that a verified test payment creates an active entitlement and makes the test product visible in the customer library.
 - [x] Add an isolated chained mock test for settlement or claim → entitlement → MT5 bind and re-bind → protected test-file download.
+- [ ] Generate the authorized RM1 live test bill, inspect its checkout amount and identity, and obtain final payment confirmation before checkout completion.
+- [ ] Verify the signed RM1 callback, portal entitlement, MT5 binding, and protected test-only download after real settlement.
+- [ ] Capture and correct the exact server-side error preventing the direct RM1 initiation route from creating a bill.
 - [x] Configure the hidden RM1 test product to use the verified active Gemini billing category `x42sivvj` while retaining the test-only entitlement policy.
 - [x] Validate the injected Gemini Bot dummy entitlement by binding and then replacing only the authorized dummy MT5 account through the public Master Server.
 - [x] Add customer MT5 account binding and authenticated replacement of the previously bound account.

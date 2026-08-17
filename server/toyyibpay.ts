@@ -64,8 +64,9 @@ function getFirstRecord(payload: unknown): Record<string, unknown> {
 }
 
 function describeToyyibPayBillResponse(payload: unknown) {
-  const record = typeof payload === "object" && payload !== null && !Array.isArray(payload) ? payload as Record<string, unknown> : {};
-  const fields = ["status", "code", "error", "message", "reason", "Description"]
+  const candidate = Array.isArray(payload) ? payload[0] : payload;
+  const record = typeof candidate === "object" && candidate !== null ? candidate as Record<string, unknown> : {};
+  const fields = ["status", "code", "error", "message", "msg", "reason", "Description"]
     .map(key => record[key])
     .filter(value => typeof value === "string" && value.trim()) as string[];
   return fields.length ? fields.join(" · ") : "ToyyibPay returned an unrecognised bill response";

@@ -88,6 +88,7 @@ export const appRouter = router({
           externalReference: pending.externalReference,
           payerName: ctx.user.name ?? "FizuxCoder owner test",
           payerEmail: ctx.user.email,
+          payerPhone: "0123456789",
         });
         await attachProviderBill(pending.orderId, billCode);
         return { checkoutUrl: `https://toyyibpay.com/${billCode}` };
