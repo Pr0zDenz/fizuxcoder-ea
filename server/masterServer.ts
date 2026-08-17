@@ -10,6 +10,12 @@ type BindingResponse = {
   expiry?: string;
 };
 
+type TestEntitlementSyncResponse = {
+  accepted: boolean;
+  issued: boolean;
+  product_id: "test-gemini-bot-ea";
+};
+
 function requiredMasterServerConfig() {
   const baseUrl = process.env.MASTER_SERVER_BASE_URL?.trim().replace(/\/+$/, "");
   const syncKey = process.env.MASTER_SERVER_SYNC_KEY?.trim();
@@ -59,4 +65,23 @@ export async function bindMasterServerLicence(input: BindingRequest): Promise<Bi
     throw new Error("The MT5 licence service returned an invalid binding response.");
   }
   return payload as BindingResponse;
+}
+
+export async function syncMasterServerTestEntitlement(input: { email: string; paymentReference: string }): Promise<TestEntitlementSyncResponse> {
+  const { baseUrl, syncKey } = requiredMasterServerConfig();
+  let response: Response;
+  try {
+    response = await fetch(`${baseUrl}/license/sync-test-entitlement`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Master-Sync-Key": syncKey },
+      body: JSON.stringify({ email: input.email, payment_reference: input.paymentReference }),
+    });
+  } catch {
+    throw new Error("The MT5 licence service is temporarily unreachable. Please try again shortly.");
+  }
+  const payload: unknown = await response.json().catch(() => null);
+  if (!response.ok || !payload || typeof payload !== "object" || !("product_id" in payload) || payload.product_id !== "test-gemini-bot-ea") {
+    throw new Error(messageFromPayload(payload) ?? "The test licence service rejected the verified RM1 entitlement.");
+  }
+  return payload as TestEntitlementSyncResponse;
 }

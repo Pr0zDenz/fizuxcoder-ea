@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { entitlements, paymentOrders, productFiles, products } from "../drizzle/schema";
 
-const { getDbMock, bindMasterMock, successfulTransactionsMock } = vi.hoisted(() => ({ getDbMock: vi.fn(), bindMasterMock: vi.fn(), successfulTransactionsMock: vi.fn() }));
+const { getDbMock, bindMasterMock, syncMasterMock, successfulTransactionsMock } = vi.hoisted(() => ({ getDbMock: vi.fn(), bindMasterMock: vi.fn(), syncMasterMock: vi.fn(), successfulTransactionsMock: vi.fn() }));
 
 vi.mock("./db", () => ({ getDb: getDbMock }));
-vi.mock("./masterServer", () => ({ bindMasterServerLicence: bindMasterMock }));
+vi.mock("./masterServer", () => ({ bindMasterServerLicence: bindMasterMock, syncMasterServerTestEntitlement: syncMasterMock }));
 vi.mock("./toyyibpay", () => ({
   callbackAmountToSen: (amount?: string) => amount ? Math.round(Number.parseFloat(amount) * 100) : null,
   getSuccessfulBillTransactions: successfulTransactionsMock,
@@ -37,7 +37,10 @@ function createMockDb(state: MockState) {
         }
         if (table === entitlements) {
           return {
-            innerJoin: () => ({ where: () => queryResult(state.entitlement ? [{ entitlement: state.entitlement, product: state.product }] : []) }),
+            innerJoin: () => ({
+              where: () => queryResult(state.entitlement ? [{ entitlement: state.entitlement, product: state.product }] : []),
+              innerJoin: () => ({ where: () => queryResult(state.entitlement ? [{ entitlement: state.entitlement, product: state.product, order: state.order }] : []) }),
+            }),
           };
         }
         return { where: () => queryResult([]) };
@@ -81,6 +84,7 @@ describe("isolated RM1 portal workflow mock", () => {
     };
     getDbMock.mockResolvedValue(createMockDb(state));
     const previousAccounts: string[] = [];
+    syncMasterMock.mockResolvedValue({ accepted: true, issued: true, product_id: "test-gemini-bot-ea" });
     bindMasterMock.mockImplementation(async ({ accountNumber }: { accountNumber: string }) => {
       const replaced = previousAccounts.at(-1);
       previousAccounts.push(accountNumber);
@@ -96,6 +100,7 @@ describe("isolated RM1 portal workflow mock", () => {
 
     await expect(bindCustomerMt5Account({ userId: 42, userEmail: "mock-buyer@example.test", productId: "test-gemini-bot-ea", accountNumber: "990001" })).resolves.toMatchObject({ accountNumber: "990001", replacedAccount: null });
     await expect(bindCustomerMt5Account({ userId: 42, userEmail: "mock-buyer@example.test", productId: "test-gemini-bot-ea", accountNumber: "990002" })).resolves.toMatchObject({ accountNumber: "990002", replacedAccount: "990001" });
+    expect(syncMasterMock).toHaveBeenCalledWith({ email: "mock-buyer@example.test", paymentReference: "invoice-mock-1" });
 
     await expect(getSecureFileForCustomer({ userId: 42, fileId: 77 })).resolves.toMatchObject({ productId: "test-gemini-bot-ea", fileName: "FizuxCoder_Test_Licence_Receipt.txt" });
     expect(state.entitlement?.productId).toBe("test-gemini-bot-ea");

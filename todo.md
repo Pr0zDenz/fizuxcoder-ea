@@ -77,6 +77,15 @@
 - [ ] Capture sanitized transaction-response metadata from the published portal runtime for the RM1 fallback receipt, including content type, byte count, response class, and JSON-array validity.
 - [x] Capture a privacy-safe structural signature for the `application/json` response that fails JSON parsing during the published RM1 fallback lookup.
 - [x] Prevent the stale pending dynamic test bill from overriding the user-selected permanent `TEST-Gemini-Bot-EA` fallback receipt verification path.
+- [x] Inspect the existing claim record for `TP2608132020278757` and determine whether an isolated RM1 test entitlement already exists.
+- [x] Reconcile the existing RM1 receipt only to the test product if the receipt, owner identity, and exact RM1 amount match and no production entitlement is affected.
+- [x] Confirm the claimed RM1 receipt `TP2608132020278757` belongs to `xtr0zen@gmail.com`.
+- [x] Audit that the RM1 receipt and permanent test bill map only to `test-gemini-bot-ea`, with no production order or entitlement affected.
+- [x] Query production entitlements explicitly to prove the RM1 receipt and test bill are not linked to any non-test entitlement.
+- [x] Record the safe no-op reconciliation outcome because the valid RM1 test entitlement already exists.
+- [ ] Verify on the deployed portal that xtr0zen@gmail.com can see the existing active RM1 test entitlement before binding MT5.
+- [ ] Diagnose why the active RM1 test entitlement is not visible in the owner’s deployed library after refresh.
+- [ ] Synchronize the already verified RM1 test entitlement to a shared-key protected Master Server pending licence before MT5 binding.
 - [ ] Retry the verified RM1 fallback receipt claim on the deployed portal after production-runtime diagnostics are available and confirm entitlement creation.
 - [ ] Confirm the observed `/payment_success` 400 is an unsigned-callback rejection and that it did not alter any production or test licence record.
 - [x] Add a non-destructive `/payment_success` verification that snapshots relevant licence or pending-payment state before and after an unsigned callback and proves no state changed.

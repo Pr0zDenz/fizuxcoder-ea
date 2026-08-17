@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { entitlements, paymentOrders, productFiles, products } from "../drizzle/schema";
 import { getDb } from "./db";
-import { bindMasterServerLicence } from "./masterServer";
+import { bindMasterServerLicence, syncMasterServerTestEntitlement } from "./masterServer";
 import { callbackAmountToSen, getSuccessfulBillTransactions } from "./toyyibpay";
 
 export const PRODUCT_IDS = {
@@ -151,14 +151,20 @@ export async function getCustomerLibrary(userId: number) {
 export async function bindCustomerMt5Account(input: { userId: number; userEmail: string; productId: string; accountNumber: string }) {
   const db = await getDb();
   if (!db) throw new Error("Database is unavailable");
-  const record = (await db.select({ entitlement: entitlements, product: products })
+  const record = (await db.select({ entitlement: entitlements, product: products, order: paymentOrders })
     .from(entitlements)
     .innerJoin(products, eq(entitlements.productId, products.id))
+    .innerJoin(paymentOrders, eq(entitlements.mostRecentOrderId, paymentOrders.id))
     .where(and(eq(entitlements.userId, input.userId), eq(entitlements.productId, input.productId)))
     .limit(1))[0];
   const now = new Date();
   const isActive = record?.entitlement.status === "active" && (!record.entitlement.expiresAt || record.entitlement.expiresAt > now);
   if (!record || !isActive) throw new Error("An active verified purchase is required before an MT5 account can be bound");
+
+  if (record.product.id === "test-gemini-bot-ea") {
+    if (!record.order.providerRefNo) throw new Error("The verified RM1 test receipt is unavailable for Master Server synchronisation");
+    await syncMasterServerTestEntitlement({ email: input.userEmail, paymentReference: record.order.providerRefNo });
+  }
 
   const binding = await bindMasterServerLicence({
     email: input.userEmail,
