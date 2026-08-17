@@ -86,6 +86,14 @@
 - [ ] Verify on the deployed portal that xtr0zen@gmail.com can see the existing active RM1 test entitlement before binding MT5.
 - [ ] Diagnose why the active RM1 test entitlement is not visible in the owner’s deployed library after refresh.
 - [ ] Synchronize the already verified RM1 test entitlement to a shared-key protected Master Server pending licence before MT5 binding.
+- [ ] Restore `TOYYIBPAY_USER_SECRET_KEY` and `MASTER_SERVER_SYNC_KEY` in the restarted Master Server process; current live probes return 503 for the callback and 401 for shared-key routes.
+- [ ] Restore public reachability for the restarted Master Server; all three external endpoint probes now time out, indicating the ngrok tunnel or port-5000 listener is unavailable.
+- [ ] Diagnose and restore protected POST handling: the public root returns HTTP 200, but `/license/bind` times out even without credentials.
+- [x] Confirm the local Master Server returns HTTP 401 promptly for an unauthenticated POST and listens on port 5000 after restart.
+- [ ] Restart or reconfigure ngrok so its public URL forwards protected POST requests to the healthy local port-5000 listener.
+- [x] Confirm that ngrok forwards protected POST requests only when `ngrok-skip-browser-warning: 1` is supplied.
+- [ ] Add the ngrok warning-skip header to portal Master Server POST calls and live credential probes.
+- [ ] Capture reproducible deployment evidence showing the RM1 test card, Master Server environment readiness, and responsive public protected POST routes.
 - [ ] Retry the verified RM1 fallback receipt claim on the deployed portal after production-runtime diagnostics are available and confirm entitlement creation.
 - [ ] Confirm the observed `/payment_success` 400 is an unsigned-callback rejection and that it did not alter any production or test licence record.
 - [x] Add a non-destructive `/payment_success` verification that snapshots relevant licence or pending-payment state before and after an unsigned callback and proves no state changed.

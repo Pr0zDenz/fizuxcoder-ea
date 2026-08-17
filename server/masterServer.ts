@@ -46,6 +46,7 @@ export async function bindMasterServerLicence(input: BindingRequest): Promise<Bi
       headers: {
         "Content-Type": "application/json",
         "X-Master-Sync-Key": syncKey,
+        "ngrok-skip-browser-warning": "1",
       },
       body: JSON.stringify({
         email: input.email,
@@ -73,7 +74,7 @@ export async function syncMasterServerTestEntitlement(input: { email: string; pa
   try {
     response = await fetch(`${baseUrl}/license/sync-test-entitlement`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "X-Master-Sync-Key": syncKey },
+      headers: { "Content-Type": "application/json", "X-Master-Sync-Key": syncKey, "ngrok-skip-browser-warning": "1" },
       body: JSON.stringify({ email: input.email, payment_reference: input.paymentReference }),
     });
   } catch {

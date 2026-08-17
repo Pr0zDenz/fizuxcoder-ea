@@ -22,7 +22,7 @@ describe("bindMasterServerLicence", () => {
     expect(result.account_number).toBe("12345678");
     expect(fetchMock).toHaveBeenCalledWith("https://master.example.test/license/bind", expect.objectContaining({
       method: "POST",
-      headers: expect.objectContaining({ "X-Master-Sync-Key": "test-key" }),
+      headers: expect.objectContaining({ "X-Master-Sync-Key": "test-key", "ngrok-skip-browser-warning": "1" }),
       body: JSON.stringify({ email: "customer@example.test", product_id: "gemini-bot-ea", account_number: "12345678" }),
     }));
   });
@@ -37,7 +37,7 @@ describe("bindMasterServerLicence", () => {
 
     expect(fetchMock).toHaveBeenCalledWith("https://master.example.test/license/sync-test-entitlement", expect.objectContaining({
       method: "POST",
-      headers: expect.objectContaining({ "X-Master-Sync-Key": "test-key" }),
+      headers: expect.objectContaining({ "X-Master-Sync-Key": "test-key", "ngrok-skip-browser-warning": "1" }),
       body: JSON.stringify({ email: "customer@example.test", payment_reference: "TP-RM1-TEST" }),
     }));
   });
