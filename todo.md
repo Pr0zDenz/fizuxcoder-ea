@@ -70,6 +70,9 @@
 - [ ] Generate the authorized RM1 live test bill, inspect its checkout amount and identity, and obtain final payment confirmation before checkout completion.
 - [ ] Verify the signed RM1 callback, portal entitlement, MT5 binding, and protected test-only download after real settlement.
 - [ ] Capture and correct the exact server-side error preventing the direct RM1 initiation route from creating a bill.
+- [ ] Capture the second published RM1 initiation provider response and distinguish portal configuration failure from Master Server callback configuration.
+- [x] Inspect the supplied `TEST-Gemini-Bot-EA` ToyyibPay URL and determine whether its settled payment can be securely verified as the isolated RM1 test product.
+- [x] Add an owner-only permanent-bill RM1 fallback that verifies the supplied `TEST-Gemini-Bot-EA` receipt by email and exact amount, unlocks only the test receipt file, and does not claim automatic callback support.
 - [x] Configure the hidden RM1 test product to use the verified active Gemini billing category `x42sivvj` while retaining the test-only entitlement policy.
 - [x] Validate the injected Gemini Bot dummy entitlement by binding and then replacing only the authorized dummy MT5 account through the public Master Server.
 - [x] Add customer MT5 account binding and authenticated replacement of the previously bound account.

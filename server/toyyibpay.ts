@@ -86,7 +86,9 @@ export async function createToyyibPayBill(input: CreateBillInput): Promise<strin
     categoryCode: input.categoryCode,
     billName: input.billName.slice(0, 30).replace(/[^a-zA-Z0-9 _]/g, " "),
     billDescription: input.billDescription.slice(0, 100).replace(/[^a-zA-Z0-9 _]/g, " "),
-    billPriceSetting: "0",
+    // API-created RM1 checkout is fixed-price; ToyyibPay dynamic-price mode
+    // requires a zero amount and rejects a non-zero fixed test amount.
+    billPriceSetting: "1",
     billPayorInfo: "1",
     billAmount: String(input.amountSen),
     billReturnUrl: input.returnUrl,

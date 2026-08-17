@@ -1,12 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { entitlements, paymentOrders, productFiles, products } from "../drizzle/schema";
 
-const { getDbMock, bindMasterMock } = vi.hoisted(() => ({ getDbMock: vi.fn(), bindMasterMock: vi.fn() }));
+const { getDbMock, bindMasterMock, successfulTransactionsMock } = vi.hoisted(() => ({ getDbMock: vi.fn(), bindMasterMock: vi.fn(), successfulTransactionsMock: vi.fn() }));
 
 vi.mock("./db", () => ({ getDb: getDbMock }));
 vi.mock("./masterServer", () => ({ bindMasterServerLicence: bindMasterMock }));
+vi.mock("./toyyibpay", () => ({
+  callbackAmountToSen: (amount?: string) => amount ? Math.round(Number.parseFloat(amount) * 100) : null,
+  getSuccessfulBillTransactions: successfulTransactionsMock,
+}));
 
-import { bindCustomerMt5Account, getCustomerLibrary, getSecureFileForCustomer, recordPaymentCallback } from "./paymentPortal";
+import { bindCustomerMt5Account, claimPermanentBillPayment, getCustomerLibrary, getSecureFileForCustomer, recordPaymentCallback } from "./paymentPortal";
 
 type MockState = {
   order: Record<string, unknown>;
@@ -96,5 +100,35 @@ describe("isolated RM1 portal workflow mock", () => {
     await expect(getSecureFileForCustomer({ userId: 42, fileId: 77 })).resolves.toMatchObject({ productId: "test-gemini-bot-ea", fileName: "FizuxCoder_Test_Licence_Receipt.txt" });
     expect(state.entitlement?.productId).toBe("test-gemini-bot-ea");
     expect(state.entitlement?.mt5AccountNumber).toBe("990002");
+  });
+
+  it("uses the supplied permanent RM1 bill only as a receipt-verified fallback for the isolated test product", async () => {
+    const product = { id: "test-gemini-bot-ea", name: "Gemini Bot EA — RM1 Live Test", priceSen: 100, billingCycle: "one-time", isTest: "yes", active: "yes" };
+    let createdOrder: Record<string, unknown> | undefined;
+    let createdEntitlement: Record<string, unknown> | undefined;
+    const fallbackDb = {
+      select: () => ({ from: (table: unknown) => ({ where: () => queryResult(table === products ? [product] : []) }) }),
+      insert: (table: unknown) => ({
+        values: (values: Record<string, unknown>) => {
+          if (table === paymentOrders) {
+            createdOrder = values;
+            return Promise.resolve();
+          }
+          if (table === entitlements) {
+            createdEntitlement = values;
+            return { onDuplicateKeyUpdate: async () => undefined };
+          }
+          return Promise.resolve();
+        },
+      }),
+    };
+    getDbMock.mockResolvedValue(fallbackDb);
+    successfulTransactionsMock.mockResolvedValue([{ billpaymentStatus: "1", billpaymentInvoiceNo: "TP-RM1-VERIFIED", billEmail: "xtr0zen@gmail.com", billpaymentAmount: "1.00" }]);
+
+    await expect(claimPermanentBillPayment({ userId: 42, userEmail: "xtr0zen@gmail.com", productId: "test-gemini-bot-ea", receiptNo: "TP-RM1-VERIFIED" })).resolves.toMatchObject({ productName: product.name });
+
+    expect(successfulTransactionsMock).toHaveBeenCalledWith("TEST-Gemini-Bot-EA");
+    expect(createdOrder).toMatchObject({ productId: "test-gemini-bot-ea", providerBillCode: "TEST-Gemini-Bot-EA", providerRefNo: "TP-RM1-VERIFIED", expectedAmountSen: 100, status: "paid" });
+    expect(createdEntitlement).toMatchObject({ productId: "test-gemini-bot-ea", status: "active" });
   });
 });

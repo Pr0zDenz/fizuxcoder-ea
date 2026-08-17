@@ -15,11 +15,13 @@ export const PRODUCT_IDS = {
 export const DIRECT_TOYYIBPAY_LINKS: Record<string, string> = {
   "gemini-bot-ea": "https://toyyibpay.com/t1rvxbft",
   "3s-universal-ea": "https://toyyibpay.com/3-Serangkai-EA",
+  "test-gemini-bot-ea": "https://toyyibpay.com/TEST-Gemini-Bot-EA",
 };
 
 const DIRECT_TOYYIBPAY_BILL_CODES: Record<string, string> = {
   "gemini-bot-ea": "t1rvxbft",
   "3s-universal-ea": "3-Serangkai-EA",
+  "test-gemini-bot-ea": "TEST-Gemini-Bot-EA",
 };
 
 export function getRequestOrigin(req: { protocol?: string; get: (name: string) => string | undefined; headers: Record<string, unknown> }) {
@@ -56,7 +58,7 @@ export async function getTestCatalog() {
     currency: products.currency,
     billingCycle: products.billingCycle,
   }).from(products).where(and(eq(products.active, "yes"), eq(products.isTest, "yes")));
-  return catalog.map(product => ({ ...product, directCheckoutUrl: undefined }));
+  return catalog.map(product => ({ ...product, directCheckoutUrl: DIRECT_TOYYIBPAY_LINKS[product.id] }));
 }
 
 export async function beginPaymentOrder(input: { userId: number; productId: string; referencePrefix?: string }) {
@@ -189,9 +191,10 @@ export async function claimPermanentBillPayment(input: { userId: number; userEma
   if (!product || product.active !== "yes") throw new Error("This package is not currently available for payment claiming");
   if (product.isTest === "yes") {
     const pending = await db.select({ id: paymentOrders.id, providerBillCode: paymentOrders.providerBillCode }).from(paymentOrders).where(and(eq(paymentOrders.userId, input.userId), eq(paymentOrders.productId, product.id), eq(paymentOrders.status, "pending"))).limit(1);
-    if (!pending.length || !pending[0].providerBillCode) throw new Error("Create a callback-enabled RM1 test bill before verifying its receipt");
-    dynamicTestOrder = { id: pending[0].id };
-    billCode = pending[0].providerBillCode;
+    if (pending.length && pending[0].providerBillCode) {
+      dynamicTestOrder = { id: pending[0].id };
+      billCode = pending[0].providerBillCode;
+    }
   }
   if (!billCode) throw new Error("This package is not currently available for payment claiming");
 

@@ -36,6 +36,7 @@ describe("ToyyibPay permanent-bill transaction lookup", () => {
 
     const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
     expect(init.headers).toMatchObject({ "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" });
+    expect((init.body as URLSearchParams).get("billPriceSetting")).toBe("1");
     expect((init.body as URLSearchParams).get("billPhone")).toBe("0123456789");
     if (priorSecret === undefined) delete process.env.TOYYIBPAY_USER_SECRET_KEY;
     else process.env.TOYYIBPAY_USER_SECRET_KEY = priorSecret;
