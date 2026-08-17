@@ -85,7 +85,11 @@
 - [x] Record the safe no-op reconciliation outcome because the valid RM1 test entitlement already exists.
 - [ ] Verify on the deployed portal that xtr0zen@gmail.com can see the existing active RM1 test entitlement before binding MT5.
 - [ ] Diagnose why the active RM1 test entitlement is not visible in the owner’s deployed library after refresh.
-- [ ] Synchronize the already verified RM1 test entitlement to a shared-key protected Master Server pending licence before MT5 binding.
+- [x] Synchronize the already verified RM1 test entitlement to a shared-key protected Master Server pending licence before MT5 binding.
+- [x] Re-bind the live RM1 test entitlement from dummy MT5 account `1101009305` to a different dummy account and verify only the replacement is authorized.
+- [x] Probe the live Master Server after re-binding to confirm `1101009305` is denied and `1101009306` is authorized.
+- [ ] Download the protected RM1 test receipt after the final MT5 binding and confirm no production EA package is exposed.
+- [ ] Record reproducible audit evidence that the post-bind signed download served only the RM1 test receipt and no production EA package.
 - [ ] Restore `TOYYIBPAY_USER_SECRET_KEY` and `MASTER_SERVER_SYNC_KEY` in the restarted Master Server process; current live probes return 503 for the callback and 401 for shared-key routes.
 - [ ] Restore public reachability for the restarted Master Server; all three external endpoint probes now time out, indicating the ngrok tunnel or port-5000 listener is unavailable.
 - [ ] Diagnose and restore protected POST handling: the public root returns HTTP 200, but `/license/bind` times out even without credentials.

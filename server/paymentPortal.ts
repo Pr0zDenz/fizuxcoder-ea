@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
-import { entitlements, paymentOrders, productFiles, products } from "../drizzle/schema";
+import { entitlements, paymentOrders, productFiles, products, protectedDeliveryAudits } from "../drizzle/schema";
 import { getDb } from "./db";
 import { bindMasterServerLicence, syncMasterServerTestEntitlement } from "./masterServer";
 import { callbackAmountToSen, getSuccessfulBillTransactions } from "./toyyibpay";
@@ -254,6 +254,12 @@ export async function getSecureFileForCustomer(input: { userId: number; fileId: 
   if (!file || file.entitlement.status !== "active" || (file.entitlement.expiresAt && file.entitlement.expiresAt <= new Date())) {
     throw new Error("No active entitlement for this download");
   }
+  await db.insert(protectedDeliveryAudits).values({
+    userId: input.userId,
+    productId: file.file.productId,
+    fileId: file.file.id,
+    entitlementId: file.entitlement.id,
+  });
   return file.file;
 }
 

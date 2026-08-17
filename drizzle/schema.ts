@@ -89,7 +89,20 @@ export const productFiles = mysqlTable("productFiles", {
   index("productFiles_product_idx").on(table.productId),
 ]);
 
+export const protectedDeliveryAudits = mysqlTable("protectedDeliveryAudits", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  productId: varchar("productId", { length: 64 }).notNull().references(() => products.id),
+  fileId: int("fileId").notNull().references(() => productFiles.id),
+  entitlementId: int("entitlementId").notNull().references(() => entitlements.id),
+  deliveredAt: timestamp("deliveredAt").defaultNow().notNull(),
+}, table => [
+  index("protectedDeliveryAudits_user_product_idx").on(table.userId, table.productId),
+  index("protectedDeliveryAudits_file_idx").on(table.fileId),
+]);
+
 export type Product = typeof products.$inferSelect;
 export type PaymentOrder = typeof paymentOrders.$inferSelect;
 export type Entitlement = typeof entitlements.$inferSelect;
 export type ProductFile = typeof productFiles.$inferSelect;
+export type ProtectedDeliveryAudit = typeof protectedDeliveryAudits.$inferSelect;
