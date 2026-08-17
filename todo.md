@@ -96,10 +96,10 @@
 - [x] Confirm the local Master Server returns HTTP 401 promptly for an unauthenticated POST and listens on port 5000 after restart.
 - [ ] Restart or reconfigure ngrok so its public URL forwards protected POST requests to the healthy local port-5000 listener.
 - [x] Confirm that ngrok forwards protected POST requests only when `ngrok-skip-browser-warning: 1` is supplied.
-- [ ] Add the ngrok warning-skip header to portal Master Server POST calls and live credential probes.
+- [x] Add the ngrok warning-skip header to portal Master Server POST calls and live credential probes.
 - [ ] Capture reproducible deployment evidence showing the RM1 test card, Master Server environment readiness, and responsive public protected POST routes.
 - [ ] Retry the verified RM1 fallback receipt claim on the deployed portal after production-runtime diagnostics are available and confirm entitlement creation.
-- [ ] Confirm the observed `/payment_success` 400 is an unsigned-callback rejection and that it did not alter any production or test licence record.
+- [x] Confirm the observed `/payment_success` 400 is an unsigned-callback rejection and that it did not alter any production or test licence record.
 - [x] Add a non-destructive `/payment_success` verification that snapshots relevant licence or pending-payment state before and after an unsigned callback and proves no state changed.
 - [x] Document the invalid `/payment_success` code path that exits before any subscriber or pending-licence write occurs.
 - [x] Configure the hidden RM1 test product to use the verified active Gemini billing category `x42sivvj` while retaining the test-only entitlement policy.

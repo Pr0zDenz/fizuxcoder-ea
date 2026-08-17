@@ -1,0 +1,18 @@
+{
+  "evidenceType": "protected_delivery_audit_snapshot",
+  "capturedAtUtc": "2026-08-17T23:21:04Z",
+  "scope": "owner-only isolated RM1 test entitlement",
+  "record": {
+    "auditId": 1,
+    "productId": "test-gemini-bot-ea",
+    "isTest": true,
+    "displayName": "RM1 live test receipt",
+    "fileName": "FizuxCoder_RM1_Test_Receipt.txt",
+    "boundMt5Account": "1101009306"
+  },
+  "exclusions": [
+    "signed download URL",
+    "file contents",
+    "production EA package identifiers"
+  ]
+}
