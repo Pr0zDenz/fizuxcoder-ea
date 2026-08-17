@@ -182,14 +182,14 @@ export async function getCustomerOrderStatus(userId: number, externalReference: 
   return { productName: order.product.name, status: order.order.status, failureReason: order.order.failureReason, paidAt: order.order.paidAt };
 }
 
-export async function claimPermanentBillPayment(input: { userId: number; userEmail: string; productId: string; receiptNo: string }) {
+export async function claimPermanentBillPayment(input: { userId: number; userEmail: string; productId: string; receiptNo: string; forcePermanentTestBill?: boolean }) {
   const db = await getDb();
   if (!db) throw new Error("Database is unavailable");
   const product = (await db.select().from(products).where(eq(products.id, input.productId)).limit(1))[0];
   let billCode = DIRECT_TOYYIBPAY_BILL_CODES[input.productId];
   let dynamicTestOrder: { id: string } | undefined;
   if (!product || product.active !== "yes") throw new Error("This package is not currently available for payment claiming");
-  if (product.isTest === "yes") {
+  if (product.isTest === "yes" && !input.forcePermanentTestBill) {
     const pending = await db.select({ id: paymentOrders.id, providerBillCode: paymentOrders.providerBillCode }).from(paymentOrders).where(and(eq(paymentOrders.userId, input.userId), eq(paymentOrders.productId, product.id), eq(paymentOrders.status, "pending"))).limit(1);
     if (pending.length && pending[0].providerBillCode) {
       dynamicTestOrder = { id: pending[0].id };

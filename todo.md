@@ -75,6 +75,8 @@
 - [x] Add an owner-only permanent-bill RM1 fallback that verifies the supplied `TEST-Gemini-Bot-EA` receipt by email and exact amount, unlocks only the test receipt file, and does not claim automatic callback support.
 - [ ] Capture and safely parse the live non-JSON ToyyibPay transaction-lookup response before retrying the verified RM1 fallback receipt claim.
 - [ ] Capture sanitized transaction-response metadata from the published portal runtime for the RM1 fallback receipt, including content type, byte count, response class, and JSON-array validity.
+- [x] Capture a privacy-safe structural signature for the `application/json` response that fails JSON parsing during the published RM1 fallback lookup.
+- [x] Prevent the stale pending dynamic test bill from overriding the user-selected permanent `TEST-Gemini-Bot-EA` fallback receipt verification path.
 - [ ] Retry the verified RM1 fallback receipt claim on the deployed portal after production-runtime diagnostics are available and confirm entitlement creation.
 - [ ] Confirm the observed `/payment_success` 400 is an unsigned-callback rejection and that it did not alter any production or test licence record.
 - [x] Add a non-destructive `/payment_success` verification that snapshots relevant licence or pending-payment state before and after an unsigned callback and proves no state changed.

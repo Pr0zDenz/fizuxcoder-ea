@@ -68,6 +68,16 @@ export const appRouter = router({
       return { name: product.name };
     }),
     inspectProvider: adminProcedure.query(async () => inspectToyyibPayCreateBill("x42sivvj")),
+    claimPermanentRm1Fallback: adminProcedure.input(z.object({ receiptNo: z.string().min(4).max(128) })).mutation(async ({ ctx, input }) => {
+      if (!ctx.user.email) throw new TRPCError({ code: "BAD_REQUEST", message: "Your owner account needs an email address before a payment can be claimed" });
+      return claimPermanentBillPayment({
+        userId: ctx.user.id,
+        userEmail: ctx.user.email,
+        productId: "test-gemini-bot-ea",
+        receiptNo: input.receiptNo,
+        forcePermanentTestBill: true,
+      });
+    }),
     createLiveCheckout: adminProcedure.mutation(async ({ ctx }) => {
       if (!ctx.user.email) throw new TRPCError({ code: "BAD_REQUEST", message: "Your owner account needs an email address before creating a test bill" });
       let pending: Awaited<ReturnType<typeof beginPaymentOrder>> | undefined;

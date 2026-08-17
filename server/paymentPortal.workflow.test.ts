@@ -107,7 +107,15 @@ describe("isolated RM1 portal workflow mock", () => {
     let createdOrder: Record<string, unknown> | undefined;
     let createdEntitlement: Record<string, unknown> | undefined;
     const fallbackDb = {
-      select: () => ({ from: (table: unknown) => ({ where: () => queryResult(table === products ? [product] : []) }) }),
+      select: () => ({
+        from: (table: unknown) => ({
+          where: () => {
+            if (table === products) return queryResult([product]);
+            if (table === paymentOrders) return queryResult([]);
+            return queryResult([]);
+          },
+        }),
+      }),
       insert: (table: unknown) => ({
         values: (values: Record<string, unknown>) => {
           if (table === paymentOrders) {
@@ -125,7 +133,7 @@ describe("isolated RM1 portal workflow mock", () => {
     getDbMock.mockResolvedValue(fallbackDb);
     successfulTransactionsMock.mockResolvedValue([{ billpaymentStatus: "1", billpaymentInvoiceNo: "TP-RM1-VERIFIED", billEmail: "xtr0zen@gmail.com", billpaymentAmount: "1.00" }]);
 
-    await expect(claimPermanentBillPayment({ userId: 42, userEmail: "xtr0zen@gmail.com", productId: "test-gemini-bot-ea", receiptNo: "TP-RM1-VERIFIED" })).resolves.toMatchObject({ productName: product.name });
+    await expect(claimPermanentBillPayment({ userId: 42, userEmail: "xtr0zen@gmail.com", productId: "test-gemini-bot-ea", receiptNo: "TP-RM1-VERIFIED", forcePermanentTestBill: true })).resolves.toMatchObject({ productName: product.name });
 
     expect(successfulTransactionsMock).toHaveBeenCalledWith("TEST-Gemini-Bot-EA");
     expect(createdOrder).toMatchObject({ productId: "test-gemini-bot-ea", providerBillCode: "TEST-Gemini-Bot-EA", providerRefNo: "TP-RM1-VERIFIED", expectedAmountSen: 100, status: "paid" });
