@@ -69,6 +69,10 @@
 - [x] Add an owner-only simulated purchase action that creates a clearly labeled test-only paid order without calling ToyyibPay or unlocking production EA files.
 - [x] Add regression coverage proving the simulated purchase flow is test-only, non-provider, and restricted to the protected RM1 test receipt.
 - [x] Document and verify the customer purchase-to-protected-EA-download procedure, including denied access without an active entitlement.
+- [x] Create customer-facing post-payment instructions and buyer email templates for both EA products.
+- [x] Create practical Gemini Bot and 3S Serangkai EA setup guides with platform, MT5, licence-binding, and risk-control steps.
+- [x] Document the owner release-upload procedure and file-version naming convention for EA updates.
+- [x] Create distinct buyer email templates for Gemini Bot EA and 3S Serangkai UNIVERSAL EA, each with correct package contents, activation steps, and update wording.
 - [x] Run an isolated mock test covering settlement acceptance, portal entitlement, MT5 binding, re-binding, and protected test-only delivery without production-data changes.
 - [x] Add a portal-side mock test that a verified test payment creates an active entitlement and makes the test product visible in the customer library.
 - [x] Add an isolated chained mock test for settlement or claim → entitlement → MT5 bind and re-bind → protected test-file download.

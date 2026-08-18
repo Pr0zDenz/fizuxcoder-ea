@@ -143,6 +143,19 @@ export default function Portal() {
           </div>
         </section>
 
+        <section className="border-b border-[#17201f]/10 bg-[#fbf9f4] px-5 py-12 lg:px-10">
+          <div className="mx-auto max-w-[1280px]">
+            <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between"><div><p className="font-mono text-[10px] font-bold uppercase tracking-[.14em] text-[#0e716e]">After payment</p><h2 className="mt-3 font-display text-4xl tracking-[-.05em]">Activate, bind, then install.</h2></div><p className="max-w-xl text-sm leading-6 text-[#596762]">Use the same e-mail address as your ToyyibPay checkout. A receipt return page alone does not unlock a package; your settlement reference must be verified first.</p></div>
+            <div className="mt-7 grid gap-4 md:grid-cols-4">{[
+              ["01", "Sign in", "Use the e-mail submitted at ToyyibPay checkout."],
+              ["02", "Verify receipt", "Enter the ToyyibPay invoice or settlement reference under Your eligible downloads."],
+              ["03", "Bind MT5", "Activate the numeric MT5 account that will run the EA. Replacing it revokes the previous account."],
+              ["04", "Install safely", "Download active package files, use MT5 File → Open Data Folder, then test on demo before live use."],
+            ].map(([step, title, detail]) => <article key={step} className="rounded-[1.25rem] border border-[#17201f]/12 bg-white p-5"><p className="font-mono text-[10px] font-bold tracking-[.14em] text-[#e5a631]">{step}</p><h3 className="mt-4 font-display text-2xl tracking-[-.04em]">{title}</h3><p className="mt-3 text-sm leading-6 text-[#596762]">{detail}</p></article>)}</div>
+            <p className="mt-5 text-xs leading-5 text-[#596762]">For Gemini Bot, install the main EA in `MQL5\Experts` and supporting calendar/fractal components in `MQL5\Indicators`. For 3S, install `3SUniversalEA` in `Experts` and its listed support components in `Indicators`. Do not share package files, settlement references, or portal access.</p>
+          </div>
+        </section>
+
         <section className="px-5 py-16 lg:px-10 lg:py-20">
           <div className="mx-auto max-w-[1280px]">
             <div className="flex flex-col justify-between gap-5 border-b border-[#17201f]/15 pb-7 md:flex-row md:items-end">
