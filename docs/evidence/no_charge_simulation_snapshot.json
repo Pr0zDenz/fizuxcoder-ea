@@ -1,0 +1,17 @@
+{
+  "evidenceType": "owner_only_no_charge_simulation",
+  "capturedAtUtc": "2026-08-18T00:57:50Z",
+  "order": {
+    "externalReference": "SIM-NOCHARGE-TZWTND-QVOZAQD",
+    "providerBillCode": "SIMULATED-NO-CHARGE",
+    "paidAmountSen": 0,
+    "providerSettlementOccurred": false,
+    "productId": "test-gemini-bot-ea",
+    "isTest": true
+  },
+  "delivery": {
+    "fileName": "FizuxCoder_RM1_Test_Receipt.txt",
+    "boundMt5Account": "1101009306",
+    "productionEaPackageExposed": false
+  }
+}

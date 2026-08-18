@@ -65,7 +65,7 @@
 - [x] Provide complete source-code export guidance and document the server, database, storage, OAuth, and secret prerequisites for self-hosting.
 - [x] Support the user’s chosen custom-link path through either Manus custom-domain configuration or external-host deployment guidance; user chose to retain `fizuxea-jxctlods.manus.space` for now.
 - [x] Confirm the permanent ToyyibPay bill plus verified receipt-claim flow as the selected production payment path; defer the separate API-created dynamic-bill callback experiment.
-- [ ] Run an owner-only, no-charge production-like purchase test that is explicitly simulated and cannot be mistaken for a ToyyibPay settlement or unlock production EA files.
+- [x] Run an owner-only, no-charge production-like purchase test that is explicitly simulated and cannot be mistaken for a ToyyibPay settlement or unlock production EA files.
 - [x] Add an owner-only simulated purchase action that creates a clearly labeled test-only paid order without calling ToyyibPay or unlocking production EA files.
 - [x] Add regression coverage proving the simulated purchase flow is test-only, non-provider, and restricted to the protected RM1 test receipt.
 - [x] Document and verify the customer purchase-to-protected-EA-download procedure, including denied access without an active entitlement.
