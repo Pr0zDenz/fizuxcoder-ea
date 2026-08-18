@@ -68,6 +68,7 @@
 - [ ] Run an owner-only, no-charge production-like purchase test that is explicitly simulated and cannot be mistaken for a ToyyibPay settlement or unlock production EA files.
 - [x] Add an owner-only simulated purchase action that creates a clearly labeled test-only paid order without calling ToyyibPay or unlocking production EA files.
 - [x] Add regression coverage proving the simulated purchase flow is test-only, non-provider, and restricted to the protected RM1 test receipt.
+- [x] Document and verify the customer purchase-to-protected-EA-download procedure, including denied access without an active entitlement.
 - [x] Run an isolated mock test covering settlement acceptance, portal entitlement, MT5 binding, re-binding, and protected test-only delivery without production-data changes.
 - [x] Add a portal-side mock test that a verified test payment creates an active entitlement and makes the test product visible in the customer library.
 - [x] Add an isolated chained mock test for settlement or claim → entitlement → MT5 bind and re-bind → protected test-file download.
