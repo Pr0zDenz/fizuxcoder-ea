@@ -73,6 +73,12 @@
 - [x] Create practical Gemini Bot and 3S Serangkai EA setup guides with platform, MT5, licence-binding, and risk-control steps.
 - [x] Document the owner release-upload procedure and file-version naming convention for EA updates.
 - [x] Create distinct buyer email templates for Gemini Bot EA and 3S Serangkai UNIVERSAL EA, each with correct package contents, activation steps, and update wording.
+- [x] Add published installation-guide links to customer e-mail templates and portal guidance.
+- [x] Configure a user-authorized Gmail outbound connection and send one clearly labeled buyer-email test to xtr0zen@gmail.com without creating a payment or entitlement.
+- [x] Defer Resend production-sender configuration: its test key was rejected, and the user selected Gmail solely for the administrator delivery test.
+- [x] Retire the Resend test-sender path for this test because no verified Resend sender was available; no personal Gmail address was used through Resend.
+- [x] Send one clearly labeled Gmail test email with the installation-guide link to xtr0zen@gmail.com after the user authorized the Gmail connection.
+- [x] Add a visible installation-guide destination in the portal post-payment guidance and verify every buyer/update template links to it.
 - [x] Run an isolated mock test covering settlement acceptance, portal entitlement, MT5 binding, re-binding, and protected test-only delivery without production-data changes.
 - [x] Add a portal-side mock test that a verified test payment creates an active entitlement and makes the test product visible in the customer library.
 - [x] Add an isolated chained mock test for settlement or claim → entitlement → MT5 bind and re-bind → protected test-file download.

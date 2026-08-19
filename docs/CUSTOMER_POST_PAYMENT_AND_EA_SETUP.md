@@ -14,6 +14,8 @@ Hello **[Customer Name]**,
 
 Thank you for your purchase of **[Product Name]**. To activate your secure download and MT5 licence, please follow these steps:
 
+**Full installation and activation guide:** [FizuxCoder Customer Portal](https://fizuxea-jxctlods.manus.space/portal#installation-guide)
+
 1. Open [the FizuxCoder Customer Portal](https://fizuxea-jxctlods.manus.space/portal) and sign in using the same e-mail address used at ToyyibPay checkout.
 2. In **Your eligible downloads**, choose **[Product Name]**, enter your ToyyibPay settlement or invoice reference, and select **Verify receipt**.
 3. Select **Refresh access**. Your product card should show **Access active**.
@@ -32,6 +34,8 @@ FizuxCoder Support
 Hello **[Customer Name]**,
 
 An updated release of **[Product Name]** is now available in your active FizuxCoder Customer Portal library.
+
+**Installation and update guide:** [FizuxCoder Customer Portal](https://fizuxea-jxctlods.manus.space/portal#installation-guide)
 
 1. Close or remove the previous EA from any active MT5 chart before updating.
 2. Download the file named **[New File Name]** from your product card.
@@ -58,6 +62,8 @@ Thank you for purchasing **Gemini Bot EA v11.97**. Your protected package includ
 
 Please sign in at [the FizuxCoder Customer Portal](https://fizuxea-jxctlods.manus.space/portal) using **[Checkout E-mail]**. Under **Your eligible downloads**, choose **Gemini Bot EA v11.97**, enter your ToyyibPay settlement reference **[Settlement Reference]**, and select **Verify receipt**. When the product card shows **Access active**, bind the numeric MT5 account that will run Gemini Bot and download the three listed files.
 
+For the complete installation and activation checklist, open [the Gemini Bot guide in the FizuxCoder Customer Portal](https://fizuxea-jxctlods.manus.space/portal#installation-guide).
+
 Install `GeminiBotEAv11.97.ex5` in `MQL5\Experts`; install the News Calendar and FMCBR Fractal components in `MQL5\Indicators`. Restart MT5, attach Gemini Bot to a demo chart first, and check **Experts** and **Journal** before enabling live trading.
 
 Trading involves risk. Do not share the package, settlement reference, or portal login.
@@ -72,6 +78,8 @@ FizuxCoder Support
 Hello **[Customer Name]**,
 
 An update for **Gemini Bot EA** is available in your active portal library: **[New File Name]**. Close Gemini Bot on any active chart before updating. Download the new file, place it in `MQL5\Experts`, retain the listed supporting News Calendar and FMCBR Fractal components in `MQL5\Indicators`, and restart MT5.
+
+For the full update checklist, open [the FizuxCoder Customer Portal](https://fizuxea-jxctlods.manus.space/portal#installation-guide).
 
 Attach the updated version to a demo chart first. Do not run both the old and new Gemini Bot versions on the same symbol and MT5 account unless the release notes explicitly instruct you to do so.
 
@@ -96,6 +104,8 @@ Thank you for purchasing **3 Serangkai UNIVERSAL EA v13.85**. Your protected pac
 
 Sign in at [the FizuxCoder Customer Portal](https://fizuxea-jxctlods.manus.space/portal) using **[Checkout E-mail]**. Under **Your eligible downloads**, choose **3 Serangkai UNIVERSAL EA v13.85**, enter ToyyibPay settlement reference **[Settlement Reference]**, and select **Verify receipt**. When **Access active** appears, bind the numeric MT5 account that will run the EA and download all seven files.
 
+For the complete installation and activation checklist, open [the 3S setup guide in the FizuxCoder Customer Portal](https://fizuxea-jxctlods.manus.space/portal#installation-guide).
+
 Install `3SUniversalEA.ex5` in `MQL5\Experts`. Install the six supporting components in `MQL5\Indicators`, restart MT5, and attach the main EA to a demo chart before using a live account. Review the Experts and Journal tabs for any initialization or licence messages.
 
 Trading involves risk. Do not share package files, settlement references, or portal access.
@@ -110,6 +120,8 @@ FizuxCoder Support
 Hello **[Customer Name]**,
 
 An update for **3 Serangkai UNIVERSAL EA** is available in your active portal library: **[New File Name]**. Remove or close the earlier 3S EA instance from its chart before installing the replacement. Download the new main EA and any updated supporting components identified in the release notes.
+
+For the full update checklist, open [the FizuxCoder Customer Portal](https://fizuxea-jxctlods.manus.space/portal#installation-guide).
 
 Place the main EA in `MQL5\Experts` and listed supporting components in `MQL5\Indicators`, restart MT5, and verify the updated release on demo. Do not run two main 3S EA versions on the same symbol and account unless the release notes explicitly say it is safe.
 
