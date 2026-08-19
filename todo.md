@@ -143,3 +143,6 @@
 - [x] Add an owner-only portal control that starts the secure Gmail production-sender authorization flow.
 - [x] Add distinct Gemini Bot and 3S automatic activation email templates with package-specific installation and update guidance.
 - [x] Add regression tests for already-sent idempotence, failed-send audit persistence, not-authorized handling, and the verified-claim-to-email handoff.
+- [x] Correct Gmail message subject and body encoding so Unicode punctuation renders correctly in recipient mail clients.
+- [x] Add regression coverage for RFC 5322 UTF-8-compatible Gmail message construction.
+- [ ] Prepare a protected, versioned EA update-library test after the owner supplies the new release file structure and release notes.

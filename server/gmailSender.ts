@@ -84,15 +84,19 @@ export function buildBuyerActivationEmail(input: BuyerActivationEmail) {
 }
 
 export function toGmailRawMessage(input: { from: string; to: string; subject: string; text: string }) {
+  const encodedSubject = /[^\x20-\x7E]/.test(input.subject)
+    ? `=?UTF-8?B?${Buffer.from(input.subject, "utf8").toString("base64")}?=`
+    : input.subject;
+  const encodedBody = Buffer.from(input.text, "utf8").toString("base64").match(/.{1,76}/g)?.join("\r\n") ?? "";
   const message = [
     `From: ${input.from}`,
     `To: ${input.to}`,
-    `Subject: ${input.subject}`,
+    `Subject: ${encodedSubject}`,
     "MIME-Version: 1.0",
     "Content-Type: text/plain; charset=UTF-8",
-    "Content-Transfer-Encoding: 8bit",
+    "Content-Transfer-Encoding: base64",
     "",
-    input.text,
+    encodedBody,
   ].join("\r\n");
   return Buffer.from(message, "utf8").toString("base64url");
 }

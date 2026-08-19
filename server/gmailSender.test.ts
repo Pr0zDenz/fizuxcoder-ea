@@ -43,6 +43,22 @@ describe("buyer activation email", () => {
     expect(decoded).toContain("To: buyer@example.com");
   });
 
+  it("MIME-encodes Unicode subjects and UTF-8 body text to prevent mojibake in mail clients", () => {
+    const raw = toGmailRawMessage({
+      from: "xtr0zen@gmail.com",
+      to: "buyer@example.com",
+      subject: "[TEST — NO PAYMENT] sender verification",
+      text: "Portal access — ready for installation.",
+    });
+    const decoded = Buffer.from(raw, "base64url").toString("utf8");
+    const [headers, encodedBody] = decoded.split("\r\n\r\n");
+
+    expect(headers).toContain("Subject: =?UTF-8?B?");
+    expect(headers).toContain("Content-Transfer-Encoding: base64");
+    expect(Buffer.from(encodedBody.replace(/\r\n/g, ""), "base64").toString("utf8")).toBe("Portal access — ready for installation.");
+    expect(headers).not.toContain("â€”");
+  });
+
   it("does not resend an already-sent order", async () => {
     const sendActivationEmail = async () => ({ status: "sent" as const, providerMessageId: "should-not-send" });
     const getDatabase = async () => ({
