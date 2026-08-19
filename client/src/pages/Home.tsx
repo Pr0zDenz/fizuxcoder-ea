@@ -502,6 +502,8 @@ export default function Home() {
               <a className="hover:text-[#e5a631]" href="#purchase">Purchase</a>
               <a className="hover:text-[#e5a631]" href="#disclosure">Risk statement</a>
               <a className="hover:text-[#e5a631]" href={brokerUrl} target="_blank" rel="noreferrer sponsored">Broker link</a>
+              <a className="hover:text-[#e5a631]" href="/privacy">Privacy</a>
+              <a className="hover:text-[#e5a631]" href="/terms">Terms</a>
             </div>
             <p className="mt-8 font-mono text-[9px] uppercase tracking-[.12em] text-[#8d9b93]">© 2026 FizuxCoder. Automated trading involves risk.</p>
           </div>

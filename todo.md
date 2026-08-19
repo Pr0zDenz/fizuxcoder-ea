@@ -133,9 +133,12 @@
 - [x] Add idempotent delivery-status auditing, failure safeguards, and regression tests for automatic buyer emails.
 - [x] Confirm xtr0zen@gmail.com can support authenticated production automation through Gmail API OAuth, subject to Google verification and administrator consent.
 - [x] Create the Google Cloud OAuth web client for Gmail API sending from xtr0zen@gmail.com.
-- [ ] Obtain and encrypt the administrator Gmail refresh authorization through the deployed OAuth callback before enabling automatic delivery.
+- [x] Obtain and encrypt the administrator Gmail refresh authorization through the deployed OAuth callback before enabling automatic delivery.
 - [x] Create the dedicated Google Cloud project for FizuxCoder Gmail Automation.
 - [ ] Publish the external OAuth app and request or complete any Google verification required for the sensitive `gmail.send` permission before enabling unattended production delivery.
+- [x] Add public OAuth-supporting branding, privacy, and terms pages that accurately describe the Gmail send-only purpose and buyer-email data handling.
+- [ ] Prepare the Google-sensitive-scope verification demonstration and submit it only after the user reviews the final verification materials.
+- [x] Send one clearly labeled administrator-only Gmail API production-sender verification email after explicit confirmation, without creating a payment, entitlement, or customer delivery record.
 - [x] Add an owner-only portal control that starts the secure Gmail production-sender authorization flow.
 - [x] Add distinct Gemini Bot and 3S automatic activation email templates with package-specific installation and update guidance.
 - [x] Add regression tests for already-sent idempotence, failed-send audit persistence, not-authorized handling, and the verified-claim-to-email handoff.
