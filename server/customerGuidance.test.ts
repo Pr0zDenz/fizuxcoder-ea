@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 const projectRoot = path.resolve(import.meta.dirname, "..");
 const portalPath = path.join(projectRoot, "client", "src", "pages", "Portal.tsx");
 const guidancePath = path.join(projectRoot, "docs", "CUSTOMER_POST_PAYMENT_AND_EA_SETUP.md");
+const reconciliationPath = path.join(projectRoot, "docs", "CHECKLIST_RECONCILIATION_2026-08-19.md");
 const publishedGuideUrl = "https://fizuxea-jxctlods.manus.space/portal#installation-guide";
 
 describe("published customer installation guidance", () => {
@@ -17,5 +18,15 @@ describe("published customer installation guidance", () => {
     expect(guidance).toContain("Buyer e-mail template: Gemini Bot EA v11.97 purchase");
     expect(guidance).toContain("Buyer e-mail template: 3 Serangkai UNIVERSAL EA v13.85 purchase");
     expect(guidance.match(new RegExp(publishedGuideUrl.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"))?.length).toBeGreaterThanOrEqual(6);
+  });
+
+  it("keeps deferred operating checks documented instead of presenting them as live automation", () => {
+    const reconciliation = readFileSync(reconciliationPath, "utf8");
+
+    expect(reconciliation).toContain("## On-demand operating runbook");
+    expect(reconciliation).toContain("Owner-only release desk");
+    expect(reconciliation).toContain("ngrok restart");
+    expect(reconciliation).toContain("Entitlement visibility before MT5 binding");
+    expect(reconciliation).toContain("not** an asserted production capability");
   });
 });

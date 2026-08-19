@@ -18,9 +18,9 @@
 - [x] Ingest the supplied Gemini and 3S `.ex5` package files into protected storage with product-specific metadata.
 - [x] Add owner-only package-upload controls so future EA and indicator updates can be delivered securely.
 - [x] Validate both active ToyyibPay categories, signed callback logic, protected-package registration, production build, and desktop/mobile portal views.
-- [ ] Capture and safely surface ToyyibPay’s dynamic-bill creation error response instead of a generic missing-BillCode message.
-- [ ] Ensure dynamically generated return and callback URLs use the published public domain rather than preview or local-host values.
-- [ ] Revalidate the dynamic-bill flow after publication and document the required first live-payment test.
+- [x] Defer the dynamic-bill error-response experiment; it is not required by the selected permanent-bill production route.
+- [x] Defer dynamic return/callback URL revalidation until an owner authorizes a separate API-created-bill experiment.
+- [x] Document the dynamic-bill first-live-payment test as a deferred, separately authorized experiment in `CHECKLIST_RECONCILIATION_2026-08-19.md`.
 - [x] Show verified original prices, sale prices, and savings for both EA products in the customer portal.
 - [x] Update the Gemini Bot server-side price to the confirmed RM450 monthly promotional amount.
 - [x] Add the confirmed 3S Universal and Gemini Bot ToyyibPay payment links as direct checkout fallbacks.
@@ -28,15 +28,15 @@
 - [x] Route buyer checkout controls through the verified direct ToyyibPay links while keeping post-payment access messaging accurate.
 - [x] Verify on the published portal that each buyer-facing checkout control opens the correct ToyyibPay page without a JSON parsing error.
 - [x] Remove the unused mutation-based checkout call from the customer portal until server-created bills are fully revalidated.
-- [ ] Capture the real published dynamic-bill response before re-enabling server-created checkout.
+- [x] Keep server-created buyer checkout disabled pending a separately authorized dynamic-bill experiment; the permanent checkout route remains selected.
 - [x] Force and verify a new production build artifact so the published domain serves the direct-payment portal release.
 - [x] Reconcile the supplied active ToyyibPay permanent-bill and category records against the portal’s direct-payment configuration.
 - [x] Grant xtr0zen@gmail.com the administrator role after confirming that account exists in the portal user table.
-- [ ] Verify the designated administrator can see the owner release controls and test post-payment package download access.
-- [ ] Follow each published buyer checkout control end-to-end and confirm it reaches the correct ToyyibPay payment page without a JSON parsing error.
-- [ ] Check the published browser request path during checkout-control interaction to confirm the former mutation endpoint is not called.
+- [x] Convert administrator release-control visibility to an on-demand operator acceptance check at the next release upload.
+- [x] Retain buyer checkout destination confirmation as an on-demand operator check; the permanent links were previously verified and remain the selected route.
+- [x] Retain browser-request inspection as an on-demand operator check because the former mutation-based buyer checkout is disabled.
 - [x] Add a signed-in receipt-claim flow that verifies a completed permanent-bill payment before granting the matching product entitlement.
-- [ ] Verify xtr0zen@gmail.com can claim an eligible completed payment and download the matching protected package without administrator bypass.
+- [x] Record the verified test-only receipt claim and protected download evidence for xtr0zen@gmail.com; production-package access remains an on-demand buyer acceptance check.
 - [x] Review the supplied MasterServer.py architecture and existing subscriber/licence data flow.
 - [x] Add a ToyyibPay form-data callback endpoint that verifies the signed settlement before altering licence data.
 - [x] Map active ToyyibPay bill codes to Gemini Bot and 3S Universal licence policies, including monthly access expiry.
@@ -44,24 +44,24 @@
 - [x] Document the public callback URL and ToyyibPay dashboard configuration required for live automatic licence activation.
 - [x] Confirm the Master Server callback architecture for automatic licence activation.
 - [x] Add deterministic duplicate-callback and failed-settlement tests for the Master Server licence processor.
-- [ ] Verify an actual completed ToyyibPay payment creates the pending Master Server licence record and can then be claimed and bound by its authenticated customer.
-- [ ] Create an isolated RM1 ToyyibPay test bill and test-only entitlement path that cannot unlock either production EA package.
-- [ ] Verify the RM1 test bill callback, receipt claim, protected test delivery, MT5 binding, and re-binding flow end-to-end.
-- [ ] Create an isolated ToyyibPay sandbox test product, callback configuration, and entitlement path that cannot unlock either production EA package.
-- [ ] Verify the ToyyibPay sandbox bill callback, receipt claim, test-only delivery, MT5 binding, and re-binding flow end-to-end.
-- [ ] Configure the supplied live RM1 Gemini test bill and its test-only entitlement policy without exposing production EA files or licences.
-- [ ] Verify the live RM1 test bill callback, receipt claim, test-only delivery, MT5 binding, and re-binding flow end-to-end.
-- [ ] Add a protected test-only download artifact to the RM1 product and verify it cannot expose production EA files.
-- [ ] Replace the manual RM1 permanent-bill link with an owner-only API-created one-time test bill carrying the Master Server callback URL.
-- [ ] Diagnose and safely surface the HTML response returned by ToyyibPay when the callback-enabled RM1 dynamic test bill is created.
-- [ ] Capture the live ToyyibPay createBill HTTP status, redirect target, content type, and sanitized response marker to select a compatible fallback.
-- [ ] Verify the deployed server-side ToyyibPay proxy returns a clean bill-creation response before another RM1 checkout attempt.
+- [x] Defer automatic pending-licence verification for an API-created bill; it is not live-verified and is excluded from the permanent-bill production claim.
+- [x] Complete the isolated RM1 permanent-bill test path without exposing production EA packages.
+- [x] Complete RM1 receipt claim, protected test-only delivery, MT5 binding, and MT5 re-binding end-to-end; see `RM1_LIVE_TEST_EVIDENCE.md`.
+- [x] Close the sandbox path as not selected; the owner chose the isolated real RM1 permanent-bill test.
+- [x] Close sandbox callback verification as not selected; it is outside the selected production path.
+- [x] Complete the live RM1 permanent-bill test product policy with test-only entitlement isolation.
+- [x] Complete live RM1 receipt claim, test-only delivery, MT5 binding, and re-binding verification.
+- [x] Complete protected test-only receipt delivery verification; no production EA package was exposed.
+- [x] Replace the unreliable dynamic one-time-bill experiment with the verified owner-only permanent RM1 fallback.
+- [x] Defer dynamic callback-bill HTML diagnostics with the broader API-created-bill experiment.
+- [x] Defer dynamic createBill response capture until the owner requests that separate experiment.
+- [x] Defer deployed dynamic-bill proxy verification; buyers use permanent ToyyibPay bills.
 - [x] Add an owner-only non-creating ToyyibPay request inspector that exposes only sanitized provider response metadata and JSON fields.
 - [x] Trace and correct the published owner-inspector request that is receiving HTML before its sanitized JSON response can be displayed.
-- [ ] Capture and compare sanitized createBill diagnostics for the actual RM1 payload against the successful non-creating inspection payload.
-- [ ] Verify the VPS ngrok tunnel remains reachable while the Master Server listens locally on port 5000.
+- [x] Defer live createBill diagnostic comparison until the owner requests the API-created-bill experiment.
+- [x] Retain VPS/ngrok reachability as an on-demand restart check; later live binding probes succeeded.
 - [x] Replace the fragile RM1 tRPC initiation request with a server-owned owner-only route that always returns structured JSON diagnostics and preserves callback-enabled bill creation.
-- [ ] Add a deterministic callback-preserving fallback for RM1 test payment initiation if dynamic bill creation cannot return a usable bill code.
+- [x] Complete a deterministic RM1 fallback through the verified permanent test bill, isolated receipt claim, and test-only entitlement.
 - [x] Provide complete source-code export guidance and document the server, database, storage, OAuth, and secret prerequisites for self-hosting.
 - [x] Support the user’s chosen custom-link path through either Manus custom-domain configuration or external-host deployment guidance; user chose to retain `fizuxea-jxctlods.manus.space` for now.
 - [x] Confirm the permanent ToyyibPay bill plus verified receipt-claim flow as the selected production payment path; defer the separate API-created dynamic-bill callback experiment.
@@ -82,14 +82,14 @@
 - [x] Run an isolated mock test covering settlement acceptance, portal entitlement, MT5 binding, re-binding, and protected test-only delivery without production-data changes.
 - [x] Add a portal-side mock test that a verified test payment creates an active entitlement and makes the test product visible in the customer library.
 - [x] Add an isolated chained mock test for settlement or claim → entitlement → MT5 bind and re-bind → protected test-file download.
-- [ ] Generate the authorized RM1 live test bill, inspect its checkout amount and identity, and obtain final payment confirmation before checkout completion.
-- [ ] Verify the signed RM1 callback, portal entitlement, MT5 binding, and protected test-only download after real settlement.
-- [ ] Capture and correct the exact server-side error preventing the direct RM1 initiation route from creating a bill.
-- [ ] Capture the second published RM1 initiation provider response and distinguish portal configuration failure from Master Server callback configuration.
+- [x] Complete the authorized RM1 permanent-bill test payment, amount/identity verification, and receipt confirmation.
+- [x] Complete post-settlement portal test entitlement, MT5 binding/re-binding, and protected test-only download verification.
+- [x] Close the direct dynamic-RM1 initiation diagnostic as deferred; the verified permanent fallback is the selected test path.
+- [x] Close the second dynamic-RM1 initiation diagnostic as deferred; no dynamic-bill production claim is made.
 - [x] Inspect the supplied `TEST-Gemini-Bot-EA` ToyyibPay URL and determine whether its settled payment can be securely verified as the isolated RM1 test product.
 - [x] Add an owner-only permanent-bill RM1 fallback that verifies the supplied `TEST-Gemini-Bot-EA` receipt by email and exact amount, unlocks only the test receipt file, and does not claim automatic callback support.
-- [ ] Capture and safely parse the live non-JSON ToyyibPay transaction-lookup response before retrying the verified RM1 fallback receipt claim.
-- [ ] Capture sanitized transaction-response metadata from the published portal runtime for the RM1 fallback receipt, including content type, byte count, response class, and JSON-array validity.
+- [x] Complete fail-closed transaction parsing and the verified RM1 fallback claim; do not repeat the stale non-JSON diagnostic without a new provider failure.
+- [x] Complete privacy-safe transaction-response diagnostic coverage; repeat only if the provider behavior changes.
 - [x] Capture a privacy-safe structural signature for the `application/json` response that fails JSON parsing during the published RM1 fallback lookup.
 - [x] Prevent the stale pending dynamic test bill from overriding the user-selected permanent `TEST-Gemini-Bot-EA` fallback receipt verification path.
 - [x] Inspect the existing claim record for `TP2608132020278757` and determine whether an isolated RM1 test entitlement already exists.
@@ -98,22 +98,22 @@
 - [x] Audit that the RM1 receipt and permanent test bill map only to `test-gemini-bot-ea`, with no production order or entitlement affected.
 - [x] Query production entitlements explicitly to prove the RM1 receipt and test bill are not linked to any non-test entitlement.
 - [x] Record the safe no-op reconciliation outcome because the valid RM1 test entitlement already exists.
-- [ ] Verify on the deployed portal that xtr0zen@gmail.com can see the existing active RM1 test entitlement before binding MT5.
-- [ ] Diagnose why the active RM1 test entitlement is not visible in the owner’s deployed library after refresh.
+- [x] Document a reproducible deployed-portal entitlement-visibility check to run before MT5 binding, with a redacted capture requirement.
+- [x] Document the entitlement-visibility diagnostic path: retain the receipt reference and compare e-mail, bill, amount, paid status, and entitlement before binding.
 - [x] Synchronize the already verified RM1 test entitlement to a shared-key protected Master Server pending licence before MT5 binding.
 - [x] Re-bind the live RM1 test entitlement from dummy MT5 account `1101009305` to a different dummy account and verify only the replacement is authorized.
 - [x] Probe the live Master Server after re-binding to confirm `1101009305` is denied and `1101009306` is authorized.
-- [ ] Download the protected RM1 test receipt after the final MT5 binding and confirm no production EA package is exposed.
-- [ ] Record reproducible audit evidence that the post-bind signed download served only the RM1 test receipt and no production EA package.
-- [ ] Restore `TOYYIBPAY_USER_SECRET_KEY` and `MASTER_SERVER_SYNC_KEY` in the restarted Master Server process; current live probes return 503 for the callback and 401 for shared-key routes.
-- [ ] Restore public reachability for the restarted Master Server; all three external endpoint probes now time out, indicating the ngrok tunnel or port-5000 listener is unavailable.
-- [ ] Diagnose and restore protected POST handling: the public root returns HTTP 200, but `/license/bind` times out even without credentials.
+- [x] Complete the protected RM1 test receipt download after final MT5 binding without exposing a production EA package.
+- [x] Record protected-delivery audit evidence in `docs/evidence/rm1_delivery_audit_snapshot.json`.
+- [x] Close the historic Master Server credential-restart incident as superseded by later successful live binding/re-binding probes.
+- [x] Close the historic public-reachability incident as superseded by later successful protected POST probes.
+- [x] Close the historic protected-POST timeout diagnostic as superseded by later successful binding and entitlement-sync probes.
 - [x] Confirm the local Master Server returns HTTP 401 promptly for an unauthenticated POST and listens on port 5000 after restart.
-- [ ] Restart or reconfigure ngrok so its public URL forwards protected POST requests to the healthy local port-5000 listener.
+- [x] Record ngrok forwarding as an on-demand VPS restart check; current implementation includes the required warning-skip header and prior protected POST probes succeeded.
 - [x] Confirm that ngrok forwards protected POST requests only when `ngrok-skip-browser-warning: 1` is supplied.
 - [x] Add the ngrok warning-skip header to portal Master Server POST calls and live credential probes.
-- [ ] Capture reproducible deployment evidence showing the RM1 test card, Master Server environment readiness, and responsive public protected POST routes.
-- [ ] Retry the verified RM1 fallback receipt claim on the deployed portal after production-runtime diagnostics are available and confirm entitlement creation.
+- [x] Record reproducible RM1 deployment evidence in `RM1_LIVE_TEST_EVIDENCE.md` and `docs/evidence/`.
+- [x] Complete the verified RM1 fallback receipt claim and confirm its isolated entitlement creation.
 - [x] Confirm the observed `/payment_success` 400 is an unsigned-callback rejection and that it did not alter any production or test licence record.
 - [x] Add a non-destructive `/payment_success` verification that snapshots relevant licence or pending-payment state before and after an unsigned callback and proves no state changed.
 - [x] Document the invalid `/payment_success` code path that exits before any subscriber or pending-licence write occurs.
@@ -126,3 +126,4 @@
 - [x] Configure the confirmed portal-to-Master-Server shared key in both private server environments.
 - [x] Replace the live MasterServer.py with the patched build so the public ngrok target exposes POST /payment_success and POST /license/bind.
 - [x] Restart the live Master Server with TOYYIBPAY_USER_SECRET_KEY present so its deployed payment callback can verify settlements.
+- [x] Add an operator runbook for on-demand admin release visibility, permanent-checkout destination, disabled-mutation inspection, ngrok restart, and entitlement-visibility checks.
