@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { entitlements, paymentOrders, productFiles, products } from "../drizzle/schema";
 
-const { getDbMock, bindMasterMock, syncMasterMock, successfulTransactionsMock } = vi.hoisted(() => ({ getDbMock: vi.fn(), bindMasterMock: vi.fn(), syncMasterMock: vi.fn(), successfulTransactionsMock: vi.fn() }));
+const { getDbMock, bindMasterMock, syncMasterMock, successfulTransactionsMock, buyerEmailDeliveryMock } = vi.hoisted(() => ({ getDbMock: vi.fn(), bindMasterMock: vi.fn(), syncMasterMock: vi.fn(), successfulTransactionsMock: vi.fn(), buyerEmailDeliveryMock: vi.fn() }));
 
 vi.mock("./db", () => ({ getDb: getDbMock }));
 vi.mock("./masterServer", () => ({ bindMasterServerLicence: bindMasterMock, syncMasterServerTestEntitlement: syncMasterMock }));
@@ -9,6 +9,7 @@ vi.mock("./toyyibpay", () => ({
   callbackAmountToSen: (amount?: string) => amount ? Math.round(Number.parseFloat(amount) * 100) : null,
   getSuccessfulBillTransactions: successfulTransactionsMock,
 }));
+vi.mock("./gmailSender", () => ({ deliverBuyerActivationEmail: buyerEmailDeliveryMock }));
 
 import { bindCustomerMt5Account, claimPermanentBillPayment, createNoChargeTestPurchase, getCustomerLibrary, getSecureFileForCustomer, recordPaymentCallback } from "./paymentPortal";
 
@@ -70,6 +71,7 @@ function createMockDb(state: MockState) {
 describe("isolated RM1 portal workflow mock", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    buyerEmailDeliveryMock.mockResolvedValue({ status: "sent" });
   });
 
   it("settles only the test product, exposes its test file, and records MT5 replacement without production access", async () => {
@@ -143,6 +145,20 @@ describe("isolated RM1 portal workflow mock", () => {
     expect(successfulTransactionsMock).toHaveBeenCalledWith("TEST-Gemini-Bot-EA");
     expect(createdOrder).toMatchObject({ productId: "test-gemini-bot-ea", providerBillCode: "TEST-Gemini-Bot-EA", providerRefNo: "TP-RM1-VERIFIED", expectedAmountSen: 100, status: "paid" });
     expect(createdEntitlement).toMatchObject({ productId: "test-gemini-bot-ea", status: "active" });
+    expect(buyerEmailDeliveryMock).toHaveBeenCalledWith(expect.objectContaining({ productId: "test-gemini-bot-ea", isTest: "yes" }));
+  });
+
+  it("hands a verified production receipt claim to the automatic buyer-email service after entitlement creation", async () => {
+    const product = { id: "gemini-bot-ea", name: "Gemini Bot EA v11.97", priceSen: 45000, billingCycle: "monthly", isTest: "no", active: "yes" };
+    const productionDb = {
+      select: () => ({ from: (table: unknown) => ({ where: () => queryResult(table === products ? [product] : []) }) }),
+      insert: () => ({ values: () => ({ onDuplicateKeyUpdate: async () => undefined }) }),
+    };
+    getDbMock.mockResolvedValue(productionDb);
+    successfulTransactionsMock.mockResolvedValue([{ billpaymentStatus: "1", billpaymentInvoiceNo: "TP-PROD-VERIFIED", billEmail: "buyer@example.com", billpaymentAmount: "450.00" }]);
+
+    await expect(claimPermanentBillPayment({ userId: 9, userEmail: "buyer@example.com", productId: "gemini-bot-ea", receiptNo: "TP-PROD-VERIFIED" })).resolves.toMatchObject({ productName: product.name, emailDelivery: "sent" });
+    expect(buyerEmailDeliveryMock).toHaveBeenCalledWith(expect.objectContaining({ userId: 9, productId: "gemini-bot-ea", productName: product.name, recipientEmail: "buyer@example.com", isTest: "no" }));
   });
 
   it("creates an owner-only no-charge simulation without calling the payment provider or touching a production product", async () => {

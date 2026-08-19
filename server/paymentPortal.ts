@@ -5,6 +5,7 @@ import { entitlements, paymentOrders, productFiles, products, protectedDeliveryA
 import { getDb } from "./db";
 import { bindMasterServerLicence, syncMasterServerTestEntitlement } from "./masterServer";
 import { callbackAmountToSen, getSuccessfulBillTransactions } from "./toyyibpay";
+import { deliverBuyerActivationEmail } from "./gmailSender";
 
 export const PRODUCT_IDS = {
   threeS: "3s-universal-ea",
@@ -280,7 +281,16 @@ export async function claimPermanentBillPayment(input: { userId: number; userEma
     startsAt: now,
     expiresAt,
   }).onDuplicateKeyUpdate({ set: { mostRecentOrderId: orderId, status: "active", startsAt: now, expiresAt } });
-  return { productName: product.name, billingCycle: product.billingCycle };
+  const emailDelivery = await deliverBuyerActivationEmail({
+    userId: input.userId,
+    orderId,
+    productId: product.id,
+    productName: product.name,
+    billingCycle: product.billingCycle,
+    recipientEmail: input.userEmail.trim().toLowerCase(),
+    isTest: product.isTest,
+  });
+  return { productName: product.name, billingCycle: product.billingCycle, emailDelivery: emailDelivery.status };
 }
 
 export async function getSecureFileForCustomer(input: { userId: number; fileId: number }) {

@@ -10,6 +10,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { registerToyyibPayCallback } from "../toyyibpayCallback";
 import { registerRm1TestRoute } from "../rm1TestRoute";
+import { registerGmailOAuthRoutes } from "../gmailOAuth";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -40,6 +41,7 @@ async function startServer() {
   registerOAuthRoutes(app);
   registerToyyibPayCallback(app);
   registerRm1TestRoute(app);
+  registerGmailOAuthRoutes(app);
   // tRPC API
   app.use(
     "/api/trpc",

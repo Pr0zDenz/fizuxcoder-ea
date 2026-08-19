@@ -127,3 +127,15 @@
 - [x] Replace the live MasterServer.py with the patched build so the public ngrok target exposes POST /payment_success and POST /license/bind.
 - [x] Restart the live Master Server with TOYYIBPAY_USER_SECRET_KEY present so its deployed payment callback can verify settlements.
 - [x] Add an operator runbook for on-demand admin release visibility, permanent-checkout destination, disabled-mutation inspection, ngrok restart, and entitlement-visibility checks.
+- [x] Replace the domain-sender path with the selected Gmail API sender route for xtr0zen@gmail.com.
+- [x] Configure the Gmail OAuth client credentials and approved sender identity securely for the production portal.
+- [x] Implement product-specific buyer activation emails that run only after a verified production receipt claim creates an entitlement.
+- [x] Add idempotent delivery-status auditing, failure safeguards, and regression tests for automatic buyer emails.
+- [x] Confirm xtr0zen@gmail.com can support authenticated production automation through Gmail API OAuth, subject to Google verification and administrator consent.
+- [x] Create the Google Cloud OAuth web client for Gmail API sending from xtr0zen@gmail.com.
+- [ ] Obtain and encrypt the administrator Gmail refresh authorization through the deployed OAuth callback before enabling automatic delivery.
+- [x] Create the dedicated Google Cloud project for FizuxCoder Gmail Automation.
+- [ ] Publish the external OAuth app and request or complete any Google verification required for the sensitive `gmail.send` permission before enabling unattended production delivery.
+- [x] Add an owner-only portal control that starts the secure Gmail production-sender authorization flow.
+- [x] Add distinct Gemini Bot and 3S automatic activation email templates with package-specific installation and update guidance.
+- [x] Add regression tests for already-sent idempotence, failed-send audit persistence, not-authorized handling, and the verified-claim-to-email handoff.

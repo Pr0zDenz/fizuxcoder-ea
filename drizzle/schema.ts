@@ -101,8 +101,45 @@ export const protectedDeliveryAudits = mysqlTable("protectedDeliveryAudits", {
   index("protectedDeliveryAudits_file_idx").on(table.fileId),
 ]);
 
+/**
+ * One server-side authorization record for the administrator-owned Gmail
+ * mailbox. The refresh token is encrypted before persistence and is never
+ * exposed through tRPC or browser responses.
+ */
+export const gmailAuthorizations = mysqlTable("gmailAuthorizations", {
+  senderEmail: varchar("senderEmail", { length: 320 }).primaryKey(),
+  encryptedRefreshToken: text("encryptedRefreshToken").notNull(),
+  grantedScopes: text("grantedScopes"),
+  authorizedAt: timestamp("authorizedAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+/**
+ * Delivery outcomes for activation emails. The unique order/type key makes a
+ * successful automatic send idempotent even if a customer repeats a request.
+ */
+export const buyerEmailDeliveries = mysqlTable("buyerEmailDeliveries", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  orderId: varchar("orderId", { length: 64 }).notNull().references(() => paymentOrders.id, { onDelete: "cascade" }),
+  productId: varchar("productId", { length: 64 }).notNull().references(() => products.id),
+  recipientEmail: varchar("recipientEmail", { length: 320 }).notNull(),
+  emailType: mysqlEnum("emailType", ["activation"]).notNull().default("activation"),
+  status: mysqlEnum("status", ["sent", "failed"]).notNull(),
+  providerMessageId: varchar("providerMessageId", { length: 128 }),
+  failureCode: varchar("failureCode", { length: 128 }),
+  sentAt: timestamp("sentAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [
+  uniqueIndex("buyerEmailDeliveries_order_type_unique").on(table.orderId, table.emailType),
+  index("buyerEmailDeliveries_user_status_idx").on(table.userId, table.status),
+]);
+
 export type Product = typeof products.$inferSelect;
 export type PaymentOrder = typeof paymentOrders.$inferSelect;
 export type Entitlement = typeof entitlements.$inferSelect;
 export type ProductFile = typeof productFiles.$inferSelect;
 export type ProtectedDeliveryAudit = typeof protectedDeliveryAudits.$inferSelect;
+export type GmailAuthorization = typeof gmailAuthorizations.$inferSelect;
+export type BuyerEmailDelivery = typeof buyerEmailDeliveries.$inferSelect;
