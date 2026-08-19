@@ -14,6 +14,8 @@ describe("3S Master Server activation guidance", () => {
     expect(home).toContain("WebRequest permissions");
     expect(home).toContain("Never enter or share a Master Server key");
     expect(home).toContain("MLN prediction and feedback requests");
+    expect(home).toContain("Payment-confirmation e-mails are sent separately by the FizuxCoder portal");
+    expect(home).toContain("Gmail only delivers the post-payment portal notice");
     expect(home).toContain("complete 3S replacement package is in validation");
   });
 });

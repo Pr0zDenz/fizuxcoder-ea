@@ -399,6 +399,7 @@ export default function Home() {
               <SectionLabel index="04">3S license-activation release</SectionLabel>
               <h2 className="mt-7 max-w-xl font-display text-[clamp(2.8rem,5vw,5rem)] leading-[.92] tracking-[-.06em]">A one-time activation, then a customer-specific connection.</h2>
               <p className="mt-6 max-w-lg text-lg leading-8 text-[#c9c7c0]">The latest 3S production-server design validates a License ID, one-time activation code, and authorized MT5 account through an HTTPS activation request. On success, the EA stores a customer-specific key locally for its permitted service connection.</p>
+              <p className="mt-4 max-w-lg text-sm leading-6 text-[#aab9b3]">Payment-confirmation e-mails are sent separately by the FizuxCoder portal after a verified payment claim and direct the buyer back to the portal. Gmail is not used by the EA, and it is not part of the MT5 activation settings.</p>
               <div className="mt-8 border-l border-[#e5a631] pl-4 text-sm leading-6 text-[#d7e1dc]">
                 <strong className="font-mono text-[10px] uppercase tracking-[.13em] text-[#e5a631]">Release boundary</strong>
                 <p className="mt-2">The complete 3S replacement package is in validation. It will be added to the protected customer library only after the corrected archive, release version, and public activation endpoint are confirmed.</p>
@@ -419,7 +420,7 @@ export default function Home() {
               ))}
               <aside className="sm:col-span-2 rounded-2xl border border-[#0eafa7]/40 bg-[#0e716e]/25 p-5 text-sm leading-6 text-[#d8efea]">
                 <p className="font-mono text-[10px] font-bold uppercase tracking-[.14em] text-[#6de0d8]">Customer security rule</p>
-                <p className="mt-2">Never enter or share a Master Server key, broker password, payment credential, Gmail credential, or customer API key. The 3S EA uses its customer-specific activation result for permitted MLN prediction and feedback requests.</p>
+                <p className="mt-2">Never enter or share a Master Server key, broker password, payment credential, Gmail credential, or customer API key. Gmail only delivers the post-payment portal notice; the 3S EA uses its customer-specific activation result for permitted MLN prediction and feedback requests.</p>
               </aside>
             </div>
           </div>

@@ -154,3 +154,5 @@
 - [x] Revise the landing page and portal activation guidance to match the latest 3S Master Server one-time license activation workflow.
 - [ ] Replace the legacy 3S EA and indicator release only after the corrected complete archive, activation URL, and release version are validated.
 - [ ] Preserve a rollback record of the previous protected 3S files before removing them from the customer library.
+- [x] Clarify in customer-facing guidance that Gmail sends post-payment portal notices, while the EA’s HTTPS WebRequest is reserved for Master Server activation and MLN service routes.
+- [ ] Reinspect the owner-confirmed corrected 3S MQL5 archive, including the BMP logo integrity, before any protected library replacement.
