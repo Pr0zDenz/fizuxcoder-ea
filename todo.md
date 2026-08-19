@@ -135,9 +135,10 @@
 - [x] Create the Google Cloud OAuth web client for Gmail API sending from xtr0zen@gmail.com.
 - [x] Obtain and encrypt the administrator Gmail refresh authorization through the deployed OAuth callback before enabling automatic delivery.
 - [x] Create the dedicated Google Cloud project for FizuxCoder Gmail Automation.
-- [ ] Publish the external OAuth app and request or complete any Google verification required for the sensitive `gmail.send` permission before enabling unattended production delivery.
+- [x] Defer formal Google sensitive-scope verification on the owner-selected Manus-domain route; do not claim it is complete until a controlled domain is available.
 - [x] Add public OAuth-supporting branding, privacy, and terms pages that accurately describe the Gmail send-only purpose and buyer-email data handling.
-- [ ] Prepare the Google-sensitive-scope verification demonstration and submit it only after the user reviews the final verification materials.
+- [x] Defer the Google-sensitive-scope verification demonstration and submission until the owner adopts a controlled domain and reviews the final materials.
+- [x] Document the owner-selected Manus-domain operating mode: authorized Gmail sender active, formal Google sensitive-scope verification deferred until a controlled domain is available.
 - [x] Send one clearly labeled administrator-only Gmail API production-sender verification email after explicit confirmation, without creating a payment, entitlement, or customer delivery record.
 - [x] Add an owner-only portal control that starts the secure Gmail production-sender authorization flow.
 - [x] Add distinct Gemini Bot and 3S automatic activation email templates with package-specific installation and update guidance.
