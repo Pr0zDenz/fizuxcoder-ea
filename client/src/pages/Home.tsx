@@ -93,6 +93,11 @@ const faq = [
     answer:
       "The supplied registration pathway is a referral link. If you choose to register through it, the site operator may receive compensation. You remain responsible for reviewing the broker's terms, local availability, and suitability for your circumstances.",
   },
+  {
+    question: "How does the 3S license-activation release work?",
+    answer:
+      "The current 3S release design uses a one-time activation code, License ID, and authorized MT5 account number. The EA sends those values to the supplied HTTPS activation endpoint, which validates the license and returns a customer-specific API key. A master server key is never a customer input. The replacement library release is still under validation and will be published only after the package and public activation endpoint are confirmed.",
+  },
 ];
 
 function SignalMark({ className = "" }: { className?: string }) {
@@ -149,6 +154,7 @@ export default function Home() {
             <a href="#systems" className="nav-link">Systems</a>
             <a href="#matrix" className="nav-link">Matrix</a>
             <a href="#protocol" className="nav-link">Setup protocol</a>
+            <a href="#activation" className="nav-link">3S activation</a>
             <a href="/portal" className="nav-link">Customer portal</a>
             <a href="#disclosure" className="nav-link">Risk notes</a>
           </nav>
@@ -174,6 +180,7 @@ export default function Home() {
                 ["Systems", "#systems"],
                 ["Matrix", "#matrix"],
                 ["Setup protocol", "#protocol"],
+                ["3S activation", "#activation"],
                 ["Risk notes", "#disclosure"],
               ].map(([label, href]) => (
                 <a key={href} href={href} onClick={() => setMobileNavOpen(false)}>{label}</a>
@@ -385,8 +392,41 @@ export default function Home() {
           </div>
         </section>
 
+        <section id="activation" className="relative bg-[#17201f] py-20 text-[#f4f0e8] lg:py-28">
+          <div className="edition-rail edition-rail-dark"><span>04</span><i /></div>
+          <div className="mx-auto grid max-w-[1440px] gap-12 px-5 lg:grid-cols-[.78fr_1.22fr] lg:px-10">
+            <div>
+              <SectionLabel index="04">3S license-activation release</SectionLabel>
+              <h2 className="mt-7 max-w-xl font-display text-[clamp(2.8rem,5vw,5rem)] leading-[.92] tracking-[-.06em]">A one-time activation, then a customer-specific connection.</h2>
+              <p className="mt-6 max-w-lg text-lg leading-8 text-[#c9c7c0]">The latest 3S production-server design validates a License ID, one-time activation code, and authorized MT5 account through an HTTPS activation request. On success, the EA stores a customer-specific key locally for its permitted service connection.</p>
+              <div className="mt-8 border-l border-[#e5a631] pl-4 text-sm leading-6 text-[#d7e1dc]">
+                <strong className="font-mono text-[10px] uppercase tracking-[.13em] text-[#e5a631]">Release boundary</strong>
+                <p className="mt-2">The complete 3S replacement package is in validation. It will be added to the protected customer library only after the corrected archive, release version, and public activation endpoint are confirmed.</p>
+              </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {[
+                ["01", "Claim protected access", "Use the verified purchase and portal claim process before downloading a current 3S release."],
+                ["02", "Extract the MQL5 package", "Open MT5 Data Folder, extract the supplied MQL5 folder, and replace files only when the release note instructs you to do so."],
+                ["03", "Attach the license EA", "Attach 3SUniversalEA_customer_license.ex5 to the intended chart, then apply the supplied MLN preset when the release note specifies it."],
+                ["04", "Activate through HTTPS", "Add the supplied base URL to MT5 WebRequest permissions, then enter the License ID, one-time code, and authorized account. The activation endpoint checks the record before returning a customer-specific key."],
+              ].map(([step, title, copy]) => (
+                <article key={step} className="rounded-2xl border border-white/15 bg-white/5 p-5 backdrop-blur-sm">
+                  <p className="font-mono text-[10px] font-bold tracking-[.15em] text-[#e5a631]">{step}</p>
+                  <h3 className="mt-5 font-display text-2xl leading-none tracking-[-.035em]">{title}</h3>
+                  <p className="mt-4 text-sm leading-6 text-[#c9d1cd]">{copy}</p>
+                </article>
+              ))}
+              <aside className="sm:col-span-2 rounded-2xl border border-[#0eafa7]/40 bg-[#0e716e]/25 p-5 text-sm leading-6 text-[#d8efea]">
+                <p className="font-mono text-[10px] font-bold uppercase tracking-[.14em] text-[#6de0d8]">Customer security rule</p>
+                <p className="mt-2">Never enter or share a Master Server key, broker password, payment credential, Gmail credential, or customer API key. The 3S EA uses its customer-specific activation result for permitted MLN prediction and feedback requests.</p>
+              </aside>
+            </div>
+          </div>
+        </section>
+
         <section className="relative py-20 lg:py-28">
-          <div className="edition-rail"><span>04</span><i /></div>
+          <div className="edition-rail"><span>05</span><i /></div>
           <div className="mx-auto grid max-w-[1440px] gap-12 px-5 lg:grid-cols-[.88fr_1.12fr] lg:px-10">
             <div className="relative min-h-[420px] overflow-hidden rounded-[2rem] bg-[#17201f]">
               <img src="/manus-storage/risk-discipline-visual_785023c2.jpg" alt="Abstract risk-management balance visual" className="absolute inset-0 h-full w-full object-cover" />
@@ -408,7 +448,7 @@ export default function Home() {
         </section>
 
         <section id="broker" className="relative bg-[#e5a631] py-20 lg:py-24">
-          <div className="edition-rail"><span>05</span><i /></div>
+          <div className="edition-rail"><span>06</span><i /></div>
           <div className="mx-auto grid max-w-[1440px] gap-10 px-5 lg:grid-cols-[1.1fr_.9fr] lg:px-10">
             <div>
               <SectionLabel index="05">Optional broker pathway</SectionLabel>
@@ -443,7 +483,7 @@ export default function Home() {
         <section id="purchase" className="bg-[#fbf9f4] py-20 lg:py-24">
           <div className="mx-auto grid max-w-[1440px] gap-10 px-5 lg:grid-cols-[.95fr_1.05fr] lg:px-10">
             <div>
-              <SectionLabel index="06">Gemini Bot purchase route</SectionLabel>
+              <SectionLabel index="07">Gemini Bot purchase route</SectionLabel>
               <h2 className="mt-7 max-w-2xl font-display text-[clamp(2.8rem,5vw,5.3rem)] leading-[.9] tracking-[-.06em]">Purchase the EA separately from your broker setup.</h2>
               <p className="mt-6 max-w-xl text-lg leading-8 text-[#52605d]">Gemini Bot EA v11.97 is available through the active ToyyibPay bill supplied by the creator. A purchase decision should follow your own review of system requirements, support terms, and the risk statement—not an expectation of a particular trading result.</p>
             </div>
@@ -470,7 +510,7 @@ export default function Home() {
         <section className="py-20 lg:py-28">
           <div className="mx-auto grid max-w-[1440px] gap-12 px-5 lg:grid-cols-[.8fr_1.2fr] lg:px-10">
             <div>
-              <SectionLabel index="07">Field questions</SectionLabel>
+              <SectionLabel index="08">Field questions</SectionLabel>
               <h2 className="mt-7 font-display text-[clamp(2.8rem,5vw,4.8rem)] leading-[.92] tracking-[-.06em]">A few useful questions before you begin.</h2>
             </div>
             <div className="border-t border-[#17201f]/20">

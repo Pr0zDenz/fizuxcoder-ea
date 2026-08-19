@@ -145,4 +145,12 @@
 - [x] Add regression tests for already-sent idempotence, failed-send audit persistence, not-authorized handling, and the verified-claim-to-email handoff.
 - [x] Correct Gmail message subject and body encoding so Unicode punctuation renders correctly in recipient mail clients.
 - [x] Add regression coverage for RFC 5322 UTF-8-compatible Gmail message construction.
-- [ ] Prepare a protected, versioned EA update-library test after the owner supplies the new release file structure and release notes.
+- [ ] Prepare a protected, versioned EA update-library test after the owner supplies a valid replacement archive, release version, and release notes.
+- [x] Inspect the owner-supplied MQL5 RAR archive without executing its contents, and validate its folder structure and instruction file.
+- [ ] Confirm whether the reviewed archive is a complete replacement or partial update before adding it to the protected portal library.
+- [ ] Obtain a valid archive with a non-corrupt `MQL5/Images/fizu_logo.bmp` and a customer instruction file included in the final package.
+- [ ] Confirm the live HTTPS activation base URL and exact compiled-EA runtime endpoint names before publishing the 3S license-activation release.
+- [ ] Use `3SUniversalEA_customer_license.ex5` as the primary customer EA and document its supplied MLN preset mapping in the protected release notes.
+- [x] Revise the landing page and portal activation guidance to match the latest 3S Master Server one-time license activation workflow.
+- [ ] Replace the legacy 3S EA and indicator release only after the corrected complete archive, activation URL, and release version are validated.
+- [ ] Preserve a rollback record of the previous protected 3S files before removing them from the customer library.
