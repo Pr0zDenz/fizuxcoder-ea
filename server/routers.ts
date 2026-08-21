@@ -149,7 +149,7 @@ export const appRouter = router({
     bindMt5Account: protectedProcedure.input(z.object({ productId: z.string().min(1), accountNumber: z.string().regex(/^\d{1,20}$/, "Enter a valid numeric MT5 account number") })).mutation(async ({ ctx, input }) => {
       if (!ctx.user.email) throw new TRPCError({ code: "BAD_REQUEST", message: "Your portal account needs an email address before an MT5 account can be bound" });
       try {
-        return await bindCustomerMt5Account({ userId: ctx.user.id, userEmail: ctx.user.email, productId: input.productId, accountNumber: input.accountNumber });
+        return await bindCustomerMt5Account({ userId: ctx.user.id, userEmail: ctx.user.email, userName: ctx.user.name, productId: input.productId, accountNumber: input.accountNumber });
       } catch (error) {
         throw new TRPCError({ code: "BAD_REQUEST", message: error instanceof Error ? error.message : "Unable to bind this MT5 account" });
       }

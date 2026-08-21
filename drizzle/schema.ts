@@ -136,6 +136,35 @@ export const buyerEmailDeliveries = mysqlTable("buyerEmailDeliveries", {
   index("buyerEmailDeliveries_user_status_idx").on(table.userId, table.status),
 ]);
 
+/**
+ * Safe audit state for a 3S one-time Master Server activation credential. The
+ * activation code itself is never persisted here: only its SHA-256 hash and
+ * the delivery outcome are retained for support and duplicate prevention.
+ */
+export const threeSLicenceIssuances = mysqlTable("threeSLicenceIssuances", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  entitlementId: int("entitlementId").notNull().references(() => entitlements.id, { onDelete: "cascade" }),
+  orderId: varchar("orderId", { length: 64 }).notNull().references(() => paymentOrders.id, { onDelete: "cascade" }),
+  productId: varchar("productId", { length: 64 }).notNull().references(() => products.id),
+  licenseId: varchar("licenseId", { length: 96 }).notNull(),
+  mt5AccountNumber: varchar("mt5AccountNumber", { length: 20 }).notNull(),
+  apiExpiresAt: timestamp("apiExpiresAt"),
+  activationCodeHash: varchar("activationCodeHash", { length: 64 }),
+  status: mysqlEnum("status", ["issuing", "issued", "issuer_failed", "delivery_failed"]).notNull().default("issuing"),
+  providerMessageId: varchar("providerMessageId", { length: 128 }),
+  failureCode: varchar("failureCode", { length: 128 }),
+  issuedAt: timestamp("issuedAt"),
+  emailedAt: timestamp("emailedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [
+  uniqueIndex("threeSLicenceIssuances_entitlement_unique").on(table.entitlementId),
+  uniqueIndex("threeSLicenceIssuances_order_unique").on(table.orderId),
+  uniqueIndex("threeSLicenceIssuances_license_unique").on(table.licenseId),
+  index("threeSLicenceIssuances_user_status_idx").on(table.userId, table.status),
+]);
+
 export type Product = typeof products.$inferSelect;
 export type PaymentOrder = typeof paymentOrders.$inferSelect;
 export type Entitlement = typeof entitlements.$inferSelect;
@@ -143,3 +172,4 @@ export type ProductFile = typeof productFiles.$inferSelect;
 export type ProtectedDeliveryAudit = typeof protectedDeliveryAudits.$inferSelect;
 export type GmailAuthorization = typeof gmailAuthorizations.$inferSelect;
 export type BuyerEmailDelivery = typeof buyerEmailDeliveries.$inferSelect;
+export type ThreeSLicenceIssuance = typeof threeSLicenceIssuances.$inferSelect;

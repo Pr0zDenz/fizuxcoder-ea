@@ -6,6 +6,7 @@ import { getDb } from "./db";
 import { bindMasterServerLicence, syncMasterServerTestEntitlement } from "./masterServer";
 import { callbackAmountToSen, getSuccessfulBillTransactions } from "./toyyibpay";
 import { deliverBuyerActivationEmail } from "./gmailSender";
+import { issueThreeSLicenceAfterVerifiedBinding } from "./threeSLicensing";
 
 export const PRODUCT_IDS = {
   threeS: "3s-universal-ea",
@@ -185,7 +186,7 @@ export async function getCustomerLibrary(userId: number) {
   }));
 }
 
-export async function bindCustomerMt5Account(input: { userId: number; userEmail: string; productId: string; accountNumber: string }) {
+export async function bindCustomerMt5Account(input: { userId: number; userEmail: string; userName?: string | null; productId: string; accountNumber: string }) {
   const db = await getDb();
   if (!db) throw new Error("Database is unavailable");
   const record = (await db.select({ entitlement: entitlements, product: products, order: paymentOrders })
@@ -197,6 +198,27 @@ export async function bindCustomerMt5Account(input: { userId: number; userEmail:
   const now = new Date();
   const isActive = record?.entitlement.status === "active" && (!record.entitlement.expiresAt || record.entitlement.expiresAt > now);
   if (!record || !isActive) throw new Error("An active verified purchase is required before an MT5 account can be bound");
+
+  if (record.product.id === PRODUCT_IDS.threeS) {
+    const issuance = await issueThreeSLicenceAfterVerifiedBinding({
+      userId: input.userId,
+      entitlementId: record.entitlement.id,
+      orderId: record.order.id,
+      productId: PRODUCT_IDS.threeS,
+      customerName: input.userName?.trim() || input.userEmail,
+      recipientEmail: input.userEmail,
+      accountNumber: input.accountNumber,
+    });
+    await db.update(entitlements).set({ mt5AccountNumber: issuance.accountNumber, mt5BoundAt: now }).where(eq(entitlements.id, record.entitlement.id));
+    return {
+      productName: record.product.name,
+      accountNumber: issuance.accountNumber,
+      replacedAccount: null,
+      expiry: issuance.apiExpiry,
+      activationStatus: issuance.status,
+      apiLicenceTerm: "one_year" as const,
+    };
+  }
 
   if (record.product.id === "test-gemini-bot-ea") {
     if (!record.order.providerRefNo) throw new Error("The verified RM1 test receipt is unavailable for Master Server synchronisation");

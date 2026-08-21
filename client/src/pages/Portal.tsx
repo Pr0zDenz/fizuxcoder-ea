@@ -92,8 +92,20 @@ export default function Portal() {
     onError: error => setTestMessage(error.message),
   });
   const bindMt5Account = trpc.portal.bindMt5Account.useMutation({
-    onSuccess: ({ productName, accountNumber, replacedAccount }, variables) => {
-      setMt5Messages(current => ({ ...current, [variables.productId]: replacedAccount ? `${productName} is now bound to MT5 account ${accountNumber}. The previous account ${replacedAccount} was removed.` : `${productName} is now active for MT5 account ${accountNumber}.` }));
+    onSuccess: (result, variables) => {
+      const { productName, accountNumber, replacedAccount } = result;
+      const threeSStatus = "activationStatus" in result ? result.activationStatus : undefined;
+      const threeSExpiry = "activationStatus" in result ? result.expiry : undefined;
+      const message = variables.productId === "3s-universal-ea"
+        ? threeSStatus === "issued"
+          ? `${productName} is linked to MT5 account ${accountNumber}. Your one-time activation details were sent to your registered email${threeSExpiry ? `; the Master Server API licence expires ${new Date(threeSExpiry).toLocaleDateString()}` : ""}. Keep the lifetime download entitlement in your portal; contact support before the API licence expires for renewal.`
+          : threeSStatus === "already_issued"
+            ? `${productName} is already linked to MT5 account ${accountNumber}. The one-time activation details were previously issued; contact support if you need help.`
+            : `${productName} was linked to MT5 account ${accountNumber}, but activation-email delivery needs support follow-up. Do not submit a second account or repeat the request.`
+        : replacedAccount
+          ? `${productName} is now bound to MT5 account ${accountNumber}. The previous account ${replacedAccount} was removed.`
+          : `${productName} is now active for MT5 account ${accountNumber}.`;
+      setMt5Messages(current => ({ ...current, [variables.productId]: message }));
       setMt5AccountNumbers(current => ({ ...current, [variables.productId]: "" }));
       library.refetch();
     },
@@ -153,7 +165,7 @@ export default function Portal() {
               ["03", "Bind MT5", "Activate the numeric MT5 account that will run the EA. Replacing it revokes the previous account."],
               ["04", "Install safely", "Download active package files, use MT5 File → Open Data Folder, then test on demo before live use."],
             ].map(([step, title, detail]) => <article key={step} className="rounded-[1.25rem] border border-[#17201f]/12 bg-white p-5"><p className="font-mono text-[10px] font-bold tracking-[.14em] text-[#e5a631]">{step}</p><h3 className="mt-4 font-display text-2xl tracking-[-.04em]">{title}</h3><p className="mt-3 text-sm leading-6 text-[#596762]">{detail}</p></article>)}</div>
-            <p className="mt-5 text-xs leading-5 text-[#596762]">For Gemini Bot, install the main EA in `MQL5\Experts` and supporting calendar/fractal components in `MQL5\Indicators`. For 3S, install `3SUniversalEA` in `Experts` and its listed support components in `Indicators`. Do not share package files, settlement references, or portal access.</p>
+            <p className="mt-5 text-xs leading-5 text-[#596762]">For Gemini Bot, install the main EA in `MQL5\Experts` and supporting calendar/fractal components in `MQL5\Indicators`. For 3S, install `3SUniversalEA_customer_license` in `Experts` and its listed support components in `Indicators`. After the verified 3S MT5 binding, the one-time activation details are sent to your registered email; do not share them, package files, settlement references, or portal access. For 3S account replacement, contact support first so the prior API licence can be safely retired.</p>
             <a href="#installation-guide" className="mt-5 inline-flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[.12em] text-[#0e716e] underline decoration-[#e5a631] decoration-2 underline-offset-4">Installation guide: start at step 1 <ArrowRight size={14} /></a>
           </div>
         </section>

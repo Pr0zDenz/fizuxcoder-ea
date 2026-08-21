@@ -57,6 +57,13 @@
       "when": 1787123760043,
       "tag": "0007_amazing_harry_osborn",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1787335209254,
+      "tag": "0008_sour_rumiko_fujikawa",
+      "breakpoints": true
     }
   ]
 }

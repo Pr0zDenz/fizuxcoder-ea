@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildBuyerActivationEmail, deliverBuyerActivationEmail, toGmailRawMessage } from "./gmailSender";
+import { buildBuyerActivationEmail, buildThreeSLicenceActivationEmail, deliverBuyerActivationEmail, toGmailRawMessage } from "./gmailSender";
 
 describe("buyer activation email", () => {
   it("contains the portal activation steps and no sensitive account request", () => {
@@ -27,6 +27,24 @@ describe("buyer activation email", () => {
     expect(message.text).toContain("3SUniversalEA");
     expect(message.text).toContain("3S Basket Dashboard");
     expect(message.text).toContain("remove or close the previous chart instance");
+  });
+
+  it("builds a separate one-time 3S activation notice with renewal and security guidance", () => {
+    const message = buildThreeSLicenceActivationEmail({
+      recipientEmail: "buyer@example.com",
+      licenseId: "3S-ORDER1",
+      activationCode: "code-for-delivery-only",
+      accountNumber: "12345678",
+      apiExpiry: "2027-08-21",
+    });
+
+    expect(message.subject).toContain("one-time activation");
+    expect(message.text).toContain("lifetime");
+    expect(message.text).toContain("one year");
+    expect(message.text).toContain("3S-ORDER1");
+    expect(message.text).toContain("code-for-delivery-only");
+    expect(message.text).toContain("Allow WebRequest");
+    expect(message.text).toContain("Do not forward this email");
   });
 
   it("produces a URL-safe Gmail raw message with declared sender and recipient", () => {

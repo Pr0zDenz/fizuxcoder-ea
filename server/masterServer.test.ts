@@ -1,12 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { bindMasterServerLicence, syncMasterServerTestEntitlement } from "./masterServer";
+import { bindMasterServerLicence, issueMasterServerThreeSLicence, syncMasterServerTestEntitlement } from "./masterServer";
 
 const originalBaseUrl = process.env.MASTER_SERVER_BASE_URL;
 const originalSyncKey = process.env.MASTER_SERVER_SYNC_KEY;
+const originalFulfillmentKey = process.env.FULFILLMENT_ADMIN_KEY;
 
 afterEach(() => {
   process.env.MASTER_SERVER_BASE_URL = originalBaseUrl;
   process.env.MASTER_SERVER_SYNC_KEY = originalSyncKey;
+  process.env.FULFILLMENT_ADMIN_KEY = originalFulfillmentKey;
   vi.unstubAllGlobals();
 });
 
@@ -39,6 +41,24 @@ describe("bindMasterServerLicence", () => {
       method: "POST",
       headers: expect.objectContaining({ "X-Master-Sync-Key": "test-key", "ngrok-skip-browser-warning": "1" }),
       body: JSON.stringify({ email: "customer@example.test", payment_reference: "TP-RM1-TEST" }),
+    }));
+  });
+
+  it("issues a one-year 3S activation licence only through the dedicated fulfilment credential", async () => {
+    process.env.MASTER_SERVER_BASE_URL = "https://master.example.test/";
+    process.env.MASTER_SERVER_SYNC_KEY = "sync-key";
+    process.env.FULFILLMENT_ADMIN_KEY = "fulfilment-key";
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      license_id: "3S-ORDER123", account_number: "12345678", expiry: "2027-08-19", activation_code: "one-time-code",
+    }), { status: 201 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(issueMasterServerThreeSLicence({ licenseId: "3S-ORDER123", clientName: "Customer", accountNumber: "12345678" })).resolves.toMatchObject({ license_id: "3S-ORDER123", expiry: "2027-08-19" });
+
+    expect(fetchMock).toHaveBeenCalledWith("https://master.example.test/admin/license/create", expect.objectContaining({
+      method: "POST",
+      headers: expect.objectContaining({ "X-Fulfillment-Admin-Key": "fulfilment-key", "ngrok-skip-browser-warning": "1" }),
+      body: JSON.stringify({ license_id: "3S-ORDER123", client_name: "Customer", account_number: "12345678", years: 1 }),
     }));
   });
 });

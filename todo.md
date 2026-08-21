@@ -156,3 +156,12 @@
 - [ ] Preserve a rollback record of the previous protected 3S files before removing them from the customer library.
 - [x] Clarify in customer-facing guidance that Gmail sends post-payment portal notices, while the EA’s HTTPS WebRequest is reserved for Master Server activation and MLN service routes.
 - [ ] Reinspect the owner-confirmed corrected 3S MQL5 archive, including the BMP logo integrity, before any protected library replacement.
+- [ ] Inspect the supplied 3SUniversalEA-MQL5 and Gemini-MQL5 archives without executing their contents.
+- [ ] Summarize and obtain approval for separate customer README and installation-guide workflows for 3S Universal EA and Gemini Bot EA before writing release documentation.
+- [ ] Reconcile the separate 3S and Gemini installation instructions against the pasted production Master Server activation contract.
+- [x] Design and implement idempotent one-time 3S License ID and activation-code issuance only after a verified 3S portal claim and MT5 account selection.
+- [x] Send the issued 3S activation details securely to the registered customer e-mail and retain only safe issuance and delivery audit metadata.
+- [ ] Reconcile the live Master Server’s legacy Gemini `/license/bind`, `/payment_success`, and test-entitlement probe behavior before relying on the latest server for portal synchronization.
+- [x] Issue a one-year 3S API licence after verified claims while preserving the 3S lifetime portal download entitlement and documenting renewal support.
+- [x] Preserve a fail-closed 3S rebind path until the Master Server supports account replacement or licence revocation without leaving an old one-time licence active.
+- [x] Show clear 3S one-time activation-email status and safe rebind guidance in the customer portal after a verified MT5 binding.

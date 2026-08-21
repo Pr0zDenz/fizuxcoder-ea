@@ -16,6 +16,14 @@ type BuyerActivationEmail = {
   billingCycle: "monthly" | "lifetime";
 };
 
+export type ThreeSLicenceActivationEmail = {
+  recipientEmail: string;
+  licenseId: string;
+  activationCode: string;
+  accountNumber: string;
+  apiExpiry: string;
+};
+
 type ProductEmailGuidance = {
   packageSummary: string;
   setupNote: string;
@@ -83,6 +91,38 @@ export function buildBuyerActivationEmail(input: BuyerActivationEmail) {
   return { subject, text };
 }
 
+/**
+ * Produces the one permitted plaintext representation of the 3S activation
+ * code. The caller must send it immediately and never persist it in the portal.
+ */
+export function buildThreeSLicenceActivationEmail(input: ThreeSLicenceActivationEmail) {
+  const subject = "3S Universal EA — your one-time activation details";
+  const text = [
+    "FizuxCoder 3S Universal EA activation",
+    "",
+    "Your protected 3S download entitlement is lifetime. The Master Server API licence below is valid for one year and can be renewed through FizuxCoder support before it expires.",
+    "",
+    `License ID: ${input.licenseId}`,
+    `One-time activation code: ${input.activationCode}`,
+    `Authorized MT5 account: ${input.accountNumber}`,
+    `Master Server API licence expiry: ${input.apiExpiry}`,
+    "",
+    "Installation and activation:",
+    "1. Sign in to the portal and download the active 3S package.",
+    "2. Extract the supplied MQL5 folders into the MT5 Data Folder, then restart MT5.",
+    "3. Attach 3SUniversalEA_customer_license.ex5 and load the supplied MLN preset.",
+    "4. In MT5, allow the supplied Master Server URL under Tools > Options > Expert Advisors > Allow WebRequest for listed URL.",
+    "5. Enter the License ID, one-time activation code, and authorized MT5 account number exactly as shown above. The EA stores its returned customer API key locally after successful activation.",
+    "",
+    `Portal and installation guide: ${PORTAL_GUIDE_URL}`,
+    "",
+    "Security notice: This code is one-time use. Do not forward this email, share the code, disclose a customer API key, or send broker passwords, payment details, Master Server keys, or Gmail credentials to support.",
+    "",
+    "This is an automatic service notice from FizuxCoder.",
+  ].join("\r\n");
+  return { subject, text };
+}
+
 export function toGmailRawMessage(input: { from: string; to: string; subject: string; text: string }) {
   const encodedSubject = /[^\x20-\x7E]/.test(input.subject)
     ? `=?UTF-8?B?${Buffer.from(input.subject, "utf8").toString("base64")}?=`
@@ -131,6 +171,21 @@ export async function sendGmailBuyerActivationEmail(input: BuyerActivationEmail,
       authorization: `Bearer ${accessToken}`,
       "content-type": "application/json",
     },
+    body: JSON.stringify({ raw: toGmailRawMessage({ from: senderEmail, to: input.recipientEmail, ...message }) }),
+  });
+  const payload = await response.json().catch(() => ({})) as { id?: string };
+  if (!response.ok || !payload.id) throw new Error("GMAIL_SEND_FAILED");
+  return { status: "sent" as const, providerMessageId: payload.id };
+}
+
+export async function sendGmailThreeSLicenceActivationEmail(input: ThreeSLicenceActivationEmail, fetchFn: typeof fetch = fetch) {
+  const accessToken = await getAccessToken(fetchFn);
+  if (!accessToken) return { status: "not_authorized" as const };
+  const { senderEmail } = gmailConfig();
+  const message = buildThreeSLicenceActivationEmail(input);
+  const response = await fetchFn(GMAIL_SEND_URL, {
+    method: "POST",
+    headers: { authorization: `Bearer ${accessToken}`, "content-type": "application/json" },
     body: JSON.stringify({ raw: toGmailRawMessage({ from: senderEmail, to: input.recipientEmail, ...message }) }),
   });
   const payload = await response.json().catch(() => ({})) as { id?: string };
