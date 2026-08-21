@@ -38,7 +38,7 @@ describe("Master Server credential", () => {
     expect(response.status).toBe(400);
   }, 15_000);
 
-  liveIt("exposes the shared-key protected test-entitlement sync route and rejects an empty non-mutating request", async () => {
+  liveIt("confirms that the retired shared-key test-entitlement route is absent from the current production server", async () => {
     expect(masterServerBaseUrl).toBeTruthy();
     expect(masterServerSyncKey).toBeTruthy();
     const response = await fetch(`${masterServerBaseUrl}/license/sync-test-entitlement`, {
@@ -51,7 +51,7 @@ describe("Master Server credential", () => {
       body: JSON.stringify({ email: "", payment_reference: "" }),
     });
 
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(404);
   }, 15_000);
 
   liveIt("authenticates the dedicated fulfilment key without creating a 3S licence", async () => {

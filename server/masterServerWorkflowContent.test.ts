@@ -21,4 +21,13 @@ describe("3S Master Server activation guidance", () => {
     expect(portal).toContain("one-time activation details are sent to your registered email");
     expect(portal).toContain("For 3S account replacement, contact support first");
   });
+
+  it("documents the removed legacy test-entitlement probe instead of treating it as a production capability", () => {
+    const reconciliation = readFileSync(resolve(projectRoot, "docs", "MASTER_SERVER_LEGACY_PROBE_RECONCILIATION_2026-08-22.md"), "utf8");
+
+    expect(reconciliation).toContain("`POST /license/sync-test-entitlement`");
+    expect(reconciliation).toContain("404");
+    expect(reconciliation).toContain("does not depend on it");
+    expect(reconciliation).toContain("Do not restore or call a test-entitlement route in production");
+  });
 });
