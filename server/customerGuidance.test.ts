@@ -29,4 +29,20 @@ describe("published customer installation guidance", () => {
     expect(reconciliation).toContain("Entitlement visibility before MT5 binding");
     expect(reconciliation).toContain("not** an asserted production capability");
   });
+
+  it("provides separate customer installation guides for the confirmed 3S one-time activation and Gemini account-binding flows", () => {
+    const threeS = readFileSync(path.join(projectRoot, "docs", "3S_UNIVERSAL_CUSTOMER_README.md"), "utf8");
+    const gemini = readFileSync(path.join(projectRoot, "docs", "GEMINI_BOT_CUSTOMER_README.md"), "utf8");
+
+    expect(threeS).toContain("3SUniversalEA_customer_license.ex5");
+    expect(threeS).toContain("https://ruby-railroad-trimester.ngrok-free.dev");
+    expect(threeS).toContain("one-year API licence");
+    expect(threeS).toContain("one-time activation code");
+    expect(threeS).toContain("lifetime product entitlement");
+    expect(gemini).toContain("GeminiBotEAv11.97.ex5");
+    expect(gemini).toContain("FizuxCoder_News_Calendar_v5.00_Tradays.ex5");
+    expect(gemini).toContain("/config");
+    expect(gemini).toContain("https://ruby-railroad-trimester.ngrok-free.dev");
+    expect(gemini).toContain("monthly entitlement");
+  });
 });
