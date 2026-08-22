@@ -173,3 +173,5 @@
 - [x] Upload only the validated, curated Gemini and 3S release packages to the corresponding protected portal library entries.
 - [ ] Verify authorized protected-release delivery with a non-production customer access check and an audit record.
 - [ ] Restore or replace the `ruby-railroad-trimester.ngrok-free.dev` tunnel after ngrok error `ERR_NGROK_725` (monthly network bandwidth limit), then rerun only the non-destructive Master Server probes.
+- [x] Verify that customer portal rendering excludes the RM1 test bench, no-charge simulation, provider inspection, and Gmail authorization controls.
+- [x] Harden and regression-test the administrator-only portal control boundary before publishing the corrected portal.
