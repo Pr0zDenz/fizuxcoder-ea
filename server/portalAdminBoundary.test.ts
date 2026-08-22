@@ -4,20 +4,34 @@ import { describe, expect, it } from "vitest";
 
 const projectRoot = resolve(import.meta.dirname, "..");
 const portalPath = resolve(projectRoot, "client", "src", "pages", "Portal.tsx");
+const adminOperationsPath = resolve(projectRoot, "client", "src", "pages", "AdminOperations.tsx");
+const appPath = resolve(projectRoot, "client", "src", "App.tsx");
 const routersPath = resolve(projectRoot, "server", "routers.ts");
 const rm1RoutePath = resolve(projectRoot, "server", "rm1TestRoute.ts");
 
 describe("customer portal administrator boundary", () => {
-  it("renders every owner control only inside an explicit administrator role condition", () => {
+  it("contains no owner operations or administrator route link in the standard customer portal", () => {
     const portal = readFileSync(portalPath, "utf8");
-    const adminGate = "{user?.role === \"admin\" && <section";
 
-    expect((portal.match(new RegExp(adminGate.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) ?? []).length).toBe(5);
-    expect(portal).toContain("Owner-only live payment test");
-    expect(portal).toContain("Owner-only no-charge simulation");
-    expect(portal).toContain("Owner-only gateway inspection");
-    expect(portal).toContain("Owner-only Gmail production sender");
-    expect(portal).toContain("Owner-only release desk");
+    expect(portal).not.toContain("trpc.test.");
+    expect(portal).not.toContain("trpc.admin.");
+    expect(portal).not.toContain("/api/owner/rm1/initiate");
+    expect(portal).not.toContain("Owner-only");
+    expect(portal).not.toContain("/admin/operations");
+  });
+
+  it("places owner operations on a separate, unlinked route with an administrator presentation gate", () => {
+    const adminOperations = readFileSync(adminOperationsPath, "utf8");
+    const app = readFileSync(appPath, "utf8");
+
+    expect(adminOperations).toContain('const isAdmin = user?.role === "admin";');
+    expect(adminOperations).toContain("if (!isAuthenticated)");
+    expect(adminOperations).toContain("if (!isAdmin)");
+    expect(adminOperations).toContain("Administrator access required");
+    expect(adminOperations).toContain("trpc.test.");
+    expect(adminOperations).toContain("trpc.admin.uploadPackage");
+    expect(adminOperations).toContain("/api/owner/rm1/initiate");
+    expect(app).toContain('<Route path="/admin/operations" component={AdminOperations} />');
   });
 
   it("keeps administrator-only actions protected by server-side role checks", () => {

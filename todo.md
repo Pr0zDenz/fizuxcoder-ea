@@ -175,3 +175,6 @@
 - [ ] Restore or replace the `ruby-railroad-trimester.ngrok-free.dev` tunnel after ngrok error `ERR_NGROK_725` (monthly network bandwidth limit), then rerun only the non-destructive Master Server probes.
 - [x] Verify that customer portal rendering excludes the RM1 test bench, no-charge simulation, provider inspection, and Gmail authorization controls.
 - [x] Harden and regression-test the administrator-only portal control boundary before publishing the corrected portal.
+- [x] Remove all test, simulation, provider-inspection, Gmail authorization, and release-management controls from the standard customer portal route.
+- [x] Create a separate unlinked administrator operations route protected by authenticated administrator role checks.
+- [x] Verify the standard customer portal source and rendering contain no owner-operation controls after separation.

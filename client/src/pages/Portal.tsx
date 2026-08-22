@@ -18,26 +18,14 @@ export default function Portal() {
   const returnedOrder = typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("order");
   const catalog = trpc.catalog.list.useQuery();
   const library = trpc.portal.library.useQuery(undefined, { enabled: isAuthenticated });
-  const testCatalog = trpc.test.catalog.useQuery(undefined, { enabled: isAuthenticated && user?.role === "admin" });
   const returnedOrderStatus = trpc.portal.orderStatus.useQuery({ externalReference: returnedOrder ?? "pending" }, { enabled: isAuthenticated && Boolean(returnedOrder) });
-  const [adminProductId, setAdminProductId] = useState("gemini-bot-ea");
-  const [adminMessage, setAdminMessage] = useState("");
   const [claimProductId, setClaimProductId] = useState("gemini-bot-ea");
   const [claimReceiptNo, setClaimReceiptNo] = useState("");
   const [claimMessage, setClaimMessage] = useState("");
-  const [testReceiptNo, setTestReceiptNo] = useState("");
-  const [testMessage, setTestMessage] = useState("");
   const [mt5AccountNumbers, setMt5AccountNumbers] = useState<Record<string, string>>({});
   const [mt5Messages, setMt5Messages] = useState<Record<string, string>>({});
   const download = trpc.portal.download.useMutation({
     onSuccess: ({ url }) => window.open(url, "_blank", "noopener,noreferrer"),
-  });
-  const adminUpload = trpc.admin.uploadPackage.useMutation({
-    onSuccess: () => {
-      setAdminMessage("Package stored securely. Customers with active access will now see it in their library.");
-      library.refetch();
-    },
-    onError: error => setAdminMessage(error.message),
   });
   const claimPurchase = trpc.portal.claimPurchase.useMutation({
     onSuccess: ({ productName, emailDelivery }) => {
@@ -47,49 +35,6 @@ export default function Portal() {
       library.refetch();
     },
     onError: error => setClaimMessage(error.message),
-  });
-  const prepareLiveTest = trpc.test.prepareLiveProduct.useMutation({
-    onSuccess: ({ name }) => {
-      setTestMessage(`${name} is ready. It is hidden from public purchase options and contains only a protected test receipt file.`);
-      testCatalog.refetch();
-    },
-    onError: error => setTestMessage(error.message),
-  });
-  const simulateNoChargePurchase = trpc.test.simulateNoChargePurchase.useMutation({
-    onSuccess: ({ productName, expiresAt }) => {
-      setTestMessage(`No-charge simulation completed for ${productName}. No ToyyibPay request or settlement occurred. A test-only entitlement is active until ${new Date(expiresAt).toLocaleString()}.`);
-      library.refetch();
-    },
-    onError: error => setTestMessage(error.message),
-  });
-  const [providerInspection, setProviderInspection] = useState("");
-  const providerInspectionQuery = trpc.test.inspectProvider.useQuery(undefined, { enabled: false, retry: false });
-  const [isCreatingLiveTestBill, setIsCreatingLiveTestBill] = useState(false);
-  const createLiveTestCheckout = async () => {
-    setIsCreatingLiveTestBill(true);
-    setTestMessage("Creating the callback-enabled RM1 test bill…");
-    try {
-      const response = await fetch("/api/owner/rm1/initiate", { method: "POST", credentials: "include", headers: { Accept: "application/json" } });
-      const raw = await response.text();
-      type Rm1InitiationResponse = { ok?: boolean; checkoutUrl?: string; error?: { message?: string } };
-      let payload: Rm1InitiationResponse | undefined;
-      try { payload = JSON.parse(raw) as Rm1InitiationResponse; } catch { throw new Error(`The payment route returned an unexpected ${response.headers.get("content-type") ?? "response"}. No bill was created.`); }
-      if (!response.ok || !payload?.ok || !payload.checkoutUrl) throw new Error(payload?.error?.message ?? "The RM1 test bill could not be initialized. No payment was created.");
-      setTestMessage("A callback-enabled one-time RM1 test bill was created. Verify RM1.00 on ToyyibPay before choosing to pay.");
-      window.open(payload.checkoutUrl, "_blank", "noopener,noreferrer");
-    } catch (error) {
-      setTestMessage(error instanceof Error ? error.message : "The RM1 test bill could not be initialized. No payment was created.");
-    } finally {
-      setIsCreatingLiveTestBill(false);
-    }
-  };
-  const claimTestPurchase = trpc.test.claimPermanentRm1Fallback.useMutation({
-    onSuccess: ({ productName }) => {
-      setTestMessage(`${productName} receipt is verified. Bind a dummy MT5 account in your library to complete the isolated test.`);
-      setTestReceiptNo("");
-      library.refetch();
-    },
-    onError: error => setTestMessage(error.message),
   });
   const bindMt5Account = trpc.portal.bindMt5Account.useMutation({
     onSuccess: (result, variables) => {
@@ -113,17 +58,6 @@ export default function Portal() {
       setMt5Messages(current => ({ ...current, [variables.productId]: error.message }));
     },
   });
-
-  const uploadRelease = async (file: File) => {
-    const base64 = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result).split(",")[1] ?? "");
-      reader.onerror = () => reject(new Error("Unable to read the selected file"));
-      reader.readAsDataURL(file);
-    });
-    setAdminMessage("Uploading protected release…");
-    adminUpload.mutate({ productId: adminProductId, displayName: file.name.replace(/\.ex5$/i, "").replace(/[-_]/g, " "), fileName: file.name, base64 });
-  };
 
   if (loading || catalog.isLoading) {
     return <div className="grid min-h-screen place-items-center bg-[#f4f0e8] text-[#0e716e]"><Loader2 className="animate-spin" size={30} /></div>;
@@ -200,29 +134,6 @@ export default function Portal() {
           </div>
         </section>
 
-        {user?.role === "admin" && <section className="border-t border-[#17201f]/12 bg-[#17201f] px-5 py-16 text-[#f4f0e8] lg:px-10">
-          <div className="mx-auto max-w-[1280px] rounded-[1.5rem] border border-[#e5a631]/50 bg-white/5 p-7 shadow-[7px_7px_0_#e5a631] lg:p-9">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[.14em] text-[#e5a631]">Owner-only live payment test</p>
-            <div className="mt-4 grid gap-7 lg:grid-cols-[.9fr_1.1fr] lg:items-end"><div><h2 className="font-display text-4xl tracking-[-.05em]">RM1 test bench.</h2><p className="mt-4 max-w-xl text-sm leading-7 text-[#c7d1cb]">The API-created route remains available for callback testing. The supplied pre-created RM1 bill is a controlled fallback: after successful payment, verify its receipt here, then bind a dummy MT5 account. Either path unlocks only a protected text receipt—never a production EA file.</p></div>{testCatalog.data?.[0] ? <div><p className="font-mono text-[10px] uppercase tracking-[.12em] text-[#e5a631]">Ready: {testCatalog.data[0].name} · {formatPrice(testCatalog.data[0].priceSen, testCatalog.data[0].currency)}</p><div className="mt-4 flex flex-col gap-3"><div className="flex flex-col gap-3 sm:flex-row"><button type="button" onClick={() => void createLiveTestCheckout()} disabled={isCreatingLiveTestBill} className="button-primary !bg-[#e5a631] !text-[#17201f]">{isCreatingLiveTestBill ? <Loader2 className="animate-spin" size={16} /> : "Create callback test bill"} <ArrowRight size={16} /></button>{testCatalog.data[0].directCheckoutUrl && <a href={testCatalog.data[0].directCheckoutUrl} target="_blank" rel="noreferrer" className="button-outline !border-[#e5a631]/70 !text-[#f4f0e8]">Open RM1 fallback bill <ArrowRight size={16} /></a>}</div><form className="flex min-w-0 flex-1 gap-2" onSubmit={event => { event.preventDefault(); if (testReceiptNo.trim()) claimTestPurchase.mutate({ receiptNo: testReceiptNo.trim() }); }}><input value={testReceiptNo} onChange={event => setTestReceiptNo(event.target.value)} placeholder="Test invoice / settlement reference" className="h-11 min-w-0 flex-1 rounded-xl border border-white/20 bg-white px-3 text-sm text-[#17201f] outline-none focus:border-[#e5a631]" /><button type="submit" disabled={!testReceiptNo.trim() || claimTestPurchase.isPending} className="button-outline !border-[#e5a631]/70 !text-[#f4f0e8] disabled:opacity-50">{claimTestPurchase.isPending ? <Loader2 className="animate-spin" size={16} /> : "Verify"}</button></form></div></div> : <button type="button" onClick={() => prepareLiveTest.mutate()} disabled={prepareLiveTest.isPending} className="button-primary !bg-[#e5a631] !text-[#17201f]">{prepareLiveTest.isPending ? <Loader2 className="animate-spin" size={16} /> : "Prepare isolated RM1 test"}</button>}</div>{testMessage && <p className="mt-5 rounded-xl border border-[#e5a631]/30 bg-white/10 p-3 text-sm leading-6 text-[#f4f0e8]">{testMessage}</p>}</div>
-        </section>}
-        {user?.role === "admin" && <section className="border-t border-[#17201f]/12 bg-[#17201f] px-5 py-8 text-[#f4f0e8] lg:px-10"><div className="mx-auto flex max-w-[1280px] flex-col gap-4 rounded-[1.25rem] border border-[#0eafa7]/40 bg-[#0eafa7]/10 p-5 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-mono text-[10px] uppercase tracking-[.12em] text-[#0eafa7]">Owner-only no-charge simulation</p><p className="mt-2 max-w-3xl text-sm leading-6 text-[#d7e1dc]">Creates only a 24-hour `test-gemini-bot-ea` order and entitlement. It sends no ToyyibPay request, records no provider settlement, and never exposes a production EA package.</p></div><button type="button" onClick={() => simulateNoChargePurchase.mutate()} disabled={simulateNoChargePurchase.isPending} className="button-outline shrink-0 !border-[#0eafa7]/70 !text-[#f4f0e8] disabled:opacity-50">{simulateNoChargePurchase.isPending ? <Loader2 className="animate-spin" size={16} /> : "Run no-charge simulation"}</button></div></section>}
-        {user?.role === "admin" && <section className="border-t border-[#17201f]/12 bg-[#17201f] px-5 py-8 text-[#f4f0e8] lg:px-10"><div className="mx-auto max-w-[1280px] rounded-[1.25rem] border border-white/15 bg-white/5 p-5"><div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-mono text-[10px] uppercase tracking-[.12em] text-[#e5a631]">Owner-only gateway inspection</p><p className="mt-2 text-sm leading-6 text-[#c7d1cb]">Sends deliberately incomplete data to ToyyibPay. It cannot create a bill and returns sanitized response metadata only.</p></div><button type="button" onClick={() => void providerInspectionQuery.refetch().then(result => setProviderInspection(result.data ? JSON.stringify(result.data, null, 2) : result.error?.message ?? "Inspection request failed"))} disabled={providerInspectionQuery.isFetching} className="button-outline !border-[#e5a631]/70 !text-[#f4f0e8] disabled:opacity-50">{providerInspectionQuery.isFetching ? <Loader2 className="animate-spin" size={16} /> : "Inspect provider response"}</button></div>{providerInspection && <pre className="mt-4 overflow-x-auto rounded-xl border border-white/10 bg-black/20 p-4 text-xs leading-5 text-[#d7e1dc]">{providerInspection}</pre>}</div></section>}
-        {user?.role === "admin" && <section className="border-t border-[#17201f]/12 bg-[#17201f] px-5 py-8 text-[#f4f0e8] lg:px-10"><div className="mx-auto flex max-w-[1280px] flex-col gap-4 rounded-[1.25rem] border border-[#0eafa7]/40 bg-[#0eafa7]/10 p-5 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-mono text-[10px] uppercase tracking-[.12em] text-[#0eafa7]">Owner-only Gmail production sender</p><p className="mt-2 max-w-3xl text-sm leading-6 text-[#d7e1dc]">Authorize `xtr0zen@gmail.com` once to allow activation emails after verified production receipt claims. The connection requests send-only access, stores its refresh authorization encrypted, and never sends for RM1 or no-charge test products.</p></div><a href="/api/gmail/oauth/start" className="button-outline shrink-0 !border-[#0eafa7]/70 !text-[#f4f0e8]">Authorize Gmail sender <ArrowRight size={16} /></a></div></section>}
-        {user?.role === "admin" && <section className="border-t border-[#17201f]/12 bg-[#fbf9f4] px-5 py-16 lg:px-10">
-          <div className="mx-auto grid max-w-[1280px] gap-8 lg:grid-cols-[.75fr_1.25fr]">
-            <div><p className="font-mono text-[10px] font-bold uppercase tracking-[.14em] text-[#0e716e]">Owner-only release desk</p><h2 className="mt-3 font-display text-4xl tracking-[-.05em]">Add a protected package file.</h2><p className="mt-5 max-w-sm text-sm leading-7 text-[#586662]">Upload a new `.ex5` release to the selected product library. Only customers with an active verified entitlement receive a signed download link.</p></div>
-            <div className="rounded-[1.5rem] border border-[#17201f]/15 bg-[#d7e1dc] p-6 shadow-[7px_7px_0_#0e716e]">
-              <label className="font-mono text-[10px] font-bold uppercase tracking-[.12em] text-[#0e716e]">Product library</label>
-              <select value={adminProductId} onChange={event => setAdminProductId(event.target.value)} className="mt-3 h-12 w-full rounded-xl border border-[#17201f]/15 bg-[#f4f0e8] px-4 text-sm outline-none focus:border-[#0e716e]">
-                {catalog.data?.map(product => <option key={product.id} value={product.id}>{product.name}</option>)}
-              </select>
-              <label className="mt-5 block font-mono text-[10px] font-bold uppercase tracking-[.12em] text-[#0e716e]">EA or indicator file</label>
-              <input aria-label="Upload EA or indicator file" accept=".ex5" type="file" disabled={adminUpload.isPending} onChange={event => { const selected = event.target.files?.[0]; if (selected) void uploadRelease(selected); event.currentTarget.value = ""; }} className="mt-3 block w-full rounded-xl border border-dashed border-[#17201f]/25 bg-[#f4f0e8] p-3 text-sm file:mr-4 file:rounded-lg file:border-0 file:bg-[#0e716e] file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white" />
-              <p className="mt-4 text-xs leading-5 text-[#586662]">Files are stored in the protected package library; the browser never receives a permanent public file URL.</p>
-              {adminMessage && <p className="mt-4 rounded-xl border border-[#0e716e]/20 bg-[#f4f0e8] p-3 text-xs leading-5 text-[#39514a]">{adminMessage}</p>}
-            </div>
-          </div>
-        </section>}
       </main>
     </div>
   );
