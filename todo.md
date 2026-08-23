@@ -178,3 +178,6 @@
 - [x] Remove all test, simulation, provider-inspection, Gmail authorization, and release-management controls from the standard customer portal route.
 - [x] Create a separate unlinked administrator operations route protected by authenticated administrator role checks.
 - [x] Verify the standard customer portal source and rendering contain no owner-operation controls after separation.
+- [x] Diagnose the deployed mobile sign-in failure that returns `{"error":"OAuth callback failed"}` at the portal callback URL.
+- [x] Correct and regression-test the OAuth callback flow without weakening nonce, session-cookie, customer, or administrator protections.
+- [x] Replace the raw OAuth callback JSON error with a safe portal retry page when the upstream authorization-code exchange is temporarily unavailable (HTTP 503).

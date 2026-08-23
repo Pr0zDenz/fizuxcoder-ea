@@ -16,6 +16,7 @@ function formatSaving(originalPriceSen: number | null, priceSen: number, currenc
 export default function Portal() {
   const { user, loading, isAuthenticated, logout } = useAuth();
   const returnedOrder = typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("order");
+  const signInStatus = typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("signIn");
   const catalog = trpc.catalog.list.useQuery();
   const library = trpc.portal.library.useQuery(undefined, { enabled: isAuthenticated });
   const returnedOrderStatus = trpc.portal.orderStatus.useQuery({ externalReference: returnedOrder ?? "pending" }, { enabled: isAuthenticated && Boolean(returnedOrder) });
@@ -80,6 +81,7 @@ export default function Portal() {
       </header>
 
       <main>
+        {signInStatus && <section className="border-b border-[#e5a631]/35 bg-[#fff7df] px-5 py-4 text-[#3c3527] lg:px-10" role="status" aria-live="polite"><div className="mx-auto flex max-w-[1280px] flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><p className="text-sm leading-6">{signInStatus === "service_unavailable" ? "Sign-in is temporarily unavailable. Your payment, library, and account access have not changed. Please start a fresh sign-in attempt." : "Sign-in could not be completed. Please start a fresh sign-in attempt."}</p><button type="button" onClick={startLogin} className="button-primary shrink-0 !px-4 !py-2">Try sign-in again <ArrowRight size={15} /></button></div></section>}
         <section className="relative overflow-hidden bg-[#17201f] px-5 py-16 text-[#f4f0e8] lg:px-10 lg:py-24">
           <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full border border-[#e5a631]/30" />
           <div className="relative mx-auto max-w-[1280px]">

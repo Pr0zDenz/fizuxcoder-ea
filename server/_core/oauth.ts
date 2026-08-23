@@ -10,6 +10,22 @@ function getQueryParam(req: Request, key: string): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
+type UpstreamError = { response?: { status?: unknown } };
+
+/**
+ * OAuth codes and error details must never be reflected to the browser.  A
+ * transient upstream exchange failure instead gets a fixed in-app recovery
+ * route, where the user can begin a completely fresh nonce-bound login.
+ */
+export function getOAuthRetryRedirect(error: unknown): "/portal?signIn=service_unavailable" | "/portal?signIn=failed" {
+  const status = typeof error === "object" && error !== null
+    ? (error as UpstreamError).response?.status
+    : undefined;
+  return status === 502 || status === 503 || status === 504
+    ? "/portal?signIn=service_unavailable"
+    : "/portal?signIn=failed";
+}
+
 export function registerOAuthRoutes(app: Express) {
   app.get("/api/oauth/callback", async (req: Request, res: Response) => {
     const code = getQueryParam(req, "code");
@@ -59,7 +75,7 @@ export function registerOAuthRoutes(app: Express) {
       res.redirect(302, "/");
     } catch (error) {
       console.error("[OAuth] Callback failed", error);
-      res.status(500).json({ error: "OAuth callback failed" });
+      res.redirect(302, getOAuthRetryRedirect(error));
     }
   });
 }
