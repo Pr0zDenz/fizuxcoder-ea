@@ -14,6 +14,11 @@ export const PRODUCT_IDS = {
   geminiLiveTest: "test-gemini-bot-ea",
 } as const;
 
+/** Test products are retained for administrators and audit history, never shown in the normal customer library. */
+export function isCustomerLibraryProductVisible(product: { isTest: "yes" | "no" }): boolean {
+  return product.isTest === "no";
+}
+
 export const DIRECT_TOYYIBPAY_LINKS: Record<string, string> = {
   "gemini-bot-ea": "https://toyyibpay.com/t1rvxbft",
   "3s-universal-ea": "https://toyyibpay.com/3-Serangkai-EA",
@@ -174,9 +179,11 @@ export async function recordPaymentCallback(input: {
 export async function getCustomerLibrary(userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database is unavailable");
-  const rows = await db.select({ entitlement: entitlements, product: products }).from(entitlements).innerJoin(products, eq(entitlements.productId, products.id)).where(eq(entitlements.userId, userId));
+  const rows = await db.select({ entitlement: entitlements, product: products }).from(entitlements).innerJoin(products, eq(entitlements.productId, products.id)).where(and(eq(entitlements.userId, userId), eq(products.isTest, "no")));
   const now = new Date();
-  return Promise.all(rows.map(async ({ entitlement, product }) => {
+  // Keep this in-memory guard as defence in depth should a database adapter or
+  // future join change return test rows unexpectedly.
+  return Promise.all(rows.filter(({ product }) => isCustomerLibraryProductVisible(product)).map(async ({ entitlement, product }) => {
     const active = entitlement.status === "active" && (!entitlement.expiresAt || entitlement.expiresAt > now);
     if (!active && entitlement.status === "active" && entitlement.expiresAt && entitlement.expiresAt <= now) {
       await db.update(entitlements).set({ status: "expired" }).where(eq(entitlements.id, entitlement.id));

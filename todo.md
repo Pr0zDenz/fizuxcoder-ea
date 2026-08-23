@@ -181,3 +181,5 @@
 - [x] Diagnose the deployed mobile sign-in failure that returns `{"error":"OAuth callback failed"}` at the portal callback URL.
 - [x] Correct and regression-test the OAuth callback flow without weakening nonce, session-cookie, customer, or administrator protections.
 - [x] Replace the raw OAuth callback JSON error with a safe portal retry page when the upstream authorization-code exchange is temporarily unavailable (HTTP 503).
+- [x] Exclude all test-only product entitlements, including the expired RM1 test record, from the standard customer portal library.
+- [x] Preserve test entitlement records and administrator-only test controls without exposing test cards to normal portal views.

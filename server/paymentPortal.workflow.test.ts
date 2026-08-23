@@ -74,7 +74,7 @@ describe("isolated RM1 portal workflow mock", () => {
     buyerEmailDeliveryMock.mockResolvedValue({ status: "sent" });
   });
 
-  it("settles only the test product, exposes its test file, and records MT5 replacement without production access", async () => {
+  it("settles only the test product, keeps it out of the customer library, and records MT5 replacement without production access", async () => {
     const state: MockState = {
       order: {
         id: "order-test-1", userId: 42, productId: "test-gemini-bot-ea", externalReference: "FZTEST-MOCK-1",
@@ -97,8 +97,7 @@ describe("isolated RM1 portal workflow mock", () => {
     expect(state.entitlement).toMatchObject({ userId: 42, productId: "test-gemini-bot-ea", status: "active" });
 
     const library = await getCustomerLibrary(42);
-    expect(library).toHaveLength(1);
-    expect(library[0]).toMatchObject({ productId: "test-gemini-bot-ea", status: "active", files: [{ id: 77, fileName: "FizuxCoder_Test_Licence_Receipt.txt" }] });
+    expect(library).toEqual([]);
 
     await expect(bindCustomerMt5Account({ userId: 42, userEmail: "mock-buyer@example.test", productId: "test-gemini-bot-ea", accountNumber: "990001" })).resolves.toMatchObject({ accountNumber: "990001", replacedAccount: null });
     await expect(bindCustomerMt5Account({ userId: 42, userEmail: "mock-buyer@example.test", productId: "test-gemini-bot-ea", accountNumber: "990002" })).resolves.toMatchObject({ accountNumber: "990002", replacedAccount: "990001" });
