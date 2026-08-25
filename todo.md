@@ -251,3 +251,6 @@
 
 - [x] Fix the MQL5 warning at the screenshot file-size read by using an explicit safe type conversion.
 - [x] Clarify the direct-upload EA input settings after the warning fix and deliver the corrected MQ5 source.
+
+- [x] Add a safe direct-upload connection ping that checks portal reachability and authentication without screenshot capture, trading, or Threads publishing.
+- [x] Add regression coverage and document the ping controls and expected MT5 log responses.

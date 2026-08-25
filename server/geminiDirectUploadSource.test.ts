@@ -8,6 +8,9 @@ describe("Gemini direct MQL5 screenshot upload source", () => {
     const source = await readFile(sourceUrl, "utf8");
     expect(source).toContain('const string   GEMINI_EVENT_PORTAL_URL    = "https://fizuxea-jxctlods.manus.space/api/threads/gemini-event";');
     expect(source).toContain("X-Gemini-Event-Key");
+    expect(source).toContain("GEMINI_EVENT_PING_URL");
+    expect(source).toContain("Ping_Portal_On_Timer");
+    expect(source).toContain("Ping_Interval_Sec");
     expect(source).toContain("Gemini_Event_Ingest_Key");
     expect(source).not.toContain("X-Master-Sync-Key");
   });

@@ -95,3 +95,15 @@ Set the following EA inputs:
 The EA queues the event and processes the screenshot from its one-second timer. It uses the current chart viewport, including visible Gemini dashboard/chart objects, writes a PNG into the terminal `MQL5\\Files` directory, Base64-encodes it, and sends it directly to the portal. If the portal is temporarily unavailable, it retries once immediately and then retries the same event ID after a short delay. The trade decision itself does not call the upload inline.
 
 Before using a real account, test on a demo chart with both capture inputs enabled and inspect the **Experts** log for a response such as `HTTP=201` or `HTTP=200`. Then open the administrator Marketing Studio and confirm the new item is a private draft with one image and no expiry. Do not approve the smoke-test item unless you intentionally want to publish it.
+
+## Connection ping
+
+The direct-upload EA performs a lightweight authenticated ping from its timer without taking a screenshot, creating a draft, placing an order, or publishing to Threads. The endpoint is:
+
+```text
+GET https://fizuxea-jxctlods.manus.space/api/threads/gemini-event/ping
+```
+
+Keep `Ping_Portal_On_Timer=true` to enable the check and use `Ping_Interval_Sec=300` for one check every five minutes. For a faster temporary diagnostic, set the interval to `30`; restore `300` afterward. The Experts log should show `Gemini event portal ping OK HTTP=200` when the URL, WebRequest permission, and dedicated ingest key are correct.
+
+If the log shows HTTP `401`, the key is wrong or the header is missing. If it shows MT5 error `4060`, add the portal origin to the WebRequest allowlist. If it shows a network or HTTP failure, the portal or network path is unavailable; screenshot events remain queued by the EA and are not silently treated as uploaded. The ping response includes `draftOnly: true`, confirming that the route is not a publishing or trading endpoint.

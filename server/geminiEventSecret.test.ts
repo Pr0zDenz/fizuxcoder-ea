@@ -8,7 +8,7 @@ import { registerGeminiEventIntakeRoute } from "./geminiEventIntakeRoute";
 
 function handlerFor() {
   let handler: (req: any, res: any) => Promise<unknown>;
-  const app = { post: vi.fn((_path: string, registered: typeof handler) => { handler = registered; }) };
+  const app = { get: vi.fn(), post: vi.fn((_path: string, registered: typeof handler) => { handler = registered; }) };
   registerGeminiEventIntakeRoute(app as never);
   return { app, handler: handler! };
 }

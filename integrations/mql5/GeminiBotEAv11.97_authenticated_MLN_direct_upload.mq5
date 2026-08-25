@@ -52,12 +52,16 @@ input string   Gemini_Event_Ingest_Key    = "";                      // Dedicate
 input int      Screenshot_Width           = 1280;
 input int      Screenshot_Height          = 720;
 input int      Screenshot_Min_Interval_Sec = 15;
+input bool     Ping_Portal_On_Timer       = true;                    // Connectivity/authentication check only
+input int      Ping_Interval_Sec          = 300;                    // Minimum seconds between pings
 const string   GEMINI_EVENT_PORTAL_URL    = "https://fizuxea-jxctlods.manus.space/api/threads/gemini-event";
+const string   GEMINI_EVENT_PING_URL      = "https://fizuxea-jxctlods.manus.space/api/threads/gemini-event/ping";
 string pending_marketing_event_type = "";
 string pending_marketing_event_id = "";
 datetime pending_marketing_event_time = 0;
 datetime last_marketing_capture_time = 0;
 datetime next_marketing_retry_time = 0;
+datetime last_portal_ping_time = 0;
 
 //=== Risk & Layering ===
 input bool     Use_Fixed_Lot  = false;     // Use Fixed Lot Sizing
@@ -420,6 +424,26 @@ string MakeMarketingEventId(string event_type, datetime event_time)
     return StringFormat("gemini-%I64d-%s-%s-%I64d", account_number, _Symbol, event_type, (long)event_time);
 }
 
+void PingGeminiEventPortal()
+{
+    if(!Ping_Portal_On_Timer || Gemini_Event_Ingest_Key == "") return;
+    datetime now = TimeCurrent();
+    if(last_portal_ping_time > 0 && (now - last_portal_ping_time) < Ping_Interval_Sec) return;
+    last_portal_ping_time = now;
+
+    char request_body[];
+    char response_body[];
+    string response_headers;
+    string headers = "X-Gemini-Event-Key: " + Gemini_Event_Ingest_Key + "\r\n";
+    ResetLastError();
+    int status = WebRequest("GET", GEMINI_EVENT_PING_URL, headers, 5000, request_body, response_body, response_headers);
+    string response_text = CharArrayToString(response_body, 0, WHOLE_ARRAY, CP_UTF8);
+    if(status == 200)
+        Print("Gemini event portal ping OK HTTP=", status, " response=", StringSubstr(response_text, 0, 120));
+    else
+        Print("Gemini event portal ping FAILED HTTP=", status, " MT5Error=", GetLastError(), " response=", StringSubstr(response_text, 0, 120));
+}
+
 void QueueMarketingScreenshot(string event_type)
 {
     if(!Enable_Marketing_Screenshot) return;
@@ -589,8 +613,9 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTimer()
 {
+    PingGeminiEventPortal();
     FetchRemoteConfig();
-    UpdateDynamicFiboTP(); 
+    UpdateDynamicFiboTP();
     UpdateDashboard();
     ChartRedraw();
     ProcessMarketingScreenshotQueue();

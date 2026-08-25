@@ -27,6 +27,11 @@ export function decodeScreenshot(value: unknown, mimeType: unknown) {
 }
 
 export function registerGeminiEventIntakeRoute(app: Express) {
+  app.get("/api/threads/gemini-event/ping", (req: Request, res: Response) => {
+    if (!validSecret(req.header("X-Gemini-Event-Key"))) return res.status(401).json({ ok: false, error: "Unauthorized" });
+    return res.json({ ok: true, service: "gemini-event-intake", draftOnly: true });
+  });
+
   app.post("/api/threads/gemini-event", async (req: Request, res: Response) => {
     if (!validSecret(req.header("X-Gemini-Event-Key"))) return res.status(401).json({ ok: false, error: "Unauthorized" });
     try {

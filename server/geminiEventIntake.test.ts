@@ -16,8 +16,8 @@ describe("Gemini VPS event intake", () => {
 
   it("registers only the dedicated event endpoint", () => {
     const paths: string[] = [];
-    registerGeminiEventIntakeRoute({ post: (path: string) => paths.push(path) } as never);
-    expect(paths).toEqual(["/api/threads/gemini-event"]);
+    registerGeminiEventIntakeRoute({ get: (path: string) => paths.push(`GET ${path}`), post: (path: string) => paths.push(`POST ${path}`) } as never);
+    expect(paths).toEqual(["GET /api/threads/gemini-event/ping", "POST /api/threads/gemini-event"]);
   });
 
   it("keeps the event contract draft-only and portal-directed", async () => {
