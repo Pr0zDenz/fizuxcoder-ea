@@ -248,3 +248,6 @@
 - [x] Add regression coverage for direct-upload payload shape, draft-only behavior, duplicate handling, and secret separation.
 - [x] Complete structural syntax review of the revised MQL5 source and verify the existing event hooks remain intact; MetaEditor compilation remains an operator-side VPS check.
 - [x] Run project tests/build and save a checkpoint after the direct-upload implementation is verified.
+
+- [x] Fix the MQL5 warning at the screenshot file-size read by using an explicit safe type conversion.
+- [x] Clarify the direct-upload EA input settings after the warning fix and deliver the corrected MQ5 source.

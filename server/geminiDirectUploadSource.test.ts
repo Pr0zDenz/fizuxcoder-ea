@@ -29,5 +29,7 @@ describe("Gemini direct MQL5 screenshot upload source", () => {
     expect(source).toContain("Screenshot_Min_Interval_Sec");
     expect(source).toContain("file_size > 8 * 1024 * 1024");
     expect(source).toContain("FileDelete(file_name);");
+    expect(source).toContain("uint bytes_read = FileReadArray(handle, bytes, 0, file_size);");
+    expect(source).not.toContain("int read = FileReadArray(handle, bytes, 0, file_size);");
   });
 });

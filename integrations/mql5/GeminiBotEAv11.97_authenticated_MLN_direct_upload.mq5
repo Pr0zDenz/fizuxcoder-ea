@@ -463,9 +463,9 @@ bool UploadMarketingScreenshot(string file_name, string event_type, string event
     }
     uchar bytes[];
     ArrayResize(bytes, file_size);
-    int read = FileReadArray(handle, bytes, 0, file_size);
+    uint bytes_read = FileReadArray(handle, bytes, 0, file_size);
     FileClose(handle);
-    if(read != file_size) return false;
+    if(bytes_read != (uint)file_size) return false;
 
     string payload = "{\"eventId\":\"" + JsonEscape(event_id) + "\",\"eventType\":\"" + JsonEscape(event_type) + "\",\"screenshotMimeType\":\"image/png\",\"screenshotBase64\":\"" + Base64Encode(bytes) + "\",\"occurredAt\":\"" + IsoUtc(event_time) + "\",\"accountLabel\":\"Gemini Bot EA\",\"symbol\":\"" + JsonEscape(_Symbol) + "\"}";
     char request_body[];
