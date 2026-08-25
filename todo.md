@@ -257,3 +257,8 @@
 
 - [x] Ensure the EA ping validates the expected JSON health response and does not report a frontend HTML shell as a successful connection.
 - [x] Add regression coverage for HTTP 200 with invalid/non-health response bodies and update the ping runbook wording.
+
+- [x] Define macro-timeframe pullback state, pre-TP boundary, and explicit HIT transition without relying on profit assumptions.
+- [x] Constrain entries and TP targets to the macro pullback pre-TP area until pre-TP HIT; then allow macro-trend-aligned entries after pullback exhaustion.
+- [x] Add source-level regression coverage and compile-safe structural review for the new macro guard.
+- [x] Deliver the revised MQ5 and document the new inputs, state transitions, and testing limits.

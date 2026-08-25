@@ -30,6 +30,18 @@ describe("Gemini direct MQL5 screenshot upload source", () => {
     expect(source).toContain("Marketing screenshot retained for retry with the same event id");
   });
 
+  it("enforces macro pullback pre-TP cap and switches to grand-trend direction after HIT", async () => {
+    const source = await readFile(sourceUrl, "utf8");
+    expect(source).toContain("macro_pullback_active");
+    expect(source).toContain("macro_pre_tp_hit");
+    expect(source).toContain("Macro_PreTP_Hit_Buffer_Pips");
+    expect(source).toContain("macro_state_label = macro_pre_tp_hit ?");
+    expect(source).toContain("required_macro = is_pullback_phase && is_pullback_exhausted ? macro_resume_direction");
+    expect(source).toContain("MACRO PULLBACK CAP / PRE-TP");
+    expect(source).toContain("PRE-TP HIT / GRAND-TREND TP");
+    expect(source).toContain("macro_pre_tp_hit = false;");
+  });
+
   it("has local throttling and an 8 MB client-side limit", async () => {
     const source = await readFile(sourceUrl, "utf8");
     expect(source).toContain("Screenshot_Min_Interval_Sec");

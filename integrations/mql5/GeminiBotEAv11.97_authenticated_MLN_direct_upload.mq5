@@ -103,6 +103,7 @@ input int             Macro_Fractal_Strength = 11;               // Faster H4 Fr
 input ENUM_TIMEFRAMES Grand_Macro_Timeframe  = PERIOD_D1;        // Grand-Macro Alignment TF
 input int             Grand_Fractal_Strength = 11;               // Faster D1 Fractal Detection
 input bool            Use_Macro_Filter       = true;             // True = Trade ONLY in Macro Direction
+input double          Macro_PreTP_Hit_Buffer_Pips = 2.0;          // Price tolerance for confirming pre-TP HIT
 
 //=== Trading Time Filter ===
 input bool     UseTimeFilter  = false;     // Enable/Disable Time Filter
@@ -172,7 +173,15 @@ double   locked_fibo_tp3 = 0.0;
 double   active_basket_tp = 0.0; 
 double   locked_basket_sl = 0.0; 
 string   active_basket_tp_label = "WAITING";
-int      locked_trend = 0; 
+int      locked_trend = 0;
+
+// Macro pullback state: current macro TF may be retracing against grand macro TF.
+bool     macro_pullback_active = false;
+bool     macro_pre_tp_hit = false;
+string   macro_pullback_direction = "NEUTRAL";
+string   macro_resume_direction = "NEUTRAL";
+double   macro_pre_tp_level = 0.0;
+string   macro_state_label = "NORMAL";
 
 //+------------------------------------------------------------------+
 //| NATIVE NEWS INTEGRATION (Reads 3STradays Global Variables)       |
@@ -748,7 +757,13 @@ void OnTick()
             reentry_pa_detected = false;
             opp_tp_level_hit = 0;
             reentry_status_msg = "STANDBY";
-            last_pa_box_time = 0; 
+            last_pa_box_time = 0;
+            macro_pullback_active = false;
+            macro_pre_tp_hit = false;
+            macro_pullback_direction = "NEUTRAL";
+            macro_resume_direction = "NEUTRAL";
+            macro_pre_tp_level = 0.0;
+            macro_state_label = "NORMAL"; 
             
             DrawSafeTPLine(0.0);
             DrawSafeTPOrigin(0);
@@ -770,6 +785,7 @@ void OnTick()
         else if(buy_cnt > 0 && sell_cnt > 0) locked_trend = (buy_cnt >= sell_cnt) ? 1 : -1;
     }
 
+    UpdateMacroPullbackState();
     TrackReentrySequence(); 
 
     int active_pos = 0;
@@ -929,6 +945,55 @@ double GetMacroPreTP(int handle, string trend_dir)
         }
     }
     return 0.0;
+}
+
+void UpdateMacroPullbackState()
+{
+    if(!Use_Macro_Filter)
+    {
+        macro_pullback_active = false;
+        macro_pre_tp_hit = false;
+        macro_pullback_direction = "NEUTRAL";
+        macro_resume_direction = "NEUTRAL";
+        macro_pre_tp_level = 0.0;
+        macro_state_label = "FILTER OFF";
+        return;
+    }
+
+    string macro_direction = GetMacroTrend(fmcbr_macro_handle);
+    string grand_direction = GetMacroTrend(fmcbr_grand_handle);
+    bool pullback = macro_direction != "NEUTRAL" && macro_direction != "NO DATA" && grand_direction != "NEUTRAL" && grand_direction != "NO DATA" && macro_direction != grand_direction;
+    double pre_tp = pullback ? GetMacroPreTP(fmcbr_macro_handle, macro_direction) : 0.0;
+
+    if(!pullback || pre_tp <= 0.0)
+    {
+        macro_pullback_active = false;
+        macro_pre_tp_hit = false;
+        macro_pullback_direction = "NEUTRAL";
+        macro_resume_direction = grand_direction;
+        macro_pre_tp_level = 0.0;
+        macro_state_label = "NORMAL";
+        return;
+    }
+
+    if(!macro_pullback_active || macro_pullback_direction != macro_direction || macro_resume_direction != grand_direction || (macro_pre_tp_level > 0.0 && MathAbs(macro_pre_tp_level - pre_tp) > 10 * SymbolInfoDouble(_Symbol, SYMBOL_POINT)))
+        macro_pre_tp_hit = false;
+
+    macro_pullback_active = true;
+    macro_pullback_direction = macro_direction;
+    macro_resume_direction = grand_direction;
+    macro_pre_tp_level = pre_tp;
+
+    double buffer = Macro_PreTP_Hit_Buffer_Pips * 10.0 * SymbolInfoDouble(_Symbol, SYMBOL_POINT);
+    double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+    double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+    if(!macro_pre_tp_hit)
+    {
+        if(macro_pullback_direction == "BULLISH" && bid >= macro_pre_tp_level - buffer) macro_pre_tp_hit = true;
+        if(macro_pullback_direction == "BEARISH" && ask <= macro_pre_tp_level + buffer) macro_pre_tp_hit = true;
+    }
+
+    macro_state_label = macro_pre_tp_hit ? "PRE-TP HIT / RESUME " + macro_resume_direction : "PULLBACK / CAP " + macro_pullback_direction;
 }
 
 int GetSwings(double &p[], datetime &t[], int &type[])
@@ -1481,25 +1546,11 @@ void ScanForSetup()
     double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
     double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
 
-    // 🔹 PULLBACK CONTEXT LOGIC
-    bool is_pullback_phase = false;
-    double macro_pre_tp_cap = 0.0;
-    bool is_pullback_exhausted = false;
-
-    if(Use_Macro_Filter) {
-        string current_macro = GetMacroTrend(fmcbr_macro_handle);
-        string grand_macro   = GetMacroTrend(fmcbr_grand_handle);
-        
-        if(current_macro != "NEUTRAL" && grand_macro != "NEUTRAL" && current_macro != grand_macro) {
-            is_pullback_phase = true;
-            macro_pre_tp_cap = GetMacroPreTP(fmcbr_macro_handle, current_macro);
-            
-            if(macro_pre_tp_cap > 0.0) {
-                if(current_macro == "BULLISH" && bid >= macro_pre_tp_cap) is_pullback_exhausted = true;
-                if(current_macro == "BEARISH" && ask <= macro_pre_tp_cap) is_pullback_exhausted = true;
-            }
-        }
-    }
+    // 🔹 PULLBACK CONTEXT LOGIC: persistent until macro direction changes.
+    UpdateMacroPullbackState();
+    bool is_pullback_phase = macro_pullback_active;
+    double macro_pre_tp_cap = macro_pre_tp_level;
+    bool is_pullback_exhausted = macro_pre_tp_hit;
 
     if(!is_reentry_trade || is_pyramid_trade)
     {
@@ -1508,18 +1559,12 @@ void ScanForSetup()
             if(is_sell_breakout && runtime_MLDirection == "BUY") return;
             if(runtime_MLDirection == "CHOPPY") return;
             
-            if(Use_Macro_Filter) 
+            if(Use_Macro_Filter)
             {
-                string current_macro = GetMacroTrend(fmcbr_macro_handle);
-                if(is_buy_breakout && current_macro != "BULLISH") return;
-                if(is_sell_breakout && current_macro != "BEARISH") return;
+                string required_macro = is_pullback_phase && is_pullback_exhausted ? macro_resume_direction : GetMacroTrend(fmcbr_macro_handle);
+                if(is_buy_breakout && required_macro != "BULLISH") return;
+                if(is_sell_breakout && required_macro != "BEARISH") return;
             }
-        }
-        
-        // 🔹 BLOCK PULLBACK IF EXHAUSTED
-        if(is_pullback_phase && is_pullback_exhausted) {
-            reentry_status_msg = "PULLBACK EXHAUSTED: WAITING D1 ALIGN";
-            return;
         }
 
         if(is_pyramid_trade) 
@@ -1948,23 +1993,20 @@ void UpdateDynamicFiboTP()
         }
     }
     
-    // 🔹 PULLBACK CAP (DYNAMIC TP)
-    if(Use_Macro_Filter) {
-        string current_macro = GetMacroTrend(fmcbr_macro_handle);
-        string grand_macro   = GetMacroTrend(fmcbr_grand_handle);
-        if(current_macro != "NEUTRAL" && grand_macro != "NEUTRAL" && current_macro != grand_macro) {
-            double macro_pre_tp = GetMacroPreTP(fmcbr_macro_handle, current_macro);
-            if(macro_pre_tp > 0.0) {
-                if(locked_trend == 1 && active_basket_tp > macro_pre_tp) {
-                    active_basket_tp = macro_pre_tp;
-                    active_basket_tp_label = "H4 PULLBACK CAP (TP1)";
-                }
-                else if(locked_trend == -1 && active_basket_tp < macro_pre_tp) {
-                    active_basket_tp = macro_pre_tp;
-                    active_basket_tp_label = "H4 PULLBACK CAP (TP1)";
-                }
-            }
+    // 🔹 PULLBACK CAP: enforce the macro pre-TP only until the latched HIT.
+    UpdateMacroPullbackState();
+    if(macro_pullback_active && !macro_pre_tp_hit && macro_pre_tp_level > 0.0) {
+        if(locked_trend == 1 && active_basket_tp > macro_pre_tp_level) {
+            active_basket_tp = macro_pre_tp_level;
+            active_basket_tp_label = "MACRO PULLBACK CAP / PRE-TP";
         }
+        else if(locked_trend == -1 && active_basket_tp < macro_pre_tp_level) {
+            active_basket_tp = macro_pre_tp_level;
+            active_basket_tp_label = "MACRO PULLBACK CAP / PRE-TP";
+        }
+    }
+    else if(macro_pullback_active && macro_pre_tp_hit) {
+        active_basket_tp_label = "PRE-TP HIT / GRAND-TREND TP";
     }
     
     if(active_basket_tp > 0) {
@@ -2422,8 +2464,8 @@ void UpdateDashboard()
     string grand_state = GetMacroTrend(fmcbr_grand_handle);
     
     string macro_disp = macro_state;
-    if(Use_Macro_Filter && macro_state != "NEUTRAL" && grand_state != "NEUTRAL" && macro_state != grand_state) {
-        macro_disp = macro_state + " (PULLBACK)";
+    if(macro_pullback_active) {
+        macro_disp = macro_state + (macro_pre_tp_hit ? " (PRE-TP HIT / RESUME " + macro_resume_direction + ")" : " (PULLBACK / PRE-TP CAP)");
     }
     
     ObjectSetString(0, "GBUI_Macro", OBJPROP_TEXT, "Macro: " + macro_disp);
