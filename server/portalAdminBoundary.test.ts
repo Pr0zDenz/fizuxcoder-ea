@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 const projectRoot = resolve(import.meta.dirname, "..");
 const portalPath = resolve(projectRoot, "client", "src", "pages", "Portal.tsx");
 const adminOperationsPath = resolve(projectRoot, "client", "src", "pages", "AdminOperations.tsx");
+const marketingStudioPath = resolve(projectRoot, "client", "src", "pages", "MarketingStudio.tsx");
 const appPath = resolve(projectRoot, "client", "src", "App.tsx");
 const routersPath = resolve(projectRoot, "server", "routers.ts");
 const rm1RoutePath = resolve(projectRoot, "server", "rm1TestRoute.ts");
@@ -18,6 +19,8 @@ describe("customer portal administrator boundary", () => {
     expect(portal).not.toContain("/api/owner/rm1/initiate");
     expect(portal).not.toContain("Owner-only");
     expect(portal).not.toContain("/admin/operations");
+    expect(portal).not.toContain("/admin/marketing");
+    expect(portal).not.toContain("trpc.marketing.");
   });
 
   it("places owner operations on a separate, unlinked route with an administrator presentation gate", () => {
@@ -32,6 +35,23 @@ describe("customer portal administrator boundary", () => {
     expect(adminOperations).toContain("trpc.admin.uploadPackage");
     expect(adminOperations).toContain("/api/owner/rm1/initiate");
     expect(app).toContain('<Route path="/admin/operations" component={AdminOperations} />');
+  });
+
+  it("keeps the marketing studio on its own administrator-gated route with manual-only wording", () => {
+    const studio = readFileSync(marketingStudioPath, "utf8");
+    const app = readFileSync(appPath, "utf8");
+    const routers = readFileSync(routersPath, "utf8");
+
+    expect(studio).toContain('const isAdmin = user?.role === "admin";');
+    expect(studio).toContain("if (!isAuthenticated)");
+    expect(studio).toContain("if (!isAdmin)");
+    expect(studio).toContain("No API call to Threads was made.");
+    expect(studio).toContain("no social connector, auto-publish control, advertising campaign, or spend capability");
+    expect(studio).toContain("trpc.marketing.");
+    expect(app).toContain('<Route path="/admin/marketing" component={MarketingStudio} />');
+    expect(routers).toContain("marketing: router({");
+    expect(routers).toContain("seedTwoWeekPilot: adminProcedure");
+    expect(routers).toContain("markManuallyPosted: adminProcedure");
   });
 
   it("keeps administrator-only actions protected by server-side role checks", () => {

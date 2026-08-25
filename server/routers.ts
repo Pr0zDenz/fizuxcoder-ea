@@ -8,6 +8,7 @@ import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_
 import { createToyyibPayBill, inspectToyyibPayCreateBill } from "./toyyibpay";
 import { attachProviderBill, beginPaymentOrder, bindCustomerMt5Account, claimPermanentBillPayment, createNoChargeTestPurchase, getCatalog, getCustomerLibrary, getCustomerOrderStatus, getRequestOrigin, getSecureFileForCustomer, getTestCatalog, packageStorageKey, removePendingOrder, safeFileName } from "./paymentPortal";
 import { getMasterServerPaymentCallbackUrl } from "./masterServer";
+import { approveMarketingContent, listMarketingContent, markMarketingContentPosted, rejectMarketingContent, seedTwoWeekThreadsPilot } from "./marketingStudio";
 import { storageGetSignedUrl, storagePut } from "./storage";
 import { getDb } from "./db";
 import { productFiles, products } from "../drizzle/schema";
@@ -170,6 +171,13 @@ export const appRouter = router({
       await db.insert(productFiles).values({ productId: input.productId, displayName: input.displayName, fileName, storageKey: uploaded.key, contentType: "application/octet-stream" });
       return { success: true };
     }),
+  }),
+  marketing: router({
+    list: adminProcedure.query(() => listMarketingContent()),
+    seedTwoWeekPilot: adminProcedure.mutation(({ ctx }) => seedTwoWeekThreadsPilot(ctx.user.id)),
+    approve: adminProcedure.input(z.object({ contentItemId: z.number().int().positive() })).mutation(({ ctx, input }) => approveMarketingContent({ contentItemId: input.contentItemId, actorUserId: ctx.user.id })),
+    reject: adminProcedure.input(z.object({ contentItemId: z.number().int().positive(), note: z.string().max(255).optional() })).mutation(({ ctx, input }) => rejectMarketingContent({ contentItemId: input.contentItemId, actorUserId: ctx.user.id, note: input.note })),
+    markManuallyPosted: adminProcedure.input(z.object({ contentItemId: z.number().int().positive(), externalPostId: z.string().max(128).optional() })).mutation(({ ctx, input }) => markMarketingContentPosted({ contentItemId: input.contentItemId, actorUserId: ctx.user.id, externalPostId: input.externalPostId })),
   }),
 });
 

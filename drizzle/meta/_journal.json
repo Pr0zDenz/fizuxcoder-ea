@@ -64,6 +64,13 @@
       "when": 1787335209254,
       "tag": "0008_sour_rumiko_fujikawa",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1787634999316,
+      "tag": "0009_free_lady_mastermind",
+      "breakpoints": true
     }
   ]
 }

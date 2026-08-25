@@ -186,4 +186,8 @@
 - [x] Research Malaysian trading-software marketing requirements and official Threads and Meta advertising automation capabilities.
 - [x] Define a risk-compliant Malaysia-focused EA acquisition funnel, measurement framework, and approval boundaries.
 - [x] Prepare Threads copy, advertising copy, and high-definition creative and video production briefs without unverified performance claims.
-- [ ] Present at least two approval-gated automation options before enabling any connector, publishing, or advertising spend.
+- [x] Present at least two approval-gated automation options before enabling any connector, publishing, or advertising spend.
+- [x] Define a private content-studio data model for Threads drafts, asset references, compliance flags, manual-post status, and owner approvals.
+- [x] Build the administrator-only Option A content-studio interface with no publishing connector, ad creation, or spending capability.
+- [x] Seed a two-week Malaysia-focused draft queue from the approved risk-first content pack.
+- [x] Test that ordinary customers cannot access the marketing studio and that drafts cannot be marked manually posted without an administrator approval.

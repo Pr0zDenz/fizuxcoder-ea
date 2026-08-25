@@ -38,4 +38,13 @@ describe("administrator-only portal procedures", () => {
       base64: "YmxvY2tlZA==",
     })).rejects.toThrow("You do not have required permission");
   });
+
+  it("rejects a customer session before the private marketing queue or approval actions can be reached", async () => {
+    const caller = appRouter.createCaller(customerContext());
+
+    await expect(caller.marketing.list()).rejects.toThrow("You do not have required permission");
+    await expect(caller.marketing.seedTwoWeekPilot()).rejects.toThrow("You do not have required permission");
+    await expect(caller.marketing.approve({ contentItemId: 1 })).rejects.toThrow("You do not have required permission");
+    await expect(caller.marketing.markManuallyPosted({ contentItemId: 1 })).rejects.toThrow("You do not have required permission");
+  });
 });

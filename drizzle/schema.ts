@@ -165,6 +165,58 @@ export const threeSLicenceIssuances = mysqlTable("threeSLicenceIssuances", {
   index("threeSLicenceIssuances_user_status_idx").on(table.userId, table.status),
 ]);
 
+/**
+ * Private, administrator-owned organic social drafts. These records intentionally
+ * contain no social credentials, automated-publish state, advertising budget, or
+ * campaign activation capability. A Threads post is marked posted only after an
+ * administrator has first approved its exact persisted content.
+ */
+export const marketingContentItems = mysqlTable("marketingContentItems", {
+  id: int("id").autoincrement().primaryKey(),
+  contentKey: varchar("contentKey", { length: 96 }).notNull(),
+  platform: mysqlEnum("platform", ["threads"]).notNull().default("threads"),
+  title: varchar("title", { length: 180 }).notNull(),
+  caption: text("caption").notNull(),
+  language: mysqlEnum("language", ["en", "en_ms"]).notNull().default("en"),
+  assetUrl: varchar("assetUrl", { length: 512 }),
+  assetAlt: text("assetAlt"),
+  destinationUrl: varchar("destinationUrl", { length: 512 }).notNull(),
+  riskNotice: varchar("riskNotice", { length: 255 }).notNull(),
+  scheduledFor: timestamp("scheduledFor"),
+  status: mysqlEnum("status", ["draft", "approved", "posted", "rejected"]).notNull().default("draft"),
+  complianceStatus: mysqlEnum("complianceStatus", ["pending", "passed", "flagged"]).notNull().default("pending"),
+  complianceFlags: text("complianceFlags"),
+  contentHash: varchar("contentHash", { length: 64 }).notNull(),
+  approvedByUserId: int("approvedByUserId").references(() => users.id, { onDelete: "set null" }),
+  approvedAt: timestamp("approvedAt"),
+  postedByUserId: int("postedByUserId").references(() => users.id, { onDelete: "set null" }),
+  postedAt: timestamp("postedAt"),
+  externalPostId: varchar("externalPostId", { length: 128 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [
+  uniqueIndex("marketingContentItems_contentKey_unique").on(table.contentKey),
+  index("marketingContentItems_status_scheduled_idx").on(table.status, table.scheduledFor),
+  index("marketingContentItems_approval_idx").on(table.approvedByUserId, table.approvedAt),
+]);
+
+/**
+ * Append-only action metadata for draft approvals and manual-post attestations.
+ * It stores the approved content hash, never an external account credential.
+ */
+export const marketingContentAudits = mysqlTable("marketingContentAudits", {
+  id: int("id").autoincrement().primaryKey(),
+  contentItemId: int("contentItemId").notNull().references(() => marketingContentItems.id, { onDelete: "cascade" }),
+  actorUserId: int("actorUserId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  action: mysqlEnum("action", ["seeded", "approved", "rejected", "marked_posted"]).notNull(),
+  contentHash: varchar("contentHash", { length: 64 }).notNull(),
+  note: varchar("note", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, table => [
+  index("marketingContentAudits_item_created_idx").on(table.contentItemId, table.createdAt),
+  index("marketingContentAudits_actor_created_idx").on(table.actorUserId, table.createdAt),
+]);
+
 export type Product = typeof products.$inferSelect;
 export type PaymentOrder = typeof paymentOrders.$inferSelect;
 export type Entitlement = typeof entitlements.$inferSelect;
@@ -173,3 +225,5 @@ export type ProtectedDeliveryAudit = typeof protectedDeliveryAudits.$inferSelect
 export type GmailAuthorization = typeof gmailAuthorizations.$inferSelect;
 export type BuyerEmailDelivery = typeof buyerEmailDeliveries.$inferSelect;
 export type ThreeSLicenceIssuance = typeof threeSLicenceIssuances.$inferSelect;
+export type MarketingContentItem = typeof marketingContentItems.$inferSelect;
+export type MarketingContentAudit = typeof marketingContentAudits.$inferSelect;
