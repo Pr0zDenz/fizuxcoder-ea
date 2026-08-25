@@ -193,8 +193,9 @@
 - [x] Test that ordinary customers cannot access the marketing studio and that drafts cannot be marked manually posted without an administrator approval.
 - [x] Verify and correct the main-page 3S Serangkai UNIVERSAL EA purchase button so it opens the direct verified ToyyibPay checkout link like Gemini Bot EA.
 - [x] Inspect the available official Threads connection options and verify the owner’s required Meta account prerequisites.
-- [ ] Prepare an official Threads authorization path that preserves per-post owner approval and has no advertising-spend capability.
-- [ ] Verify the connected Threads account identity without publishing any draft.
+- [x] Prepare an official Threads authorization path that preserves per-post owner approval and has no advertising-spend capability.
+- [x] Verify the connected Threads account identity without publishing any draft.
 - [x] Add secure official Threads OAuth callback, deauthorization, and data-deletion endpoints for the owner-created Meta app.
 - [x] Collect the Threads App ID and App Secret through secure configuration rather than chat or source control.
-- [ ] Complete Threads owner authorization and verify the connected account identity without publishing a draft.
+- [x] Complete Threads owner authorization and verify the connected account identity without publishing a draft.
+- [x] Resolve the Meta dashboard validation error that rejects the entered Threads OAuth redirect configuration despite the correct callback URLs.
