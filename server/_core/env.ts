@@ -13,4 +13,5 @@ export const ENV = {
   threadsAppId: process.env.THREADS_APP_ID ?? "",
   threadsAppSecret: process.env.THREADS_APP_SECRET ?? "",
   masterServerSyncKey: process.env.MASTER_SERVER_SYNC_KEY ?? "",
+  geminiEventIngestKey: process.env.GEMINI_EVENT_INGEST_KEY ?? "",
 };

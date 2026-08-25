@@ -8,7 +8,7 @@ const MAX_SCREENSHOT_BYTES = 8 * 1024 * 1024;
 const MIME_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 
 export function validSecret(received: string | undefined) {
-  const expected = ENV.masterServerSyncKey;
+  const expected = ENV.geminiEventIngestKey;
   if (!received || !expected) return false;
   const actualBuffer = Buffer.from(received);
   const expectedBuffer = Buffer.from(expected);
@@ -28,7 +28,7 @@ export function decodeScreenshot(value: unknown, mimeType: unknown) {
 
 export function registerGeminiEventIntakeRoute(app: Express) {
   app.post("/api/threads/gemini-event", async (req: Request, res: Response) => {
-    if (!validSecret(req.header("X-Master-Sync-Key"))) return res.status(401).json({ ok: false, error: "Unauthorized" });
+    if (!validSecret(req.header("X-Gemini-Event-Key"))) return res.status(401).json({ ok: false, error: "Unauthorized" });
     try {
       const body = req.body as Record<string, unknown>;
       const eventId = typeof body.eventId === "string" ? body.eventId : "";

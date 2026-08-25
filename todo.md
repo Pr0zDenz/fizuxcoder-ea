@@ -240,3 +240,11 @@
 - [x] Document the VPS event payload, PowerShell smoke test, retry/idempotency rules, and troubleshooting runbook.
 - [x] Run TypeScript validation, full deterministic test suite, production build, server restart, and preview verification.
 - [ ] Run final non-destructive Master Server probes and delivery audit after the owner restores the VPS tunnel.
+
+- [x] Add direct ChartScreenShot capture and event detection to the supplied Gemini Bot EA source; VPS MetaEditor compilation remains an operator-side check.
+- [x] Add direct HTTPS JSON upload from the EA to the portal with Base64 encoding, stable event IDs, throttling, and same-ID retry behavior.
+- [x] Provision and validate a dedicated Gemini event-ingest secret without reusing the licensing sync key.
+- [x] Document MT5 WebRequest allowlisting, screenshot settings, ingest-key configuration, and smoke testing for direct upload.
+- [x] Add regression coverage for direct-upload payload shape, draft-only behavior, duplicate handling, and secret separation.
+- [x] Complete structural syntax review of the revised MQL5 source and verify the existing event hooks remain intact; MetaEditor compilation remains an operator-side VPS check.
+- [x] Run project tests/build and save a checkpoint after the direct-upload implementation is verified.
