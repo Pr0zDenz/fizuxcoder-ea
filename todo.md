@@ -205,3 +205,5 @@
 - [x] Test the responsive performance section, evidence labels, and disclosures before publishing.
 - [x] Correct the August historical-performance section, screenshot captions, and supporting evidence record so they explicitly and exclusively identify Gemini Bot EA rather than 3S Serangkai UNIVERSAL EA.
 - [x] Regression-test and visually verify the Gemini-only performance attribution before publishing the correction.
+- [ ] Review and revise the private Threads draft queue for Gemini Bot EA-only marketing; do not change the public landing page or publish any Threads post.
+- [ ] Verify the revised Threads drafts remain private, approval-gated, and free from profit guarantees or unsupported performance claims.

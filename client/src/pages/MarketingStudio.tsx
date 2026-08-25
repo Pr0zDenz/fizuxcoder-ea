@@ -2,7 +2,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, Check, Clipboard, ExternalLink, Loader2, ShieldCheck, X } from "lucide-react";
+import { ArrowLeft, Check, Clipboard, ExternalLink, Loader2, RefreshCw, ShieldCheck, X } from "lucide-react";
 import { useMemo, useState } from "react";
 
 type ContentStatus = "draft" | "approved" | "posted" | "rejected";
@@ -32,6 +32,10 @@ export default function MarketingStudio() {
   const refresh = async () => utils.marketing.list.invalidate();
   const seed = trpc.marketing.seedTwoWeekPilot.useMutation({
     onSuccess: async result => { setMessage(`Two-week pilot ready: ${result.created} new draft(s), ${result.existing} existing item(s).`); await refresh(); },
+    onError: error => setMessage(error.message),
+  });
+  const applyGeminiRevision = trpc.marketing.applyGeminiBotRevision.useMutation({
+    onSuccess: async result => { setMessage(`Gemini Bot EA draft revision applied: ${result.revised} revised, ${result.current} already current, ${result.skipped} protected from change. All revised items remain drafts; no Threads post was sent.`); await refresh(); },
     onError: error => setMessage(error.message),
   });
   const approve = trpc.marketing.approve.useMutation({
@@ -72,7 +76,7 @@ export default function MarketingStudio() {
       <a href="/admin/operations" className="inline-flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[.14em] text-[#c7d1cb] hover:text-[#e5a631]"><ArrowLeft size={14} /> Administrator operations</a>
       <section className="mt-7 border-b border-white/15 pb-8">
         <p className="font-mono text-[10px] font-bold uppercase tracking-[.15em] text-[#e5a631]">Private organic pilot · manual Threads workflow</p>
-        <div className="mt-4 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between"><div><h1 className="font-display text-5xl tracking-[-.06em]">Content studio.</h1><p className="mt-4 max-w-2xl text-sm leading-7 text-[#c7d1cb]">Review risk-first drafts, approve their exact content, copy them into Threads yourself, then record the completed manual post. The Threads connection verifies only the owner account; this page has no auto-publish control, advertising campaign, or spend capability.</p></div><div className="flex flex-col gap-3 sm:flex-row"><a href="/api/threads/oauth/start" className="button-outline !border-[#0eafa7]/70 !text-[#f4f0e8]">{threadsConnection.data?.connected ? `Connected @${threadsConnection.data.username ?? "Threads"}` : "Connect Threads"} <ExternalLink size={16} /></a><button type="button" onClick={() => seed.mutate()} disabled={seed.isPending} className="button-primary shrink-0"><span>{seed.isPending ? "Preparing pilot" : "Prepare two-week pilot"}</span>{seed.isPending ? <Loader2 className="animate-spin" size={16} /> : <ExternalLink size={16} />}</button></div></div>
+        <div className="mt-4 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between"><div><h1 className="font-display text-5xl tracking-[-.06em]">Content studio.</h1><p className="mt-4 max-w-2xl text-sm leading-7 text-[#c7d1cb]">Review risk-first drafts, approve their exact content, copy them into Threads yourself, then record the completed manual post. The Threads connection verifies only the owner account; this page has no auto-publish control, advertising campaign, or spend capability.</p></div><div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-end"><a href="/api/threads/oauth/start" className="button-outline !border-[#0eafa7]/70 !text-[#f4f0e8]">{threadsConnection.data?.connected ? `Connected @${threadsConnection.data.username ?? "Threads"}` : "Connect Threads"} <ExternalLink size={16} /></a><button type="button" onClick={() => applyGeminiRevision.mutate()} disabled={applyGeminiRevision.isPending} className="button-outline !border-[#e5a631]/70 !text-[#f4f0e8]"><span>{applyGeminiRevision.isPending ? "Revising Gemini drafts" : "Apply Gemini Bot EA revision"}</span>{applyGeminiRevision.isPending ? <Loader2 className="animate-spin" size={16} /> : <RefreshCw size={16} />}</button><button type="button" onClick={() => seed.mutate()} disabled={seed.isPending} className="button-primary shrink-0"><span>{seed.isPending ? "Preparing pilot" : "Prepare two-week pilot"}</span>{seed.isPending ? <Loader2 className="animate-spin" size={16} /> : <ExternalLink size={16} />}</button></div></div>
       </section>
 
       <section className="mt-7 grid gap-4 sm:grid-cols-3" aria-label="Content queue status"><StatusCard label="Draft review" value={counts.draft} tone="text-[#e5a631]" /><StatusCard label="Approved to post" value={counts.approved} tone="text-[#0eafa7]" /><StatusCard label="Recorded manually posted" value={counts.posted} tone="text-[#d3f1d8]" /></section>

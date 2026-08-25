@@ -8,7 +8,7 @@ import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_
 import { createToyyibPayBill, inspectToyyibPayCreateBill } from "./toyyibpay";
 import { attachProviderBill, beginPaymentOrder, bindCustomerMt5Account, claimPermanentBillPayment, createNoChargeTestPurchase, getCatalog, getCustomerLibrary, getCustomerOrderStatus, getRequestOrigin, getSecureFileForCustomer, getTestCatalog, packageStorageKey, removePendingOrder, safeFileName } from "./paymentPortal";
 import { getMasterServerPaymentCallbackUrl } from "./masterServer";
-import { approveMarketingContent, listMarketingContent, markMarketingContentPosted, rejectMarketingContent, seedTwoWeekThreadsPilot } from "./marketingStudio";
+import { applyGeminiBotThreadsRevision, approveMarketingContent, listMarketingContent, markMarketingContentPosted, rejectMarketingContent, seedTwoWeekThreadsPilot } from "./marketingStudio";
 import { getThreadsConnectionStatus } from "./threadsOAuth";
 import { storageGetSignedUrl, storagePut } from "./storage";
 import { getDb } from "./db";
@@ -177,6 +177,7 @@ export const appRouter = router({
     list: adminProcedure.query(() => listMarketingContent()),
     threadsConnection: adminProcedure.query(({ ctx }) => getThreadsConnectionStatus(ctx.user.id)),
     seedTwoWeekPilot: adminProcedure.mutation(({ ctx }) => seedTwoWeekThreadsPilot(ctx.user.id)),
+    applyGeminiBotRevision: adminProcedure.mutation(({ ctx }) => applyGeminiBotThreadsRevision(ctx.user.id)),
     approve: adminProcedure.input(z.object({ contentItemId: z.number().int().positive() })).mutation(({ ctx, input }) => approveMarketingContent({ contentItemId: input.contentItemId, actorUserId: ctx.user.id })),
     reject: adminProcedure.input(z.object({ contentItemId: z.number().int().positive(), note: z.string().max(255).optional() })).mutation(({ ctx, input }) => rejectMarketingContent({ contentItemId: input.contentItemId, actorUserId: ctx.user.id, note: input.note })),
     markManuallyPosted: adminProcedure.input(z.object({ contentItemId: z.number().int().positive(), externalPostId: z.string().max(128).optional() })).mutation(({ ctx, input }) => markMarketingContentPosted({ contentItemId: input.contentItemId, actorUserId: ctx.user.id, externalPostId: input.externalPostId })),

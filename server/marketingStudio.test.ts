@@ -4,7 +4,7 @@ const { getDbMock } = vi.hoisted(() => ({ getDbMock: vi.fn() }));
 
 vi.mock("./db", () => ({ getDb: getDbMock }));
 
-import { TWO_WEEK_THREADS_PILOT, approveMarketingContent, markMarketingContentPosted } from "./marketingStudio";
+import { GEMINI_BOT_THREADS_REVISION, TWO_WEEK_THREADS_PILOT, applyGeminiBotThreadsRevision, approveMarketingContent, markMarketingContentPosted } from "./marketingStudio";
 
 function draftItem(overrides: Record<string, unknown> = {}) {
   return {
@@ -59,5 +59,29 @@ describe("private marketing studio safeguards", () => {
     expect(TWO_WEEK_THREADS_PILOT).toHaveLength(10);
     const allCaptions = TWO_WEEK_THREADS_PILOT.map(item => item.caption.toLowerCase()).join(" ");
     expect(allCaptions).not.toMatch(/guaranteed returns?|risk-free automation|passive income|\bwin rate\b|guaranteed profit/);
+  });
+
+  it("revises only unapproved drafts into the Gemini Bot EA campaign and records each revision", async () => {
+    const { updateSet, insertValues } = mockDatabase(draftItem({ contentHash: "old-hash" }));
+
+    await expect(applyGeminiBotThreadsRevision(1)).resolves.toEqual({ revised: 10, current: 0, skipped: 0 });
+    expect(updateSet).toHaveBeenCalledWith(expect.objectContaining({ title: "Gemini Bot EA is not a shortcut around risk", status: "draft", complianceStatus: "passed" }));
+    expect(insertValues).toHaveBeenCalledWith(expect.objectContaining({ actorUserId: 1, action: "revised", note: "Gemini Bot EA-only Threads revision" }));
+  });
+
+  it("does not overwrite an approved or posted caption during the Gemini Bot EA revision", async () => {
+    const { updateSet } = mockDatabase(draftItem({ status: "approved", contentHash: "old-hash" }));
+
+    await expect(applyGeminiBotThreadsRevision(1)).resolves.toEqual({ revised: 0, current: 0, skipped: 10 });
+    expect(updateSet).not.toHaveBeenCalled();
+  });
+
+  it("keeps the Gemini Bot EA revision factual, risk-balanced, and separate from 3S performance claims", () => {
+    const captions = GEMINI_BOT_THREADS_REVISION.map(item => `${item.title} ${item.caption}`).join(" ").toLowerCase();
+
+    expect(GEMINI_BOT_THREADS_REVISION).toHaveLength(10);
+    expect(captions).toContain("gemini bot ea");
+    expect(captions).not.toMatch(/guaranteed returns?|risk-free automation|passive income|\bwin rate\b|guaranteed profit/);
+    expect(captions).not.toContain("3s universal ea");
   });
 });

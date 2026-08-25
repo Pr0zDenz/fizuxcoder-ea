@@ -52,6 +52,7 @@ describe("customer portal administrator boundary", () => {
     expect(app).toContain('<Route path="/admin/marketing" component={MarketingStudio} />');
     expect(routers).toContain("marketing: router({");
     expect(routers).toContain("seedTwoWeekPilot: adminProcedure");
+    expect(routers).toContain("applyGeminiBotRevision: adminProcedure");
     expect(routers).toContain("markManuallyPosted: adminProcedure");
     expect(routers).toContain("threadsConnection: adminProcedure");
   });

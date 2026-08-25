@@ -1,0 +1,1 @@
+ALTER TABLE `marketingContentAudits` MODIFY COLUMN `action` enum('seeded','revised','approved','rejected','marked_posted') NOT NULL;

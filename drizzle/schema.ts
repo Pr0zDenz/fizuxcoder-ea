@@ -208,7 +208,7 @@ export const marketingContentAudits = mysqlTable("marketingContentAudits", {
   id: int("id").autoincrement().primaryKey(),
   contentItemId: int("contentItemId").notNull().references(() => marketingContentItems.id, { onDelete: "cascade" }),
   actorUserId: int("actorUserId").notNull().references(() => users.id, { onDelete: "cascade" }),
-  action: mysqlEnum("action", ["seeded", "approved", "rejected", "marked_posted"]).notNull(),
+  action: mysqlEnum("action", ["seeded", "revised", "approved", "rejected", "marked_posted"]).notNull(),
   contentHash: varchar("contentHash", { length: 64 }).notNull(),
   note: varchar("note", { length: 255 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
