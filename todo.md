@@ -183,3 +183,7 @@
 - [x] Replace the raw OAuth callback JSON error with a safe portal retry page when the upstream authorization-code exchange is temporarily unavailable (HTTP 503).
 - [x] Exclude all test-only product entitlements, including the expired RM1 test record, from the standard customer portal library.
 - [x] Preserve test entitlement records and administrator-only test controls without exposing test cards to normal portal views.
+- [x] Research Malaysian trading-software marketing requirements and official Threads and Meta advertising automation capabilities.
+- [x] Define a risk-compliant Malaysia-focused EA acquisition funnel, measurement framework, and approval boundaries.
+- [x] Prepare Threads copy, advertising copy, and high-definition creative and video production briefs without unverified performance claims.
+- [ ] Present at least two approval-gated automation options before enabling any connector, publishing, or advertising spend.
