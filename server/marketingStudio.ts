@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { marketingContentAudits, marketingContentItems } from "../drizzle/schema";
 import { getDb } from "./db";
 import { publishThreadsPost, ThreadsPublishError } from "./threadsPublisher";
+import { storagePut } from "./storage";
 
 export const MARKETING_RISK_NOTICE = "Automated trading carries risk. Review the system and risk notes before deciding.";
 
@@ -182,6 +183,45 @@ export async function applyGeminiBotThreadsRevision(actorUserId: number) {
     archived += 1;
   }
   return { created, revised, current, skipped, archived };
+}
+
+export const GEMINI_EVENT_PORTAL_URL = "https://fizuxea-jxctlods.manus.space/portal";
+
+export async function createGeminiVpsEventDraft({ eventId, eventType, screenshot, screenshotMimeType, occurredAt, accountLabel, symbol, profitAmount, actorUserId }: { eventId: string; eventType: "setup" | "take_profit"; screenshot: Buffer; screenshotMimeType: "image/png" | "image/jpeg" | "image/webp"; occurredAt?: string; accountLabel?: string; symbol?: string; profitAmount?: number; actorUserId: number }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  const safeEventId = eventId.trim().replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 96);
+  if (!safeEventId) throw new Error("eventId is required");
+  const contentKey = `threads-gemini-vps-event-${safeEventId}`;
+  const [existing] = await db.select({ id: marketingContentItems.id, status: marketingContentItems.status }).from(marketingContentItems).where(eq(marketingContentItems.contentKey, contentKey)).limit(1);
+  if (existing) return { created: false, contentItemId: existing.id, status: existing.status };
+
+  const stored = await storagePut(`threads/gemini-vps-events/${safeEventId}.png`, screenshot, screenshotMimeType);
+  const eventLabel = eventType === "take_profit" ? "take-profit event" : "setup event";
+  const occurredLabel = occurredAt ? new Date(occurredAt).toISOString() : new Date().toISOString();
+  const accountContext = accountLabel ? ` Account label: ${accountLabel.slice(0, 40)}.` : "";
+  const symbolContext = symbol ? ` Symbol: ${symbol.slice(0, 20)}.` : "";
+  const profitContext = typeof profitAmount === "number" && Number.isFinite(profitAmount) ? ` Reported event amount: ${profitAmount.toFixed(2)}; verify the full account context before publication.` : "";
+  const caption = `Gemini Bot EA ${eventLabel} captured at ${occurredLabel}.${accountContext}${symbolContext}${profitContext} This owner-supplied screenshot is one account event, not a promise or forecast. Review the full context, losses, drawdown, execution conditions, and demo-first guidance before deciding. Visit the portal: ${GEMINI_EVENT_PORTAL_URL} #GeminiBotEA #MT5 #TradingEvidence #RiskManagement`;
+  const hash = contentHash({ title: `Gemini Bot EA — ${eventLabel}`, caption, language: "en", assetUrl: stored.url, assetAlt: `Owner-supplied Gemini Bot EA ${eventLabel} screenshot`, destinationUrl: GEMINI_EVENT_PORTAL_URL });
+  const result = await db.insert(marketingContentItems).values({
+    contentKey,
+    title: `Gemini Bot EA — ${eventLabel}`,
+    caption,
+    language: "en",
+    assetUrl: stored.url,
+    assetAlt: `Owner-supplied Gemini Bot EA ${eventLabel} screenshot`,
+    destinationUrl: GEMINI_EVENT_PORTAL_URL,
+    riskNotice: MARKETING_RISK_NOTICE,
+    scheduledFor: null,
+    status: "draft",
+    complianceStatus: "passed",
+    complianceFlags: JSON.stringify(["evergreen_vps_event", "no_expiry", `event_type_${eventType}`]),
+    contentHash: hash,
+  });
+  const contentItemId = Number(result[0].insertId);
+  await db.insert(marketingContentAudits).values({ contentItemId, actorUserId, action: "revised", contentHash: hash, note: `Evergreen VPS ${eventLabel} screenshot draft created; approval required` });
+  return { created: true, contentItemId, status: "draft" as const, assetUrl: stored.url };
 }
 
 export const EVERGREEN_GEMINI_COPY_BANK = [

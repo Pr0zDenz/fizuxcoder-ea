@@ -13,6 +13,7 @@ import { registerRm1TestRoute } from "../rm1TestRoute";
 import { registerGmailOAuthRoutes } from "../gmailOAuth";
 import { registerThreadsOAuthRoutes } from "../threadsOAuth";
 import { registerProtectedDeliveryAuditRoute } from "../protectedDeliveryAuditRoute";
+import { registerGeminiEventIntakeRoute } from "../geminiEventIntakeRoute";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -46,6 +47,7 @@ async function startServer() {
   registerGmailOAuthRoutes(app);
   registerThreadsOAuthRoutes(app);
   registerProtectedDeliveryAuditRoute(app);
+  registerGeminiEventIntakeRoute(app);
   // tRPC API
   app.use(
     "/api/trpc",

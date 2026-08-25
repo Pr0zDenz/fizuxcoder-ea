@@ -12,4 +12,5 @@ export const ENV = {
   gmailSenderEmail: process.env.GMAIL_SENDER_EMAIL ?? "",
   threadsAppId: process.env.THREADS_APP_ID ?? "",
   threadsAppSecret: process.env.THREADS_APP_SECRET ?? "",
+  masterServerSyncKey: process.env.MASTER_SERVER_SYNC_KEY ?? "",
 };

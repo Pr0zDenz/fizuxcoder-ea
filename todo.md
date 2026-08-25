@@ -228,3 +228,15 @@
 - [x] Verify the exact rejected-draft counts and distinguish superseded archive records from any provider-rejected publication attempts.
 - [x] Add an auditable evergreen Gemini Bot EA replenishment path that creates one fresh unpublished copy draft after each successful post, with duplicate guards and no replacement auto-publish.
 - [x] Update the private studio to explain rejected versus archived statuses and show replenishment outcomes; test and publish without sending a replacement post.
+- [x] Define evergreen no-expiry behavior for VPS setup/take-profit screenshot events, including evidence retention, redaction, duplicate protection, and required human approval before posting.
+- [x] Implement secure VPS event intake that stores each supplied screenshot in project-backed storage and creates a fresh Gemini Bot EA draft with the portal link and risk notice.
+- [x] Update private-studio status, tests, and runbook documentation for evergreen screenshot-backed drafts; verify draft-only behavior and publish the implementation without sending live posts.
+
+- [x] Repair and reload the protected-delivery audit route module so the development server starts without `ERR_MODULE_NOT_FOUND`.
+- [x] Add authenticated `/api/threads/gemini-event` validation for setup/take-profit events, MIME/magic-byte checks, 8 MB limits, and draft-only intake.
+- [x] Store each VPS screenshot in S3-backed storage, append the portal link, keep the evergreen draft unscheduled, and deduplicate by event ID.
+- [x] Add focused regression tests for VPS authentication helpers, screenshot validation, route registration, duplicate protection, portal links, and approval-only status.
+- [x] Update the administrator Marketing Studio to describe evergreen VPS intake and manual approval boundaries.
+- [x] Document the VPS event payload, PowerShell smoke test, retry/idempotency rules, and troubleshooting runbook.
+- [x] Run TypeScript validation, full deterministic test suite, production build, server restart, and preview verification.
+- [ ] Run final non-destructive Master Server probes and delivery audit after the owner restores the VPS tunnel.
