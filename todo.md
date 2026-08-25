@@ -215,8 +215,8 @@
 - [x] Map each image-backed Gemini Bot EA draft to one approved supplied image URL for automatic Threads publication; keep text-only drafts text-only and leave the landing page unchanged.
 - [x] Test and verify the one-image-per-post publishing path, including public asset URL handling, exact approved content, duplicate prevention, and no live post during development.
 - [x] Create a 20-day Gemini Bot EA Threads campaign with varied attention hooks, opportunity-oriented positioning, factual product descriptions, and clear risk boundaries; do not remove compliance safeguards or change the landing page.
-- [ ] Replace the private draft queue with 20 Gemini Bot EA-only drafts, retaining one-image-per-post mappings where supplied assets are available and leaving all drafts unposted.
+- [x] Replace the private draft queue with 20 Gemini Bot EA-only drafts, retaining one-image-per-post mappings where supplied assets are available and leaving all drafts unposted.
 - [x] Test draft length, prohibited-claim filters, historical-evidence wording, image mapping, private approval state, and landing-page isolation before publishing the draft update.
 - [x] Finalize the specific 20-day Gemini Bot EA Threads copy set with three-to-five relevant hashtags and a compliant call to action per draft.
 - [x] Assign one supplied image to selected daily drafts using existing public asset URLs, while preserving text-only posts where no image is assigned.
-- [ ] Store the 20-draft set in the private studio, verify it remains unapproved and unposted, and leave the public landing page unchanged.
+- [x] Store the 20-draft set in the private studio, verify it remains unapproved and unposted, and leave the public landing page unchanged.
