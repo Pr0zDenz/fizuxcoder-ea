@@ -13,3 +13,9 @@ Every revised Threads draft must identify Gemini Bot EA in its title or copy, us
 ## Approval boundary
 
 Changing a private draft does not approve or publish it. Each post remains a separate owner review decision in the private studio, and any posting must be performed manually in the owner’s Threads account.
+
+## Deployment verification note
+
+Immediately after the revision-control checkpoint, the initially loaded production studio still displayed the prior header controls and generic queue. No draft mutation was attempted while the new administrator-only Gemini Bot EA revision control was absent. The published bundle must expose that control before the unapproved queue is changed.
+
+A cache-busted production reload and a subsequent wait for the owner session on 25 August 2026 continued to display the prior header controls. The existing ten drafts were therefore left untouched pending a verified deployment of the revision control.
