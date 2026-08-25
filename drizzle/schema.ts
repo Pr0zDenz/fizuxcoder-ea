@@ -106,6 +106,36 @@ export const protectedDeliveryAudits = mysqlTable("protectedDeliveryAudits", {
  * mailbox. The refresh token is encrypted before persistence and is never
  * exposed through tRPC or browser responses.
  */
+export const protectedDeliveryAuditSchedules = mysqlTable("protectedDeliveryAuditSchedules", {
+  id: int("id").autoincrement().primaryKey(),
+  scheduleName: varchar("scheduleName", { length: 128 }).notNull().unique(),
+  masterServerBaseUrl: varchar("masterServerBaseUrl", { length: 512 }).notNull(),
+  scheduleCronTaskUid: varchar("scheduleCronTaskUid", { length: 65 }),
+  enabled: mysqlEnum("enabled", ["yes", "no"]).notNull().default("yes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [
+  uniqueIndex("protectedDeliveryAuditSchedules_task_uid_unique").on(table.scheduleCronTaskUid),
+]);
+
+export const protectedDeliveryAuditCycles = mysqlTable("protectedDeliveryAuditCycles", {
+  id: int("id").autoincrement().primaryKey(),
+  scheduleId: int("scheduleId").notNull().references(() => protectedDeliveryAuditSchedules.id, { onDelete: "cascade" }),
+  cycleKey: varchar("cycleKey", { length: 7 }).notNull(),
+  status: mysqlEnum("status", ["running", "completed", "failed", "skipped"]).notNull().default("running"),
+  localDeliveryAuditCount: int("localDeliveryAuditCount").notNull().default(0),
+  activeProductionEntitlementCount: int("activeProductionEntitlementCount").notNull().default(0),
+  masterServerHttpStatus: int("masterServerHttpStatus"),
+  masterServerReachable: mysqlEnum("masterServerReachable", ["yes", "no"]).notNull().default("no"),
+  masterServerResponseClass: varchar("masterServerResponseClass", { length: 32 }),
+  failureReason: text("failureReason"),
+  startedAt: timestamp("startedAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
+}, table => [
+  uniqueIndex("protectedDeliveryAuditCycles_schedule_cycle_unique").on(table.scheduleId, table.cycleKey),
+  index("protectedDeliveryAuditCycles_status_idx").on(table.status),
+]);
+
 export const gmailAuthorizations = mysqlTable("gmailAuthorizations", {
   senderEmail: varchar("senderEmail", { length: 320 }).primaryKey(),
   encryptedRefreshToken: text("encryptedRefreshToken").notNull(),
@@ -246,6 +276,8 @@ export type PaymentOrder = typeof paymentOrders.$inferSelect;
 export type Entitlement = typeof entitlements.$inferSelect;
 export type ProductFile = typeof productFiles.$inferSelect;
 export type ProtectedDeliveryAudit = typeof protectedDeliveryAudits.$inferSelect;
+export type ProtectedDeliveryAuditSchedule = typeof protectedDeliveryAuditSchedules.$inferSelect;
+export type ProtectedDeliveryAuditCycle = typeof protectedDeliveryAuditCycles.$inferSelect;
 export type GmailAuthorization = typeof gmailAuthorizations.$inferSelect;
 export type BuyerEmailDelivery = typeof buyerEmailDeliveries.$inferSelect;
 export type ThreeSLicenceIssuance = typeof threeSLicenceIssuances.$inferSelect;

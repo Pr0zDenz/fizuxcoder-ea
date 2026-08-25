@@ -12,6 +12,7 @@ import { registerToyyibPayCallback } from "../toyyibpayCallback";
 import { registerRm1TestRoute } from "../rm1TestRoute";
 import { registerGmailOAuthRoutes } from "../gmailOAuth";
 import { registerThreadsOAuthRoutes } from "../threadsOAuth";
+import { registerProtectedDeliveryAuditRoute } from "../protectedDeliveryAuditRoute";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -44,6 +45,7 @@ async function startServer() {
   registerRm1TestRoute(app);
   registerGmailOAuthRoutes(app);
   registerThreadsOAuthRoutes(app);
+  registerProtectedDeliveryAuditRoute(app);
   // tRPC API
   app.use(
     "/api/trpc",
