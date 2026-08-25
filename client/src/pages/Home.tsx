@@ -434,18 +434,18 @@ export default function Home() {
           <div className="mx-auto max-w-[1440px] px-5 lg:px-10">
             <div className="grid gap-10 lg:grid-cols-[.82fr_1.18fr] lg:items-end">
               <div>
-                <SectionLabel index="05">Historical account evidence</SectionLabel>
-                <h2 className="mt-7 max-w-3xl font-display text-[clamp(2.8rem,5vw,5.2rem)] leading-[.9] tracking-[-.06em]">A result is evidence to inspect—not a promise to buy.</h2>
+                <SectionLabel index="05">Gemini Bot EA · historical account evidence</SectionLabel>
+                <h2 className="mt-7 max-w-3xl font-display text-[clamp(2.8rem,5vw,5.2rem)] leading-[.9] tracking-[-.06em]">Gemini Bot EA results are evidence to inspect—not a promise to buy.</h2>
               </div>
               <div className="space-y-4 border-l border-[#e5a631] pl-5 text-base leading-7 text-[#4e5e59] lg:mb-2">
-                <p><strong className="text-[#17201f]">Owner-stated sample window:</strong> 13–25 August 2026. The supplied platform screenshots visibly show account activity and reports captured on 24–25 August.</p>
-                <p>They are owner-supplied, not independently audited, and do not establish the result of every day in the stated window. The account currency and deposit history are not visible in the screenshots.</p>
+                <p><strong className="text-[#17201f]">Gemini Bot EA owner-stated sample window:</strong> 13–25 August 2026. The supplied platform screenshots visibly show Gemini Bot EA account activity and reports captured on 24–25 August.</p>
+                <p>They are owner-supplied, not independently audited, and do not establish the result of every day in the stated window. The account currency and deposit history are not visible in the screenshots. This material does not describe or support a performance claim for 3S Serangkai UNIVERSAL EA.</p>
               </div>
             </div>
 
             <div className="mt-12 grid gap-5 lg:grid-cols-[.76fr_1.24fr]">
               <article className="rounded-[2rem] bg-[#17201f] p-7 text-[#f4f0e8] shadow-[10px_10px_0_#0e716e] lg:p-9">
-                <p className="font-mono text-[10px] font-bold uppercase tracking-[.14em] text-[#e5a631]">How the EA can create or lose value</p>
+                <p className="font-mono text-[10px] font-bold uppercase tracking-[.14em] text-[#e5a631]">How Gemini Bot EA can create or lose value</p>
                 <h3 className="mt-5 font-display text-4xl leading-[.95] tracking-[-.05em]">Rules first. Market outcome second.</h3>
                 <div className="mt-7 space-y-5 text-sm leading-7 text-[#d4ddd7]">
                   <p>Gemini Bot EA automates its configured decision and execution workflow in MetaTrader. It can monitor its permitted market conditions, place or manage an order when those conditions are met, and operate according to its settings.</p>
@@ -459,7 +459,7 @@ export default function Home() {
                 {[
                   ["Reported net result", "+2,646.91", "No currency shown in the supplied account report."],
                   ["Maximum drawdown", "11.5%", "Reported historical drawdown in the platform summary."],
-                  ["Trading-robot activity", "133 XAUUSD trades", "The displayed report attributes the sample to trading robots; no manual trades are shown."],
+                  ["Gemini Bot EA activity", "133 XAUUSD trades", "The displayed report attributes this Gemini Bot EA sample to trading robots; no manual trades are shown."],
                   ["Profit factor", "3.18", "Historical XAUUSD report statistic only; it is not a forecast."],
                   ["Reported gross loss", "−1,216.78", "Displayed alongside gross profit of +3,863.69."],
                   ["Losing sequence", "9 consecutive losses", "The platform summary also shows 23 consecutive wins; both belong to this sample."],
@@ -475,16 +475,16 @@ export default function Home() {
 
             <div className="mt-12 grid gap-5 lg:grid-cols-4">
               <figure className="rounded-2xl border border-[#17201f]/12 bg-white p-3 shadow-sm">
-                <img src="/manus-storage/IMG_2830_0b6080d2.PNG" alt="Owner-supplied account report displaying reported total, gross profit, gross loss, and performance ratios" className="h-[330px] w-full rounded-xl object-cover object-top" loading="lazy" />
-                <figcaption className="px-1 pt-3 text-xs leading-5 text-[#5e6d68]">Platform summary: reported total, gross profit, gross loss, drawdown, and ratios.</figcaption>
+                <img src="/manus-storage/IMG_2830_0b6080d2.PNG" alt="Owner-supplied Gemini Bot EA account report displaying reported total, gross profit, gross loss, and performance ratios" className="h-[330px] w-full rounded-xl object-cover object-top" loading="lazy" />
+                <figcaption className="px-1 pt-3 text-xs leading-5 text-[#5e6d68]">Gemini Bot EA platform summary: reported total, gross profit, gross loss, drawdown, and ratios.</figcaption>
               </figure>
               <figure className="rounded-2xl border border-[#17201f]/12 bg-white p-3 shadow-sm">
-                <img src="/manus-storage/IMG_2829_5c3403f2.PNG" alt="Owner-supplied platform report displaying maximum drawdown and deposit load" className="h-[330px] w-full rounded-xl object-cover object-top" loading="lazy" />
-                <figcaption className="px-1 pt-3 text-xs leading-5 text-[#5e6d68]">Platform risk report: 11.5% maximum drawdown and 5.27% maximum deposit load shown.</figcaption>
+                <img src="/manus-storage/IMG_2829_5c3403f2.PNG" alt="Owner-supplied Gemini Bot EA platform report displaying maximum drawdown and deposit load" className="h-[330px] w-full rounded-xl object-cover object-top" loading="lazy" />
+                <figcaption className="px-1 pt-3 text-xs leading-5 text-[#5e6d68]">Gemini Bot EA platform risk report: 11.5% maximum drawdown and 5.27% maximum deposit load shown.</figcaption>
               </figure>
               <figure className="rounded-2xl border border-[#17201f]/12 bg-white p-3 shadow-sm">
-                <img src="/manus-storage/IMG_2833_de9ccbc1.PNG" alt="Owner-supplied XAUUSD report displaying 133 trading-robot trades and a profit factor of 3.18" className="h-[330px] w-full rounded-xl object-cover object-top" loading="lazy" />
-                <figcaption className="px-1 pt-3 text-xs leading-5 text-[#5e6d68]">Platform symbol report: 133 XAUUSD robot trades and a displayed 3.18 profit factor.</figcaption>
+                <img src="/manus-storage/IMG_2833_de9ccbc1.PNG" alt="Owner-supplied Gemini Bot EA XAUUSD report displaying 133 trading-robot trades and a profit factor of 3.18" className="h-[330px] w-full rounded-xl object-cover object-top" loading="lazy" />
+                <figcaption className="px-1 pt-3 text-xs leading-5 text-[#5e6d68]">Gemini Bot EA platform symbol report: 133 XAUUSD robot trades and a displayed 3.18 profit factor.</figcaption>
               </figure>
               <figure className="rounded-2xl border border-[#17201f]/12 bg-white p-3 shadow-sm">
                 <img src="/manus-storage/IMG_2828_176307f5.PNG" alt="Owner-supplied XAUUSD deal history showing a completed Gemini Bot EA trade and multiple historical positions" className="h-[330px] w-full rounded-xl object-cover object-top" loading="lazy" />
@@ -494,7 +494,7 @@ export default function Home() {
 
             <aside className="mt-8 rounded-2xl border border-[#e5a631]/60 bg-[#fff5dd] p-5 text-sm leading-6 text-[#4e5248] lg:flex lg:gap-6">
               <p className="shrink-0 font-mono text-[10px] font-bold uppercase tracking-[.13em] text-[#8a5b05]">Evidence boundary</p>
-              <p className="mt-2 lg:mt-0"><strong>Owner-supplied August 2026 account snapshot.</strong> These screenshots are not independently audited, may not be representative, and do not predict future results. Automated XAUUSD trading can produce losses, drawdowns, spread and slippage effects, or rapid account loss. Test every configuration on demo before considering live use.</p>
+              <p className="mt-2 lg:mt-0"><strong>Owner-supplied Gemini Bot EA August 2026 account snapshot.</strong> These screenshots are not independently audited, may not be representative, and do not predict future results. They are not evidence for 3S Serangkai UNIVERSAL EA. Automated XAUUSD trading can produce losses, drawdowns, spread and slippage effects, or rapid account loss. Test every configuration on demo before considering live use.</p>
             </aside>
           </div>
         </section>

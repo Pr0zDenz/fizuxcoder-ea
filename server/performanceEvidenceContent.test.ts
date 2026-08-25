@@ -10,7 +10,8 @@ describe("historical performance evidence content", () => {
     const source = fs.readFileSync(homePath, "utf8");
 
     expect(source).toContain('id="performance"');
-    expect(source).toContain("Owner-stated sample window:");
+    expect(source).toContain("Gemini Bot EA owner-stated sample window:");
+    expect(source).toContain("Gemini Bot EA · historical account evidence");
     expect(source).toContain("not independently audited");
     expect(source).toContain("Maximum drawdown");
     expect(source).toContain("11.5%");
@@ -26,6 +27,17 @@ describe("historical performance evidence content", () => {
     expect(source).toContain("does not create profit with certainty");
     expect(source).toContain("market movement, broker execution, and costs");
     expect(source).not.toContain("profit without hesitation");
+  });
+
+  it("limits the August evidence to Gemini Bot EA and excludes 3S from this performance claim", () => {
+    const source = fs.readFileSync(homePath, "utf8");
+    const performanceSection = source.slice(source.indexOf('id="performance"'), source.indexOf('id="broker"'));
+    const evidence = fs.readFileSync(evidencePath, "utf8");
+
+    expect(performanceSection).toContain("Gemini Bot EA results");
+    expect(performanceSection).toContain("not evidence for 3S Serangkai UNIVERSAL EA");
+    expect(evidence).toContain("Gemini Bot EA only");
+    expect(evidence).toContain("must not be used to describe, compare, or substantiate a performance claim for **3S Serangkai UNIVERSAL EA**");
   });
 
   it("documents screenshot boundaries before figures are used in customer-facing copy", () => {

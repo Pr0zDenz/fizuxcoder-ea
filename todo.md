@@ -203,3 +203,5 @@
 - [x] Write risk-balanced methodology and historical-performance copy without a profit guarantee, certainty claim, or unverified causal explanation.
 - [x] Add the verified historical-performance snapshot and supporting screenshots to the marketing portal with prominent risk and period disclosures.
 - [x] Test the responsive performance section, evidence labels, and disclosures before publishing.
+- [x] Correct the August historical-performance section, screenshot captions, and supporting evidence record so they explicitly and exclusively identify Gemini Bot EA rather than 3S Serangkai UNIVERSAL EA.
+- [x] Regression-test and visually verify the Gemini-only performance attribution before publishing the correction.
