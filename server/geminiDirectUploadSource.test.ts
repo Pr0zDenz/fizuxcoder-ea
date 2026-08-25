@@ -11,6 +11,9 @@ describe("Gemini direct MQL5 screenshot upload source", () => {
     expect(source).toContain("GEMINI_EVENT_PING_URL");
     expect(source).toContain("Ping_Portal_On_Timer");
     expect(source).toContain("Ping_Interval_Sec");
+    expect(source).toContain("IsValidGeminiPingResponse");
+    expect(source).toContain("status == 200 && IsValidGeminiPingResponse(response_text)");
+    expect(source).toContain("validHealthJson=");
     expect(source).toContain("Gemini_Event_Ingest_Key");
     expect(source).not.toContain("X-Master-Sync-Key");
   });

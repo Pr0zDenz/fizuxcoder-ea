@@ -254,3 +254,6 @@
 
 - [x] Add a safe direct-upload connection ping that checks portal reachability and authentication without screenshot capture, trading, or Threads publishing.
 - [x] Add regression coverage and document the ping controls and expected MT5 log responses.
+
+- [x] Ensure the EA ping validates the expected JSON health response and does not report a frontend HTML shell as a successful connection.
+- [x] Add regression coverage for HTTP 200 with invalid/non-health response bodies and update the ping runbook wording.

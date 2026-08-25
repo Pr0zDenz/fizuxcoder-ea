@@ -424,6 +424,11 @@ string MakeMarketingEventId(string event_type, datetime event_time)
     return StringFormat("gemini-%I64d-%s-%s-%I64d", account_number, _Symbol, event_type, (long)event_time);
 }
 
+bool IsValidGeminiPingResponse(string response_text)
+{
+    return StringFind(response_text, "\"ok\":true") >= 0 && StringFind(response_text, "\"service\":\"gemini-event-intake\"") >= 0 && StringFind(response_text, "\"draftOnly\":true") >= 0;
+}
+
 void PingGeminiEventPortal()
 {
     if(!Ping_Portal_On_Timer || Gemini_Event_Ingest_Key == "") return;
@@ -438,10 +443,11 @@ void PingGeminiEventPortal()
     ResetLastError();
     int status = WebRequest("GET", GEMINI_EVENT_PING_URL, headers, 5000, request_body, response_body, response_headers);
     string response_text = CharArrayToString(response_body, 0, WHOLE_ARRAY, CP_UTF8);
-    if(status == 200)
+    bool healthy = (status == 200 && IsValidGeminiPingResponse(response_text));
+    if(healthy)
         Print("Gemini event portal ping OK HTTP=", status, " response=", StringSubstr(response_text, 0, 120));
     else
-        Print("Gemini event portal ping FAILED HTTP=", status, " MT5Error=", GetLastError(), " response=", StringSubstr(response_text, 0, 120));
+        Print("Gemini event portal ping FAILED HTTP=", status, " validHealthJson=", IsValidGeminiPingResponse(response_text), " MT5Error=", GetLastError(), " response=", StringSubstr(response_text, 0, 120));
 }
 
 void QueueMarketingScreenshot(string event_type)
