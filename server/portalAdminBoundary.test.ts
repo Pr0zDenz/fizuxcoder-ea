@@ -46,12 +46,14 @@ describe("customer portal administrator boundary", () => {
     expect(studio).toContain("if (!isAuthenticated)");
     expect(studio).toContain("if (!isAdmin)");
     expect(studio).toContain("No API call to Threads was made.");
-    expect(studio).toContain("no social connector, auto-publish control, advertising campaign, or spend capability");
+    expect(studio).toContain("no auto-publish control, advertising campaign, or spend capability");
+    expect(studio).toContain('href="/api/threads/oauth/start"');
     expect(studio).toContain("trpc.marketing.");
     expect(app).toContain('<Route path="/admin/marketing" component={MarketingStudio} />');
     expect(routers).toContain("marketing: router({");
     expect(routers).toContain("seedTwoWeekPilot: adminProcedure");
     expect(routers).toContain("markManuallyPosted: adminProcedure");
+    expect(routers).toContain("threadsConnection: adminProcedure");
   });
 
   it("keeps administrator-only actions protected by server-side role checks", () => {

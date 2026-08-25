@@ -11,6 +11,7 @@ import { serveStatic, setupVite } from "./vite";
 import { registerToyyibPayCallback } from "../toyyibpayCallback";
 import { registerRm1TestRoute } from "../rm1TestRoute";
 import { registerGmailOAuthRoutes } from "../gmailOAuth";
+import { registerThreadsOAuthRoutes } from "../threadsOAuth";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -42,6 +43,7 @@ async function startServer() {
   registerToyyibPayCallback(app);
   registerRm1TestRoute(app);
   registerGmailOAuthRoutes(app);
+  registerThreadsOAuthRoutes(app);
   // tRPC API
   app.use(
     "/api/trpc",

@@ -10,4 +10,6 @@ export const ENV = {
   gmailOauthClientId: process.env.GMAIL_OAUTH_CLIENT_ID ?? "",
   gmailOauthClientSecret: process.env.GMAIL_OAUTH_CLIENT_SECRET ?? "",
   gmailSenderEmail: process.env.GMAIL_SENDER_EMAIL ?? "",
+  threadsAppId: process.env.THREADS_APP_ID ?? "",
+  threadsAppSecret: process.env.THREADS_APP_SECRET ?? "",
 };

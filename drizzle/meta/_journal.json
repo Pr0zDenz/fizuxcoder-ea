@@ -71,6 +71,13 @@
       "when": 1787634999316,
       "tag": "0009_free_lady_mastermind",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1787645035992,
+      "tag": "0010_magical_polaris",
+      "breakpoints": true
     }
   ]
 }

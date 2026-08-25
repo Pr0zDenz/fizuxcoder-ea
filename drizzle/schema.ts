@@ -217,6 +217,25 @@ export const marketingContentAudits = mysqlTable("marketingContentAudits", {
   index("marketingContentAudits_actor_created_idx").on(table.actorUserId, table.createdAt),
 ]);
 
+/**
+ * Server-only authorization for the owner-controlled Threads account. The
+ * access token is encrypted before persistence and no token is exposed to a
+ * browser, tRPC response, draft, or audit record.
+ */
+export const threadsAuthorizations = mysqlTable("threadsAuthorizations", {
+  ownerUserId: int("ownerUserId").primaryKey().references(() => users.id, { onDelete: "cascade" }),
+  threadsUserId: varchar("threadsUserId", { length: 64 }).notNull(),
+  username: varchar("username", { length: 120 }),
+  displayName: varchar("displayName", { length: 160 }),
+  encryptedAccessToken: text("encryptedAccessToken").notNull(),
+  grantedScopes: text("grantedScopes").notNull(),
+  expiresAt: timestamp("expiresAt"),
+  authorizedAt: timestamp("authorizedAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [
+  uniqueIndex("threadsAuthorizations_threadsUserId_unique").on(table.threadsUserId),
+]);
+
 export type Product = typeof products.$inferSelect;
 export type PaymentOrder = typeof paymentOrders.$inferSelect;
 export type Entitlement = typeof entitlements.$inferSelect;
@@ -227,3 +246,4 @@ export type BuyerEmailDelivery = typeof buyerEmailDeliveries.$inferSelect;
 export type ThreeSLicenceIssuance = typeof threeSLicenceIssuances.$inferSelect;
 export type MarketingContentItem = typeof marketingContentItems.$inferSelect;
 export type MarketingContentAudit = typeof marketingContentAudits.$inferSelect;
+export type ThreadsAuthorization = typeof threadsAuthorizations.$inferSelect;
