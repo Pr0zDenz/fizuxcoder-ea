@@ -223,3 +223,5 @@
 - [x] Define a first-of-month fresh-cycle, read-only protected-delivery audit against `https://ruby-railroad-trimester.ngrok-free.dev`, with no payment, entitlement, rebinding, or package-delivery side effects.
 - [x] Implement the durable scheduled audit handler and cycle record using the project’s `/api/scheduled/*` contract and idempotent retry behavior.
 - [x] Deploy the handler, create the monthly schedule, verify its configuration, and document the next execution boundary.
+- [x] Diagnose why the private Threads Approve & publish action gives no visible success or failure response, without retrying or creating a live post during diagnosis.
+- [x] Add explicit in-progress, success, failure, and duplicate-safe feedback for the Threads publish mutation, then test desktop/mobile behavior and publish the fix.

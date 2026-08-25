@@ -15,6 +15,12 @@ The existing owner OAuth record remains server-side only. The application should
 ## Open implementation constraints
 
 The current data model is manual-post oriented. It needs explicit states for an in-flight publish attempt and provider failure, plus an audit action that distinguishes API publication from manual attestation. Token refresh should be handled server-side and should fail closed when reauthorization is required. A live post should not be sent during implementation or automated tests.
+## Approve & publish response verification
+
+The owner confirmed that one Gemini Bot EA post had already published successfully with its supplied image, exact approved caption, and required risk notice. The private studio initially gave no visible outcome while the provider request was in progress. The UI now shows immediate `Publishing…` feedback, a server-side `publish_pending` state, explicit success text with the external post ID, explicit failure text, and retry feedback. TypeScript, focused tests, the full suite, and desktop/mobile preview checks passed without triggering another post.
+
+The refreshed private studio showed 19 remaining drafts and zero approved items after the confirmed publication. No duplicate or retry request was issued.
+
 ## Development preview verification
 
 The development preview was checked at 1280 × 720 and 375 × 812 without invoking any mutation. The mobile view rendered the approval-triggered workflow label, connected owner identity, Gemini revision control, preparation control, draft-review count, and automatic-publish explanation legibly. The desktop capture remained on the loading state while the authenticated studio initialized; server health and TypeScript checks were clean. Production verification must still be performed after the next checkpoint and must not include clicking Approve on a live draft unless the owner explicitly names that draft for publication.
