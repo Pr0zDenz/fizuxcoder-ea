@@ -199,3 +199,7 @@
 - [x] Collect the Threads App ID and App Secret through secure configuration rather than chat or source control.
 - [x] Complete Threads owner authorization and verify the connected account identity without publishing a draft.
 - [x] Resolve the Meta dashboard validation error that rejects the entered Threads OAuth redirect configuration despite the correct callback URLs.
+- [x] Reconcile the supplied August 13–25 performance screenshots into a transparent historical metrics record, including losses, drawdown, and data limitations.
+- [x] Write risk-balanced methodology and historical-performance copy without a profit guarantee, certainty claim, or unverified causal explanation.
+- [x] Add the verified historical-performance snapshot and supporting screenshots to the marketing portal with prominent risk and period disclosures.
+- [x] Test the responsive performance section, evidence labels, and disclosures before publishing.

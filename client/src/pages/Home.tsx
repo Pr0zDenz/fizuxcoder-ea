@@ -429,8 +429,78 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="relative py-20 lg:py-28">
+        <section id="performance" className="relative overflow-hidden bg-[#fbf9f4] py-20 lg:py-28">
           <div className="edition-rail"><span>05</span><i /></div>
+          <div className="mx-auto max-w-[1440px] px-5 lg:px-10">
+            <div className="grid gap-10 lg:grid-cols-[.82fr_1.18fr] lg:items-end">
+              <div>
+                <SectionLabel index="05">Historical account evidence</SectionLabel>
+                <h2 className="mt-7 max-w-3xl font-display text-[clamp(2.8rem,5vw,5.2rem)] leading-[.9] tracking-[-.06em]">A result is evidence to inspect—not a promise to buy.</h2>
+              </div>
+              <div className="space-y-4 border-l border-[#e5a631] pl-5 text-base leading-7 text-[#4e5e59] lg:mb-2">
+                <p><strong className="text-[#17201f]">Owner-stated sample window:</strong> 13–25 August 2026. The supplied platform screenshots visibly show account activity and reports captured on 24–25 August.</p>
+                <p>They are owner-supplied, not independently audited, and do not establish the result of every day in the stated window. The account currency and deposit history are not visible in the screenshots.</p>
+              </div>
+            </div>
+
+            <div className="mt-12 grid gap-5 lg:grid-cols-[.76fr_1.24fr]">
+              <article className="rounded-[2rem] bg-[#17201f] p-7 text-[#f4f0e8] shadow-[10px_10px_0_#0e716e] lg:p-9">
+                <p className="font-mono text-[10px] font-bold uppercase tracking-[.14em] text-[#e5a631]">How the EA can create or lose value</p>
+                <h3 className="mt-5 font-display text-4xl leading-[.95] tracking-[-.05em]">Rules first. Market outcome second.</h3>
+                <div className="mt-7 space-y-5 text-sm leading-7 text-[#d4ddd7]">
+                  <p>Gemini Bot EA automates its configured decision and execution workflow in MetaTrader. It can monitor its permitted market conditions, place or manage an order when those conditions are met, and operate according to its settings.</p>
+                  <p>A profitable trade occurs only when the selected direction, timing, exit logic, market movement, broker execution, and costs align favourably. The same workflow can produce losses when they do not.</p>
+                  <p>That is why the evidence below includes both the reported gain and the reported losses, drawdown, and losing sequence. The EA does not create profit with certainty, and it should never be run without risk limits and active supervision.</p>
+                </div>
+                <a href="#disclosure" className="mt-8 inline-flex items-center gap-2 border-b border-[#e5a631] pb-1 font-mono text-[10px] font-bold uppercase tracking-[.12em] text-[#f4f0e8] hover:text-[#e5a631]">Read the risk statement <ArrowRight size={14} /></a>
+              </article>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                {[
+                  ["Reported net result", "+2,646.91", "No currency shown in the supplied account report."],
+                  ["Maximum drawdown", "11.5%", "Reported historical drawdown in the platform summary."],
+                  ["Trading-robot activity", "133 XAUUSD trades", "The displayed report attributes the sample to trading robots; no manual trades are shown."],
+                  ["Profit factor", "3.18", "Historical XAUUSD report statistic only; it is not a forecast."],
+                  ["Reported gross loss", "−1,216.78", "Displayed alongside gross profit of +3,863.69."],
+                  ["Losing sequence", "9 consecutive losses", "The platform summary also shows 23 consecutive wins; both belong to this sample."],
+                ].map(([label, value, detail]) => (
+                  <article key={label} className="rounded-2xl border border-[#17201f]/12 bg-white p-5 shadow-sm">
+                    <p className="font-mono text-[10px] font-bold uppercase tracking-[.12em] text-[#0e716e]">{label}</p>
+                    <p className="mt-5 font-display text-4xl leading-none tracking-[-.05em] text-[#17201f]">{value}</p>
+                    <p className="mt-4 text-sm leading-6 text-[#63716d]">{detail}</p>
+                  </article>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-12 grid gap-5 lg:grid-cols-4">
+              <figure className="rounded-2xl border border-[#17201f]/12 bg-white p-3 shadow-sm">
+                <img src="/manus-storage/IMG_2830_0b6080d2.PNG" alt="Owner-supplied account report displaying reported total, gross profit, gross loss, and performance ratios" className="h-[330px] w-full rounded-xl object-cover object-top" loading="lazy" />
+                <figcaption className="px-1 pt-3 text-xs leading-5 text-[#5e6d68]">Platform summary: reported total, gross profit, gross loss, drawdown, and ratios.</figcaption>
+              </figure>
+              <figure className="rounded-2xl border border-[#17201f]/12 bg-white p-3 shadow-sm">
+                <img src="/manus-storage/IMG_2829_5c3403f2.PNG" alt="Owner-supplied platform report displaying maximum drawdown and deposit load" className="h-[330px] w-full rounded-xl object-cover object-top" loading="lazy" />
+                <figcaption className="px-1 pt-3 text-xs leading-5 text-[#5e6d68]">Platform risk report: 11.5% maximum drawdown and 5.27% maximum deposit load shown.</figcaption>
+              </figure>
+              <figure className="rounded-2xl border border-[#17201f]/12 bg-white p-3 shadow-sm">
+                <img src="/manus-storage/IMG_2833_de9ccbc1.PNG" alt="Owner-supplied XAUUSD report displaying 133 trading-robot trades and a profit factor of 3.18" className="h-[330px] w-full rounded-xl object-cover object-top" loading="lazy" />
+                <figcaption className="px-1 pt-3 text-xs leading-5 text-[#5e6d68]">Platform symbol report: 133 XAUUSD robot trades and a displayed 3.18 profit factor.</figcaption>
+              </figure>
+              <figure className="rounded-2xl border border-[#17201f]/12 bg-white p-3 shadow-sm">
+                <img src="/manus-storage/IMG_2828_176307f5.PNG" alt="Owner-supplied XAUUSD deal history showing a completed Gemini Bot EA trade and multiple historical positions" className="h-[330px] w-full rounded-xl object-cover object-top" loading="lazy" />
+                <figcaption className="px-1 pt-3 text-xs leading-5 text-[#5e6d68]">Platform deal history: one visible XAUUSD Gemini Bot EA deal and surrounding historical positions.</figcaption>
+              </figure>
+            </div>
+
+            <aside className="mt-8 rounded-2xl border border-[#e5a631]/60 bg-[#fff5dd] p-5 text-sm leading-6 text-[#4e5248] lg:flex lg:gap-6">
+              <p className="shrink-0 font-mono text-[10px] font-bold uppercase tracking-[.13em] text-[#8a5b05]">Evidence boundary</p>
+              <p className="mt-2 lg:mt-0"><strong>Owner-supplied August 2026 account snapshot.</strong> These screenshots are not independently audited, may not be representative, and do not predict future results. Automated XAUUSD trading can produce losses, drawdowns, spread and slippage effects, or rapid account loss. Test every configuration on demo before considering live use.</p>
+            </aside>
+          </div>
+        </section>
+
+        <section className="relative py-20 lg:py-28">
+          <div className="edition-rail"><span>06</span><i /></div>
           <div className="mx-auto grid max-w-[1440px] gap-12 px-5 lg:grid-cols-[.88fr_1.12fr] lg:px-10">
             <div className="relative min-h-[420px] overflow-hidden rounded-[2rem] bg-[#17201f]">
               <img src="/manus-storage/risk-discipline-visual_785023c2.jpg" alt="Abstract risk-management balance visual" className="absolute inset-0 h-full w-full object-cover" />
@@ -441,7 +511,7 @@ export default function Home() {
               </div>
             </div>
             <div id="disclosure" className="lg:pt-10">
-              <SectionLabel index="04">Read before configuring</SectionLabel>
+              <SectionLabel index="06">Read before configuring</SectionLabel>
               <h2 className="mt-7 font-display text-[clamp(2.8rem,5vw,4.8rem)] leading-[.92] tracking-[-0.06em]">The risk note belongs in the main document.</h2>
               <div className="mt-8 border-y border-[#17201f]/15 py-6">
                 <p className="text-lg leading-8 text-[#455551]">Trading leveraged products and operating automated systems can result in rapid losses. Past testing and historical examples do not predict future results. You are responsible for local legal requirements, broker selection, position sizing, settings, supervision, and any decision to use a live account.</p>
@@ -452,10 +522,10 @@ export default function Home() {
         </section>
 
         <section id="broker" className="relative bg-[#e5a631] py-20 lg:py-24">
-          <div className="edition-rail"><span>06</span><i /></div>
+          <div className="edition-rail"><span>07</span><i /></div>
           <div className="mx-auto grid max-w-[1440px] gap-10 px-5 lg:grid-cols-[1.1fr_.9fr] lg:px-10">
             <div>
-              <SectionLabel index="05">Optional broker pathway</SectionLabel>
+              <SectionLabel index="07">Optional broker pathway</SectionLabel>
               <h2 className="mt-7 max-w-3xl font-display text-[clamp(3rem,6vw,6rem)] leading-[.88] tracking-[-.065em]">If you need a broker, begin with the details.</h2>
               <p className="mt-7 max-w-2xl text-lg leading-8 text-[#413310]">The provided Pepperstone registration path is available for visitors who independently decide it is relevant to their setup. Before proceeding, check availability in your jurisdiction, review its terms and product disclosures, and consider whether the service is appropriate for you.</p>
               <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
@@ -486,7 +556,7 @@ export default function Home() {
 
         <section id="purchase" className="bg-[#fbf9f4] py-20 lg:py-24">
           <div className="mx-auto max-w-[1440px] px-5 lg:px-10">
-            <div className="grid gap-10 lg:grid-cols-[.9fr_1.1fr] lg:items-end"><div><SectionLabel index="07">Secure purchase routes</SectionLabel><h2 className="mt-7 max-w-2xl font-display text-[clamp(2.8rem,5vw,5.3rem)] leading-[.9] tracking-[-.06em]">Choose the EA separately from your broker setup.</h2></div><p className="max-w-xl text-lg leading-8 text-[#52605d]">Each button opens its own active ToyyibPay checkout. Review the system requirements, support terms, licence model, and risk statement before making any purchase decision.</p></div>
+            <div className="grid gap-10 lg:grid-cols-[.9fr_1.1fr] lg:items-end"><div><SectionLabel index="08">Secure purchase routes</SectionLabel><h2 className="mt-7 max-w-2xl font-display text-[clamp(2.8rem,5vw,5.3rem)] leading-[.9] tracking-[-.06em]">Choose the EA separately from your broker setup.</h2></div><p className="max-w-xl text-lg leading-8 text-[#52605d]">Each button opens its own active ToyyibPay checkout. Review the system requirements, support terms, licence model, and risk statement before making any purchase decision.</p></div>
             <div className="mt-12 grid gap-6 lg:grid-cols-2">
               <PurchaseCard eyebrow="Lifetime package access" title="3 Serangkai UNIVERSAL EA v13.85" price="RM2,999" priorPrice="RM4,300" detail="Lifetime package-download entitlement. After a verified claim and MT5 binding, the Master Server API licence is issued for one year and renewed through support." href={threeSPurchaseUrl} />
               <PurchaseCard eyebrow="Monthly access" title="Gemini Bot EA v11.97" price="RM450" priorPrice="RM999" detail="Monthly access to the Gemini Bot EA package and required indicators. Renewal is required to retain the monthly entitlement." href={geminiPurchaseUrl} />
