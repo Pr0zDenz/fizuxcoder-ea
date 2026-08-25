@@ -19,3 +19,11 @@ Changing a private draft does not approve or publish it. Each post remains a sep
 Immediately after the revision-control checkpoint, the initially loaded production studio still displayed the prior header controls and generic queue. No draft mutation was attempted while the new administrator-only Gemini Bot EA revision control was absent. The published bundle must expose that control before the unapproved queue is changed.
 
 A cache-busted production reload and a subsequent wait for the owner session on 25 August 2026 continued to display the prior header controls. The existing ten drafts were therefore left untouched pending a verified deployment of the revision control.
+
+## Revision execution record
+
+On 25 August 2026, the owner-requested revision service was invoked through an owner-bound internal runner after the audited database migration and regression suite had passed. It reported **10 revised, 0 already current, and 0 skipped**. The operation modifies only records still in `draft` status, writes an append-only `revised` audit record for each item, and does not send content to Threads. At the time of execution, no item was approved or recorded as posted.
+
+The refreshed production studio was then verified with the owner session. It showed **10 drafts**, **0 approved**, and **0 recorded as manually posted**. Each title and caption is Gemini Bot EA-focused; the August snapshot copy retains its owner-supplied, date, loss, drawdown, and non-audited boundaries. The private studio exposed the revision control, the ordinary per-draft approval controls, and no publishing or advertising control.
+
+A final non-destructive database check confirmed **10** `draft` items and **10** `revised` audit actions. No `approved` or `posted` content item was returned by the queue-status check.
