@@ -31,7 +31,7 @@ function mockDatabase(item: Record<string, unknown>) {
   const selectFrom = vi.fn(() => ({ where: selectWhere }));
   const updateWhere = vi.fn().mockResolvedValue([{ affectedRows: 1 }]);
   const updateSet = vi.fn(() => ({ where: updateWhere }));
-  const insertValues = vi.fn().mockResolvedValue(undefined);
+  const insertValues = vi.fn().mockResolvedValue([{ insertId: 100 }]);
   const db = {
     select: vi.fn(() => ({ from: selectFrom })),
     update: vi.fn(() => ({ set: updateSet })),
@@ -39,6 +39,20 @@ function mockDatabase(item: Record<string, unknown>) {
   };
   getDbMock.mockResolvedValue(db);
   return { db, updateSet, updateWhere, insertValues };
+}
+
+function mockMissingDatabase() {
+  const selectLimit = vi.fn().mockResolvedValue([]);
+  const selectWhere = vi.fn(() => ({ limit: selectLimit }));
+  const selectFrom = vi.fn(() => ({ where: selectWhere }));
+  const insertValues = vi.fn().mockResolvedValue([{ insertId: 100 }]);
+  const db = {
+    select: vi.fn(() => ({ from: selectFrom })),
+    update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn().mockResolvedValue([{ affectedRows: 1 }]) })) })),
+    insert: vi.fn(() => ({ values: insertValues })),
+  };
+  getDbMock.mockResolvedValue(db);
+  return { db, insertValues };
 }
 
 describe("private marketing studio safeguards", () => {
@@ -78,28 +92,35 @@ describe("private marketing studio safeguards", () => {
     expect(allCaptions).not.toMatch(/guaranteed returns?|risk-free automation|passive income|\bwin rate\b|guaranteed profit/);
   });
 
-  it("revises only unapproved drafts into the Gemini Bot EA campaign and records each revision", async () => {
-    const { updateSet, insertValues } = mockDatabase(draftItem({ contentHash: "old-hash" }));
+  it("creates the twenty-draft Gemini Bot EA campaign when the desired keys are missing", async () => {
+    const { insertValues } = mockMissingDatabase();
 
-    await expect(applyGeminiBotThreadsRevision(1)).resolves.toEqual({ revised: 10, current: 0, skipped: 0 });
-    expect(updateSet).toHaveBeenCalledWith(expect.objectContaining({ title: "Gemini Bot EA is not a shortcut around risk", status: "draft", complianceStatus: "passed" }));
-    expect(insertValues).toHaveBeenCalledWith(expect.objectContaining({ actorUserId: 1, action: "revised", note: "Gemini Bot EA-only Threads revision" }));
+    await expect(applyGeminiBotThreadsRevision(1)).resolves.toEqual({ created: 20, revised: 0, current: 0, skipped: 0, archived: 0 });
+    expect(insertValues).toHaveBeenCalledWith(expect.objectContaining({ title: "A trading process you can inspect", status: "draft", complianceStatus: "passed" }));
+    expect(insertValues).toHaveBeenCalledWith(expect.objectContaining({ actorUserId: 1, action: "revised", note: "Gemini Bot EA 20-day campaign created" }));
   });
 
   it("does not overwrite an approved or posted caption during the Gemini Bot EA revision", async () => {
     const { updateSet } = mockDatabase(draftItem({ status: "approved", contentHash: "old-hash" }));
 
-    await expect(applyGeminiBotThreadsRevision(1)).resolves.toEqual({ revised: 0, current: 0, skipped: 10 });
+    await expect(applyGeminiBotThreadsRevision(1)).resolves.toEqual({ created: 0, revised: 0, current: 0, skipped: 20, archived: 0 });
     expect(updateSet).not.toHaveBeenCalled();
   });
 
   it("keeps the Gemini Bot EA revision factual, risk-balanced, and separate from 3S performance claims", () => {
     const captions = GEMINI_BOT_THREADS_REVISION.map(item => `${item.title} ${item.caption}`).join(" ").toLowerCase();
 
-    expect(GEMINI_BOT_THREADS_REVISION).toHaveLength(10);
+    expect(GEMINI_BOT_THREADS_REVISION).toHaveLength(20);
     expect(captions).toContain("gemini bot ea");
     expect(captions).not.toMatch(/guaranteed returns?|risk-free automation|passive income|\bwin rate\b|guaranteed profit/);
     expect(captions).not.toContain("3s universal ea");
-    expect(GEMINI_BOT_THREADS_REVISION.filter(item => item.assetUrl)).toHaveLength(5);
+    expect(GEMINI_BOT_THREADS_REVISION.filter(item => item.assetUrl)).toHaveLength(13);
+    expect(new Set(GEMINI_BOT_THREADS_REVISION.map(item => item.contentKey)).size).toBe(20);
+    for (const draft of GEMINI_BOT_THREADS_REVISION) {
+      expect(draft.caption.length).toBeLessThanOrEqual(500);
+      expect(draft.caption.match(/#[A-Za-z0-9_]+/g)?.length ?? 0).toBeGreaterThanOrEqual(3);
+      expect(draft.caption.match(/#[A-Za-z0-9_]+/g)?.length ?? 0).toBeLessThanOrEqual(5);
+      expect(draft.caption).not.toMatch(/guaranteed returns?|guaranteed profit|risk[- ]free|passive income|fixed returns?/i);
+    }
   });
 });

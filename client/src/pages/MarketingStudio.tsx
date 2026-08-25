@@ -36,7 +36,7 @@ export default function MarketingStudio() {
     onError: error => setMessage(error.message),
   });
   const applyGeminiRevision = trpc.marketing.applyGeminiBotRevision.useMutation({
-    onSuccess: async result => { setMessage(`Gemini Bot EA draft revision applied: ${result.revised} revised, ${result.current} already current, ${result.skipped} protected from change. All revised items remain drafts; no Threads post was sent.`); await refresh(); },
+    onSuccess: async result => { setMessage(`20-day Gemini Bot EA campaign ready: ${result.created} created, ${result.revised} revised, ${result.current} already current, ${result.archived} prior drafts archived, ${result.skipped} protected from change. All new items remain drafts; no Threads post was sent.`); await refresh(); },
     onError: error => setMessage(error.message),
   });
   const approve = trpc.marketing.approve.useMutation({
