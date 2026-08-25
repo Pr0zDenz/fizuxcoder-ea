@@ -33,6 +33,8 @@ describe("Gemini VPS event draft intake", () => {
     expect(storagePutMock).toHaveBeenCalledWith("threads/gemini-vps-events/e1.png", expect.any(Buffer), "image/png");
     expect(values).toHaveBeenCalledWith(expect.objectContaining({ status: "draft", scheduledFor: null, destinationUrl: GEMINI_EVENT_PORTAL_URL, riskNotice: MARKETING_RISK_NOTICE, assetUrl: "/manus-storage/threads/gemini-vps-events/e1.png" }));
     expect(values.mock.calls[0][0].caption).toContain("not a promise or forecast");
+    expect(values.mock.calls[0][0].caption).toContain("Semak konteks penuh");
+    expect(values.mock.calls[0][0].language).toBe("en_ms");
     expect(values.mock.calls[0][0].caption).toContain(GEMINI_EVENT_PORTAL_URL);
     expect(values.mock.calls[1][0]).toEqual(expect.objectContaining({ action: "revised", actorUserId: 7 }));
     expect(db.select).toHaveBeenCalledTimes(1);

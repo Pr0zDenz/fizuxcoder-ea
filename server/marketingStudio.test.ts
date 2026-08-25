@@ -96,7 +96,8 @@ describe("private marketing studio safeguards", () => {
 
     await expect(createEvergreenGeminiDraftAfterPublish({ item: draftItem({ id: 42, contentHash: "c".repeat(64), assetUrl: null, assetAlt: null }), actorUserId: 1 })).resolves.toEqual({ created: true, contentItemId: 777 });
     expect(insertValues).toHaveBeenCalledTimes(2);
-    expect(insertValues.mock.calls[0][0]).toEqual(expect.objectContaining({ status: "draft", complianceStatus: "passed", complianceFlags: expect.stringContaining("evergreen_replenishment") }));
+    expect(insertValues.mock.calls[0][0]).toEqual(expect.objectContaining({ status: "draft", language: "en_ms", complianceStatus: "passed", complianceFlags: expect.stringContaining("evergreen_replenishment") }));
+    expect(insertValues.mock.calls[0][0].caption).toContain("portal");
     expect(insertValues.mock.calls[1][0]).toEqual(expect.objectContaining({ action: "revised", note: expect.stringContaining("Fresh Gemini Bot EA copy replenished") }));
   });
 
@@ -122,7 +123,7 @@ describe("private marketing studio safeguards", () => {
     const { insertValues } = mockMissingDatabase();
 
     await expect(applyGeminiBotThreadsRevision(1)).resolves.toEqual({ created: 20, revised: 0, current: 0, skipped: 0, archived: 0 });
-    expect(insertValues).toHaveBeenCalledWith(expect.objectContaining({ title: "A trading process you can inspect", status: "draft", complianceStatus: "passed" }));
+    expect(insertValues).toHaveBeenCalledWith(expect.objectContaining({ title: "A clearer way to explore MT5 automation", language: "en_ms", destinationUrl: "https://fizuxea-jxctlods.manus.space/portal", status: "draft", complianceStatus: "passed" }));
     expect(insertValues).toHaveBeenCalledWith(expect.objectContaining({ actorUserId: 1, action: "revised", note: "Gemini Bot EA 20-day campaign created" }));
   });
 
@@ -138,6 +139,9 @@ describe("private marketing studio safeguards", () => {
 
     expect(GEMINI_BOT_THREADS_REVISION).toHaveLength(20);
     expect(captions).toContain("gemini bot ea");
+    expect(captions).toContain("berminat");
+    expect(captions).toContain("portal");
+    expect(GEMINI_BOT_THREADS_REVISION.every(item => item.language === "en_ms")).toBe(true);
     expect(captions).not.toMatch(/guaranteed returns?|risk-free automation|passive income|\bwin rate\b|guaranteed profit/);
     expect(captions).not.toContain("3s universal ea");
     expect(GEMINI_BOT_THREADS_REVISION.filter(item => item.assetUrl)).toHaveLength(13);
