@@ -1,8 +1,14 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { getDbMock } = vi.hoisted(() => ({ getDbMock: vi.fn() }));
+const { getDbMock, publishThreadsPostMock } = vi.hoisted(() => ({ getDbMock: vi.fn(), publishThreadsPostMock: vi.fn() }));
 
 vi.mock("./db", () => ({ getDb: getDbMock }));
+vi.mock("./threadsPublisher", () => ({
+  publishThreadsPost: publishThreadsPostMock,
+  ThreadsPublishError: class ThreadsPublishError extends Error {
+    constructor(public readonly code: string, message: string) { super(message); }
+  },
+}));
 
 import { GEMINI_BOT_THREADS_REVISION, TWO_WEEK_THREADS_PILOT, applyGeminiBotThreadsRevision, approveMarketingContent, markMarketingContentPosted } from "./marketingStudio";
 
@@ -12,6 +18,9 @@ function draftItem(overrides: Record<string, unknown> = {}) {
     status: "draft",
     complianceStatus: "passed",
     contentHash: "a".repeat(64),
+    caption: "Gemini Bot EA note",
+    riskNotice: "Automated trading carries risk.",
+    assetUrl: "/manus-storage/gemini.png",
     ...overrides,
   };
 }
@@ -20,7 +29,7 @@ function mockDatabase(item: Record<string, unknown>) {
   const selectLimit = vi.fn().mockResolvedValue([item]);
   const selectWhere = vi.fn(() => ({ limit: selectLimit }));
   const selectFrom = vi.fn(() => ({ where: selectWhere }));
-  const updateWhere = vi.fn().mockResolvedValue(undefined);
+  const updateWhere = vi.fn().mockResolvedValue([{ affectedRows: 1 }]);
   const updateSet = vi.fn(() => ({ where: updateWhere }));
   const insertValues = vi.fn().mockResolvedValue(undefined);
   const db = {
@@ -29,30 +38,38 @@ function mockDatabase(item: Record<string, unknown>) {
     insert: vi.fn(() => ({ values: insertValues })),
   };
   getDbMock.mockResolvedValue(db);
-  return { db, updateSet, insertValues };
+  return { db, updateSet, updateWhere, insertValues };
 }
 
 describe("private marketing studio safeguards", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    publishThreadsPostMock.mockResolvedValue({ externalPostId: "threads-post-1", hasImage: true });
+  });
+
   it("does not allow an unapproved draft to be marked as manually posted", async () => {
     const { updateSet } = mockDatabase(draftItem({ status: "draft" }));
 
-    await expect(markMarketingContentPosted({ contentItemId: 9, actorUserId: 1 })).rejects.toThrow("Only an approved draft may be marked as manually posted");
+    await expect(markMarketingContentPosted({ contentItemId: 9, actorUserId: 1 })).rejects.toThrow("Manual posting is available only for legacy approved records");
     expect(updateSet).not.toHaveBeenCalled();
   });
 
   it("does not approve a draft until its compliance review has passed", async () => {
     const { updateSet } = mockDatabase(draftItem({ complianceStatus: "pending" }));
 
-    await expect(approveMarketingContent({ contentItemId: 9, actorUserId: 1 })).rejects.toThrow("Resolve compliance review before approving this draft");
+    await expect(approveMarketingContent({ contentItemId: 9, actorUserId: 1 })).rejects.toThrow("Resolve compliance review before publishing this draft");
     expect(updateSet).not.toHaveBeenCalled();
+    expect(publishThreadsPostMock).not.toHaveBeenCalled();
   });
 
-  it("writes an approval update and audit only for a compliant draft", async () => {
+  it("publishes the approved caption with its required notice and selected image", async () => {
     const { updateSet, insertValues } = mockDatabase(draftItem({ status: "draft", complianceStatus: "passed" }));
 
-    await expect(approveMarketingContent({ contentItemId: 9, actorUserId: 1 })).resolves.toEqual({ success: true });
-    expect(updateSet).toHaveBeenCalledWith(expect.objectContaining({ status: "approved", approvedByUserId: 1 }));
-    expect(insertValues).toHaveBeenCalledWith(expect.objectContaining({ contentItemId: 9, actorUserId: 1, action: "approved" }));
+    await expect(approveMarketingContent({ contentItemId: 9, actorUserId: 1 })).resolves.toEqual({ success: true, externalPostId: "threads-post-1", hasImage: true });
+    expect(updateSet).toHaveBeenCalledWith(expect.objectContaining({ status: "publish_pending", approvedByUserId: 1 }));
+    expect(publishThreadsPostMock).toHaveBeenCalledWith(expect.objectContaining({ ownerUserId: 1, text: "Gemini Bot EA note\n\nAutomated trading carries risk.", assetUrl: "/manus-storage/gemini.png" }));
+    expect(insertValues).toHaveBeenCalledWith(expect.objectContaining({ actorUserId: 1, action: "approved" }));
+    expect(insertValues).toHaveBeenCalledWith(expect.objectContaining({ actorUserId: 1, action: "published" }));
   });
 
   it("keeps the seeded pilot educational and free of return promises", () => {
@@ -83,5 +100,6 @@ describe("private marketing studio safeguards", () => {
     expect(captions).toContain("gemini bot ea");
     expect(captions).not.toMatch(/guaranteed returns?|risk-free automation|passive income|\bwin rate\b|guaranteed profit/);
     expect(captions).not.toContain("3s universal ea");
+    expect(GEMINI_BOT_THREADS_REVISION.filter(item => item.assetUrl)).toHaveLength(5);
   });
 });

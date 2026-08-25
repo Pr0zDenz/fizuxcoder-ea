@@ -183,7 +183,7 @@ export const marketingContentItems = mysqlTable("marketingContentItems", {
   destinationUrl: varchar("destinationUrl", { length: 512 }).notNull(),
   riskNotice: varchar("riskNotice", { length: 255 }).notNull(),
   scheduledFor: timestamp("scheduledFor"),
-  status: mysqlEnum("status", ["draft", "approved", "posted", "rejected"]).notNull().default("draft"),
+  status: mysqlEnum("status", ["draft", "approved", "publish_pending", "publish_failed", "posted", "rejected"]).notNull().default("draft"),
   complianceStatus: mysqlEnum("complianceStatus", ["pending", "passed", "flagged"]).notNull().default("pending"),
   complianceFlags: text("complianceFlags"),
   contentHash: varchar("contentHash", { length: 64 }).notNull(),
@@ -192,12 +192,17 @@ export const marketingContentItems = mysqlTable("marketingContentItems", {
   postedByUserId: int("postedByUserId").references(() => users.id, { onDelete: "set null" }),
   postedAt: timestamp("postedAt"),
   externalPostId: varchar("externalPostId", { length: 128 }),
+  publishAttemptKey: varchar("publishAttemptKey", { length: 64 }),
+  publishAttemptedAt: timestamp("publishAttemptedAt"),
+  publishErrorCode: varchar("publishErrorCode", { length: 64 }),
+  publishErrorMessage: varchar("publishErrorMessage", { length: 255 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, table => [
   uniqueIndex("marketingContentItems_contentKey_unique").on(table.contentKey),
   index("marketingContentItems_status_scheduled_idx").on(table.status, table.scheduledFor),
   index("marketingContentItems_approval_idx").on(table.approvedByUserId, table.approvedAt),
+  uniqueIndex("marketingContentItems_publish_attempt_key_unique").on(table.publishAttemptKey),
 ]);
 
 /**
@@ -208,7 +213,7 @@ export const marketingContentAudits = mysqlTable("marketingContentAudits", {
   id: int("id").autoincrement().primaryKey(),
   contentItemId: int("contentItemId").notNull().references(() => marketingContentItems.id, { onDelete: "cascade" }),
   actorUserId: int("actorUserId").notNull().references(() => users.id, { onDelete: "cascade" }),
-  action: mysqlEnum("action", ["seeded", "revised", "approved", "rejected", "marked_posted"]).notNull(),
+  action: mysqlEnum("action", ["seeded", "revised", "approved", "publish_started", "published", "publish_failed", "rejected", "marked_posted"]).notNull(),
   contentHash: varchar("contentHash", { length: 64 }).notNull(),
   note: varchar("note", { length: 255 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

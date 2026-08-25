@@ -207,3 +207,10 @@
 - [x] Regression-test and visually verify the Gemini-only performance attribution before publishing the correction.
 - [x] Review and revise the private Threads draft queue for Gemini Bot EA-only marketing; do not change the public landing page or publish any Threads post.
 - [x] Verify the revised Threads drafts remain private, approval-gated, and free from profit guarantees or unsupported performance claims.
+- [x] Verify official Threads publishing API requirements and choose the WebDev event-handler architecture for approval-triggered posting.
+- [x] Add server-side approval-triggered Threads publishing with duplicate prevention, exact-approved-content enforcement, and provider-failure auditing.
+- [x] Extend the private studio UI and data model for publish attempts while keeping advertisements, spend, and unapproved drafts disabled.
+- [x] Add migration, unit tests, and browser verification for successful, duplicate, failed, expired-token, and unauthorized publish paths.
+- [x] Publish the auto-post capability only after all tests and safeguards pass; do not publish any live marketing post during implementation.
+- [x] Map each image-backed Gemini Bot EA draft to one approved supplied image URL for automatic Threads publication; keep text-only drafts text-only and leave the landing page unchanged.
+- [x] Test and verify the one-image-per-post publishing path, including public asset URL handling, exact approved content, duplicate prevention, and no live post during development.

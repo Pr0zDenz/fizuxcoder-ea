@@ -102,6 +102,26 @@ export async function getThreadsAuthorization(ownerUserId: number) {
   return authorization ? { ...authorization, accessToken: decryptThreadsAccessToken(authorization.encryptedAccessToken) } : null;
 }
 
+export async function getThreadsAuthorizationForPublishing(ownerUserId: number) {
+  const authorization = await getThreadsAuthorization(ownerUserId);
+  if (!authorization || !authorization.expiresAt) return authorization;
+  const remainingMs = authorization.expiresAt.getTime() - Date.now();
+  if (remainingMs > 7 * 24 * 60 * 60 * 1000) return authorization;
+  if (Date.now() - authorization.authorizedAt.getTime() < 24 * 60 * 60 * 1000) return authorization;
+
+  const refreshUrl = new URL("https://graph.threads.com/refresh_access_token");
+  refreshUrl.search = new URLSearchParams({ grant_type: "th_refresh_token", access_token: authorization.accessToken }).toString();
+  const refreshedResponse = await fetch(refreshUrl);
+  const refreshed = await responseJson<ThreadsTokenResponse>(refreshedResponse);
+  if (!refreshedResponse.ok || !refreshed.access_token || !refreshed.expires_in) throw new Error("Threads authorization needs to be reconnected");
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  const expiresAt = new Date(Date.now() + refreshed.expires_in * 1000);
+  const encryptedAccessToken = encryptThreadsAccessToken(refreshed.access_token);
+  await db.update(threadsAuthorizations).set({ encryptedAccessToken, expiresAt, updatedAt: new Date() }).where(eq(threadsAuthorizations.ownerUserId, ownerUserId));
+  return { ...authorization, accessToken: refreshed.access_token, encryptedAccessToken, expiresAt };
+}
+
 export async function getThreadsConnectionStatus(ownerUserId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database is unavailable");

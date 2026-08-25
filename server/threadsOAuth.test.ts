@@ -20,14 +20,16 @@ describe("Threads OAuth security boundary", () => {
     expect(THREADS_DATA_DELETION_URL).toBe("https://fizuxea-jxctlods.manus.space/api/threads/data-deletion");
   });
 
-  it("requests only identity and content-publish scopes while exposing no publishing endpoint", () => {
+  it("requests only identity and content-publish scopes while keeping publication server-side", () => {
     const source = readFileSync(sourcePath, "utf8");
 
     expect(source).toContain('const THREADS_SCOPES = "threads_basic,threads_content_publish";');
     expect(source).toContain('app.get("/api/threads/oauth/start"');
     expect(source).toContain('app.post("/api/threads/deauthorize"');
     expect(source).toContain('app.post("/api/threads/data-deletion"');
-    expect(source).not.toContain('threads.com/v1.0/{threads-user-id}/threads');
+    expect(source).toContain('https://graph.threads.com/refresh_access_token');
+    expect(source).toContain('grant_type: "th_refresh_token"');
+    expect(source).not.toContain('res.json({ accessToken');
   });
 
   it("keeps encrypted access tokens out of the connection-status projection", () => {

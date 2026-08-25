@@ -2,6 +2,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { createHash } from "node:crypto";
 import { marketingContentAudits, marketingContentItems } from "../drizzle/schema";
 import { getDb } from "./db";
+import { publishThreadsPost, ThreadsPublishError } from "./threadsPublisher";
 
 export const MARKETING_RISK_NOTICE = "Automated trading carries risk. Review the system and risk notes before deciding.";
 
@@ -140,16 +141,39 @@ export async function applyGeminiBotThreadsRevision(actorUserId: number) {
   return { revised, current, skipped };
 }
 
-export async function approveMarketingContent({ contentItemId, actorUserId }: { contentItemId: number; actorUserId: number }) {
+async function publishApprovedMarketingContent({ contentItemId, actorUserId, retry }: { contentItemId: number; actorUserId: number; retry: boolean }) {
   const db = await getDb();
   if (!db) throw new Error("Database is unavailable");
   const [item] = await db.select().from(marketingContentItems).where(eq(marketingContentItems.id, contentItemId)).limit(1);
   if (!item) throw new Error("Marketing draft not found");
-  if (item.status !== "draft") throw new Error("Only a draft can be approved");
-  if (item.complianceStatus !== "passed") throw new Error("Resolve compliance review before approving this draft");
-  await db.update(marketingContentItems).set({ status: "approved", approvedByUserId: actorUserId, approvedAt: new Date() }).where(and(eq(marketingContentItems.id, contentItemId), eq(marketingContentItems.status, "draft")));
-  await db.insert(marketingContentAudits).values({ contentItemId, actorUserId, action: "approved", contentHash: item.contentHash, note: "Manual Threads posting approved" });
-  return { success: true };
+  if (item.complianceStatus !== "passed") throw new Error("Resolve compliance review before publishing this draft");
+  if (retry ? item.status !== "publish_failed" : item.status !== "draft") throw new Error(retry ? "Only a failed automatic publication can be retried" : "Only a draft can be approved and published");
+  const attemptKey = createHash("sha256").update(`${item.id}:${item.contentHash}`).digest("hex");
+  const now = new Date();
+  const transition = await db.update(marketingContentItems).set({ status: "publish_pending", approvedByUserId: actorUserId, approvedAt: now, publishAttemptKey: attemptKey, publishAttemptedAt: now, publishErrorCode: null, publishErrorMessage: null }).where(and(eq(marketingContentItems.id, item.id), retry ? eq(marketingContentItems.status, "publish_failed") : eq(marketingContentItems.status, "draft")));
+  if (!transition[0].affectedRows) throw new Error("This draft is already being processed or has changed");
+  await db.insert(marketingContentAudits).values({ contentItemId: item.id, actorUserId, action: retry ? "publish_started" : "approved", contentHash: item.contentHash, note: retry ? "Automatic Threads publication retry started" : "Approval triggered automatic Threads publication" });
+  const text = `${item.caption}\n\n${item.riskNotice}`;
+  try {
+    const published = await publishThreadsPost({ ownerUserId: actorUserId, text, assetUrl: item.assetUrl });
+    await db.update(marketingContentItems).set({ status: "posted", postedByUserId: actorUserId, postedAt: new Date(), externalPostId: published.externalPostId, publishErrorCode: null, publishErrorMessage: null }).where(and(eq(marketingContentItems.id, item.id), eq(marketingContentItems.status, "publish_pending"), eq(marketingContentItems.publishAttemptKey, attemptKey)));
+    await db.insert(marketingContentAudits).values({ contentItemId: item.id, actorUserId, action: "published", contentHash: item.contentHash, note: published.hasImage ? "Automatic Threads publication succeeded with one image" : "Automatic Threads publication succeeded as text-only" });
+    return { success: true, externalPostId: published.externalPostId, hasImage: published.hasImage };
+  } catch (error) {
+    const code = error instanceof ThreadsPublishError ? error.code : "PUBLISH_ERROR";
+    const message = error instanceof Error ? error.message : "Threads publication failed";
+    await db.update(marketingContentItems).set({ status: "publish_failed", publishErrorCode: code.slice(0, 64), publishErrorMessage: message.slice(0, 255) }).where(and(eq(marketingContentItems.id, item.id), eq(marketingContentItems.status, "publish_pending"), eq(marketingContentItems.publishAttemptKey, attemptKey)));
+    await db.insert(marketingContentAudits).values({ contentItemId: item.id, actorUserId, action: "publish_failed", contentHash: item.contentHash, note: `${code}: ${message}`.slice(0, 255) });
+    throw new Error(`Automatic Threads publication failed (${code}). ${message}`);
+  }
+}
+
+export function approveMarketingContent({ contentItemId, actorUserId }: { contentItemId: number; actorUserId: number }) {
+  return publishApprovedMarketingContent({ contentItemId, actorUserId, retry: false });
+}
+
+export function retryMarketingContentPublication({ contentItemId, actorUserId }: { contentItemId: number; actorUserId: number }) {
+  return publishApprovedMarketingContent({ contentItemId, actorUserId, retry: true });
 }
 
 export async function rejectMarketingContent({ contentItemId, actorUserId, note }: { contentItemId: number; actorUserId: number; note?: string }) {
@@ -168,7 +192,7 @@ export async function markMarketingContentPosted({ contentItemId, actorUserId, e
   if (!db) throw new Error("Database is unavailable");
   const [item] = await db.select().from(marketingContentItems).where(eq(marketingContentItems.id, contentItemId)).limit(1);
   if (!item) throw new Error("Marketing draft not found");
-  if (item.status !== "approved") throw new Error("Only an approved draft may be marked as manually posted");
+  if (item.status !== "approved") throw new Error("Manual posting is available only for legacy approved records");
   await db.update(marketingContentItems).set({ status: "posted", postedByUserId: actorUserId, postedAt: new Date(), externalPostId: externalPostId?.trim().slice(0, 128) || null }).where(and(eq(marketingContentItems.id, contentItemId), eq(marketingContentItems.status, "approved")));
   await db.insert(marketingContentAudits).values({ contentItemId, actorUserId, action: "marked_posted", contentHash: item.contentHash, note: "Owner attested to manual Threads publication" });
   return { success: true };

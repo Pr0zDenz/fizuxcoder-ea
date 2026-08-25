@@ -37,7 +37,7 @@ describe("customer portal administrator boundary", () => {
     expect(app).toContain('<Route path="/admin/operations" component={AdminOperations} />');
   });
 
-  it("keeps the marketing studio on its own administrator-gated route with manual-only wording", () => {
+  it("keeps the marketing studio on its own administrator-gated route with approval-triggered wording", () => {
     const studio = readFileSync(marketingStudioPath, "utf8");
     const app = readFileSync(appPath, "utf8");
     const routers = readFileSync(routersPath, "utf8");
@@ -45,15 +45,16 @@ describe("customer portal administrator boundary", () => {
     expect(studio).toContain('const isAdmin = user?.role === "admin";');
     expect(studio).toContain("if (!isAuthenticated)");
     expect(studio).toContain("if (!isAdmin)");
-    expect(studio).toContain("No API call to Threads was made.");
-    expect(studio).toContain("no auto-publish control, advertising campaign, or spend capability");
+    expect(studio).toContain("Approval publishes that approved item to the connected owner account");
+    expect(studio).toContain("no advertising campaign or spend capability");
+    expect(studio).toContain("One supplied image will be attached when this item is published.");
     expect(studio).toContain('href="/api/threads/oauth/start"');
     expect(studio).toContain("trpc.marketing.");
     expect(app).toContain('<Route path="/admin/marketing" component={MarketingStudio} />');
     expect(routers).toContain("marketing: router({");
     expect(routers).toContain("seedTwoWeekPilot: adminProcedure");
     expect(routers).toContain("applyGeminiBotRevision: adminProcedure");
-    expect(routers).toContain("markManuallyPosted: adminProcedure");
+    expect(routers).toContain("retryPublish: adminProcedure");
     expect(routers).toContain("threadsConnection: adminProcedure");
   });
 
