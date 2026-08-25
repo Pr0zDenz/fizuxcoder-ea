@@ -184,6 +184,68 @@ export async function applyGeminiBotThreadsRevision(actorUserId: number) {
   return { created, revised, current, skipped, archived };
 }
 
+export const EVERGREEN_GEMINI_COPY_BANK = [
+  { title: "Inspect the process, not just the outcome", caption: "Interested in Gemini Bot EA? Start with the process: review the MT5 setup, understand the configured rules, test on demo, and monitor the account. A historical result can invite questions; it cannot promise your outcome. #GeminiBotEA #MT5 #TradingEducation #DemoFirst" },
+  { title: "A clearer way to evaluate an EA", caption: "A serious EA evaluation asks practical questions: what does it trade, how is size set, how can drawdown appear, and what happens when conditions change? Gemini Bot EA is software to study and operate responsibly—not a guarantee of profit. #GeminiBotEA #MT5 #RiskManagement #AlgorithmicTrading" },
+  { title: "Opportunity starts with preparation", caption: "The opportunity is not certainty. It is the chance to evaluate a defined MT5 workflow before risking live capital. Review Gemini Bot EA, test on demo, and decide only after the settings and risks make sense for you. #GeminiBotEA #MT5 #DemoTrading #TradingSystems" },
+  { title: "Every account has its own conditions", caption: "Same EA, different account conditions. Results can vary with balance, settings, broker execution, spread, slippage, market regime, and timing. Treat Gemini Bot EA as a system to evaluate—not an income promise. #GeminiBotEA #XAUUSD #MT5 #RiskFirst" },
+  { title: "Read the whole trading picture", caption: "Profit numbers attract attention. Losses, drawdown, costs, frequency, and execution complete the picture. If you are evaluating Gemini Bot EA, review the evidence carefully and test the setup before making a live decision. #GeminiBotEA #TradingEvidence #MT5 #RiskManagement" },
+  { title: "Automation should make decisions clearer", caption: "Automation does not remove responsibility. Gemini Bot EA can execute configured rules on MT5, while you remain responsible for setup, monitoring, broker choice, and risk. Learn the workflow before you decide whether it fits. #GeminiBotEA #MT5 #AlgorithmicTrading #TradingEducation" },
+  { title: "Do not skip the demo phase", caption: "Before live use, verify symbol settings, permissions, sizing, spread conditions, and expected behavior on demo. Gemini Bot EA deserves a review based on your own tolerance—not a rushed decision based on one screenshot. #GeminiBotEA #DemoFirst #MT5 #RiskManagement" },
+  { title: "The right questions beat the loudest claim", caption: "Ask better questions before choosing an EA: What is the process? What can fail? What drawdown can I tolerate? How will I monitor it? Gemini Bot EA is for evaluation and responsible operation, not guaranteed returns. #GeminiBotEA #MT5 #TradingQuestions #RiskFirst" },
+  { title: "Study the journey, not only the finish", caption: "A profitable line on a chart is only one part of a trading record. Study the path, losing periods, drawdown, costs, and conditions. Historical Gemini Bot EA material is context—not a forecast. #GeminiBotEA #TradingJournal #MT5 #TradingEvidence" },
+  { title: "Build your own view of the system", caption: "Do not outsource your judgement to a bot or a screenshot. Review Gemini Bot EA documentation, understand the MT5 workflow, test on demo, and form your own view before using live funds. #GeminiBotEA #MT5 #DemoTrading #TradingEducation" },
+  { title: "Configured execution still meets a changing market", caption: "Market conditions change. Slippage, spreads, connectivity, and volatility can change the experience of any automated strategy. Gemini Bot EA is not risk-free; review the controls and monitor your own account. #GeminiBotEA #MT5 #RiskManagement #XAUUSD" },
+  { title: "A system is easier to judge when the limits are visible", caption: "Good evaluation includes limits: maximum drawdown, losing streaks, exposure, costs, and what you will do if conditions change. Gemini Bot EA historical material should be read with those limits visible. #GeminiBotEA #TradingEvidence #MT5 #RiskFirst" },
+  { title: "Use evidence to investigate, not imitate", caption: "An owner-supplied account screenshot can help you investigate a system. It cannot tell you what your account will earn. Examine Gemini Bot EA evidence, settings, timing, and risk before deciding what to do next. #GeminiBotEA #XAUUSD #MT5 #TradingJournal" },
+  { title: "MT5 automation needs an operating plan", caption: "Before installing Gemini Bot EA, decide how you will configure, monitor, pause, and review it. The software is only one part of the operating plan; your risk limits and attention still matter. #GeminiBotEA #MT5 #ExpertAdvisor #RiskManagement" },
+  { title: "The best first step is a measured one", caption: "Curious about Gemini Bot EA? Take a measured first step: read the guide, confirm your MT5 environment, use demo testing, and record what you observe. Past results do not guarantee future results. #GeminiBotEA #MT5 #DemoFirst #TradingEducation" },
+  { title: "Performance has a context", caption: "Gross profit, gross loss, profit factor, and drawdown each answer a different question. Review them together before forming an opinion about Gemini Bot EA. No single metric can predict your personal result. #GeminiBotEA #TradingEvidence #MT5 #RiskManagement" },
+  { title: "Responsible automation is an active decision", caption: "Choosing automation is not switching off. It means understanding the rules, checking the environment, monitoring execution, and accepting that losses are possible. Evaluate Gemini Bot EA on that basis. #GeminiBotEA #MT5 #AlgorithmicTrading #RiskFirst" },
+  { title: "What happens after you decide matters", caption: "A responsible Gemini Bot EA workflow includes protected delivery, documented installation, account setup, demo testing, and ongoing review. Clear steps do not remove market risk—but they reduce avoidable setup confusion. #GeminiBotEA #MT5 #TradingWorkflow #DemoFirst" },
+  { title: "Attention is useful when it leads to better questions", caption: "A strong result can catch your eye. Let the next step be a stronger question: what conditions produced it, what losses occurred, and how would I respond? Review Gemini Bot EA without assuming repetition. #GeminiBotEA #XAUUSD #MT5 #TradingEvidence" },
+  { title: "Decide with information, not urgency", caption: "If you are considering Gemini Bot EA, take time to understand the product, test the setup, and decide whether the risk fits your circumstances. There is no promise that an EA will earn profit for you. #GeminiBotEA #MT5 #RiskManagement #DemoFirst" },
+] as const;
+
+export async function createEvergreenGeminiDraftAfterPublish({ item, actorUserId }: { item: typeof marketingContentItems.$inferSelect; actorUserId: number }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  const copy = EVERGREEN_GEMINI_COPY_BANK[(item.id + item.contentHash.charCodeAt(0)) % EVERGREEN_GEMINI_COPY_BANK.length];
+  const contentKey = `threads-gemini-evergreen-${item.id}-${item.contentHash.slice(0, 12)}`;
+  const [existing] = await db.select({ id: marketingContentItems.id, status: marketingContentItems.status }).from(marketingContentItems).where(eq(marketingContentItems.contentKey, contentKey)).limit(1);
+  if (existing) return { created: false, contentItemId: existing.id };
+  const draft = {
+    contentKey,
+    title: copy.title,
+    caption: copy.caption,
+    language: "en" as const,
+    assetUrl: item.assetUrl ?? undefined,
+    assetAlt: item.assetAlt ?? undefined,
+    destinationUrl: item.destinationUrl,
+    dayOffset: 1,
+  };
+  const hash = contentHash(draft);
+  const scheduledFor = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const result = await db.insert(marketingContentItems).values({
+    contentKey: draft.contentKey,
+    title: draft.title,
+    caption: draft.caption,
+    language: draft.language,
+    assetUrl: draft.assetUrl,
+    assetAlt: draft.assetAlt,
+    destinationUrl: draft.destinationUrl,
+    riskNotice: MARKETING_RISK_NOTICE,
+    scheduledFor,
+    status: "draft",
+    complianceStatus: "passed",
+    complianceFlags: JSON.stringify(["evergreen_replenishment", `after_post_${item.id}`]),
+    contentHash: hash,
+  });
+  const contentItemId = Number(result[0].insertId);
+  await db.insert(marketingContentAudits).values({ contentItemId, actorUserId, action: "revised", contentHash: hash, note: `Fresh Gemini Bot EA copy replenished after post #${item.id}`.slice(0, 255) });
+  return { created: true, contentItemId };
+}
+
 async function publishApprovedMarketingContent({ contentItemId, actorUserId, retry }: { contentItemId: number; actorUserId: number; retry: boolean }) {
   const db = await getDb();
   if (!db) throw new Error("Database is unavailable");
@@ -201,7 +263,14 @@ async function publishApprovedMarketingContent({ contentItemId, actorUserId, ret
     const published = await publishThreadsPost({ ownerUserId: actorUserId, text, assetUrl: item.assetUrl });
     await db.update(marketingContentItems).set({ status: "posted", postedByUserId: actorUserId, postedAt: new Date(), externalPostId: published.externalPostId, publishErrorCode: null, publishErrorMessage: null }).where(and(eq(marketingContentItems.id, item.id), eq(marketingContentItems.status, "publish_pending"), eq(marketingContentItems.publishAttemptKey, attemptKey)));
     await db.insert(marketingContentAudits).values({ contentItemId: item.id, actorUserId, action: "published", contentHash: item.contentHash, note: published.hasImage ? "Automatic Threads publication succeeded with one image" : "Automatic Threads publication succeeded as text-only" });
-    return { success: true, externalPostId: published.externalPostId, hasImage: published.hasImage };
+    let replenishment: { created: boolean; contentItemId?: number } = { created: false };
+    try {
+      replenishment = await createEvergreenGeminiDraftAfterPublish({ item, actorUserId });
+    } catch (replenishmentError) {
+      console.error("[Threads] Published post but evergreen replenishment failed", replenishmentError);
+    }
+    return { success: true, externalPostId: published.externalPostId, hasImage: published.hasImage, replenishment };
+
   } catch (error) {
     const code = error instanceof ThreadsPublishError ? error.code : "PUBLISH_ERROR";
     const message = error instanceof Error ? error.message : "Threads publication failed";

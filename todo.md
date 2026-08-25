@@ -225,3 +225,6 @@
 - [x] Deploy the handler, create the monthly schedule, verify its configuration, and document the next execution boundary.
 - [x] Diagnose why the private Threads Approve & publish action gives no visible success or failure response, without retrying or creating a live post during diagnosis.
 - [x] Add explicit in-progress, success, failure, and duplicate-safe feedback for the Threads publish mutation, then test desktop/mobile behavior and publish the fix.
+- [x] Verify the exact rejected-draft counts and distinguish superseded archive records from any provider-rejected publication attempts.
+- [x] Add an auditable evergreen Gemini Bot EA replenishment path that creates one fresh unpublished copy draft after each successful post, with duplicate guards and no replacement auto-publish.
+- [x] Update the private studio to explain rejected versus archived statuses and show replenishment outcomes; test and publish without sending a replacement post.

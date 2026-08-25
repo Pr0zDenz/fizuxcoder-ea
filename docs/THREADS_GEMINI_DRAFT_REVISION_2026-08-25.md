@@ -27,3 +27,19 @@ On 25 August 2026, the owner-requested revision service was invoked through an o
 The refreshed production studio was then verified with the owner session. It showed **10 drafts**, **0 approved**, and **0 recorded as manually posted**. Each title and caption is Gemini Bot EA-focused; the August snapshot copy retains its owner-supplied, date, loss, drawdown, and non-audited boundaries. The private studio exposed the revision control, the ordinary per-draft approval controls, and no publishing or advertising control.
 
 A final non-destructive database check confirmed **10** `draft` items and **10** `revised` audit actions. No `approved` or `posted` content item was returned by the queue-status check.
+
+## Evergreen replenishment and archive-label verification
+
+After the successful publication path was extended, the development preview was checked at desktop and mobile sizes without triggering publication. The desktop capture encountered the transient loading state while the private query initialized. The mobile capture rendered the owner connection, approval-triggered workflow, draft-review status, and Gemini Bot EA revision control legibly. The studio now labels superseded pilot records as **archived / superseded** and explains that they are not Threads provider rejections. The successful-publish feedback path reports whether a fresh unpublished draft was queued or whether the idempotency guard prevented a duplicate.
+
+The fresh-copy helper selects a deterministic new caption from the evergreen Gemini Bot EA copy bank, preserves the published item’s selected-image mapping, creates the replacement in `draft` status with `complianceStatus=passed`, and records an append-only audit action. It does not publish the replacement automatically.
+
+The project’s existing live-production status remains unchanged by this verification; no replacement Threads post was sent.
+
+
+## Final archive and replenishment UI check
+
+The private studio was checked again at 1280 × 720 and 375 × 812 without triggering an approval or publication. Desktop rendered the queue summary with **19 draft review**, **0 approved to post**, **2 recorded published**, and **9 archived / superseded**; the connection and approval guardrail remained visible. Mobile rendered the same owner connection and approval-triggered controls without clipping. Superseded records are visibly distinguished from provider failures, and successful publication feedback is wired to report whether a fresh draft was created or an idempotent duplicate was prevented.
+
+No replacement post was sent during this check.
+

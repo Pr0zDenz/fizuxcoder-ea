@@ -10,7 +10,7 @@ vi.mock("./threadsPublisher", () => ({
   },
 }));
 
-import { GEMINI_BOT_THREADS_REVISION, TWO_WEEK_THREADS_PILOT, applyGeminiBotThreadsRevision, approveMarketingContent, markMarketingContentPosted } from "./marketingStudio";
+import { GEMINI_BOT_THREADS_REVISION, TWO_WEEK_THREADS_PILOT, applyGeminiBotThreadsRevision, approveMarketingContent, createEvergreenGeminiDraftAfterPublish, markMarketingContentPosted } from "./marketingStudio";
 
 function draftItem(overrides: Record<string, unknown> = {}) {
   return {
@@ -79,11 +79,37 @@ describe("private marketing studio safeguards", () => {
   it("publishes the approved caption with its required notice and selected image", async () => {
     const { updateSet, insertValues } = mockDatabase(draftItem({ status: "draft", complianceStatus: "passed" }));
 
-    await expect(approveMarketingContent({ contentItemId: 9, actorUserId: 1 })).resolves.toEqual({ success: true, externalPostId: "threads-post-1", hasImage: true });
+    await expect(approveMarketingContent({ contentItemId: 9, actorUserId: 1 })).resolves.toEqual({ success: true, externalPostId: "threads-post-1", hasImage: true, replenishment: { created: false, contentItemId: 9 } });
     expect(updateSet).toHaveBeenCalledWith(expect.objectContaining({ status: "publish_pending", approvedByUserId: 1 }));
     expect(publishThreadsPostMock).toHaveBeenCalledWith(expect.objectContaining({ ownerUserId: 1, text: "Gemini Bot EA note\n\nAutomated trading carries risk.", assetUrl: "/manus-storage/gemini.png" }));
     expect(insertValues).toHaveBeenCalledWith(expect.objectContaining({ actorUserId: 1, action: "approved" }));
     expect(insertValues).toHaveBeenCalledWith(expect.objectContaining({ actorUserId: 1, action: "published" }));
+  });
+
+  it("creates one fresh unpublished copy after a successful post and records the replenishment audit", async () => {
+    const insertValues = vi.fn().mockResolvedValue([{ insertId: 777 }]);
+    const db = {
+      select: vi.fn(() => ({ from: vi.fn(() => ({ where: vi.fn(() => ({ limit: vi.fn().mockResolvedValue([]) })) })) })),
+      insert: vi.fn(() => ({ values: insertValues })),
+    };
+    getDbMock.mockResolvedValue(db);
+
+    await expect(createEvergreenGeminiDraftAfterPublish({ item: draftItem({ id: 42, contentHash: "c".repeat(64), assetUrl: null, assetAlt: null }), actorUserId: 1 })).resolves.toEqual({ created: true, contentItemId: 777 });
+    expect(insertValues).toHaveBeenCalledTimes(2);
+    expect(insertValues.mock.calls[0][0]).toEqual(expect.objectContaining({ status: "draft", complianceStatus: "passed", complianceFlags: expect.stringContaining("evergreen_replenishment") }));
+    expect(insertValues.mock.calls[1][0]).toEqual(expect.objectContaining({ action: "revised", note: expect.stringContaining("Fresh Gemini Bot EA copy replenished") }));
+  });
+
+  it("does not create a duplicate fresh draft when the replenishment key already exists", async () => {
+    const insertValues = vi.fn();
+    const db = {
+      select: vi.fn(() => ({ from: vi.fn(() => ({ where: vi.fn(() => ({ limit: vi.fn().mockResolvedValue([{ id: 778, status: "draft" }]) })) })) })),
+      insert: vi.fn(() => ({ values: insertValues })),
+    };
+    getDbMock.mockResolvedValue(db);
+
+    await expect(createEvergreenGeminiDraftAfterPublish({ item: draftItem({ id: 42, contentHash: "c".repeat(64) }), actorUserId: 1 })).resolves.toEqual({ created: false, contentItemId: 778 });
+    expect(insertValues).not.toHaveBeenCalled();
   });
 
   it("keeps the seeded pilot educational and free of return promises", () => {
