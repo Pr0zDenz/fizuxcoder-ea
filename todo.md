@@ -191,3 +191,4 @@
 - [x] Build the administrator-only Option A content-studio interface with no publishing connector, ad creation, or spending capability.
 - [x] Seed a two-week Malaysia-focused draft queue from the approved risk-first content pack.
 - [x] Test that ordinary customers cannot access the marketing studio and that drafts cannot be marked manually posted without an administrator approval.
+- [x] Verify and correct the main-page 3S Serangkai UNIVERSAL EA purchase button so it opens the direct verified ToyyibPay checkout link like Gemini Bot EA.

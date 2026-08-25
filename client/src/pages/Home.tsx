@@ -23,7 +23,8 @@ import {
 } from "lucide-react";
 
 const brokerUrl = "https://trk.pepperstonepartners.com/SH1TD";
-const geminiPurchaseUrl = "/portal";
+const geminiPurchaseUrl = "https://toyyibpay.com/t1rvxbft";
+const threeSPurchaseUrl = "https://toyyibpay.com/3-Serangkai-EA";
 
 const products = {
   gemini: {
@@ -46,7 +47,7 @@ const products = {
   universal: {
     index: "02",
     name: "3 Serangkai UNIVERSAL EA",
-    version: "v13.65",
+    version: "v13.85",
     eyebrow: "17-pillar matrix & Markov Logic Network engine",
     statement: "A multi-layer basket-management framework with explicit market-state verification.",
     image: "/manus-storage/universal-ea-visual_56634923.jpg",
@@ -118,6 +119,10 @@ function SectionLabel({ index, children }: { index: string; children: React.Reac
       <p>{children}</p>
     </div>
   );
+}
+
+function PurchaseCard({ eyebrow, title, price, priorPrice, detail, href }: { eyebrow: string; title: string; price: string; priorPrice: string; detail: string; href: string }) {
+  return <article className="flex flex-col rounded-[2rem] border border-[#17201f]/15 bg-[#d7e1dc] p-7 shadow-[10px_10px_0_#0e716e] lg:p-9"><div className="flex items-start justify-between gap-5"><div><p className="font-mono text-[10px] font-bold uppercase tracking-[.14em] text-[#0e716e]">{eyebrow}</p><h3 className="mt-4 max-w-lg font-display text-4xl leading-none tracking-[-.05em]">{title}</h3></div><Sparkles className="shrink-0 text-[#e5a631]" size={31} /></div><p className="mt-6 flex-1 text-[.96rem] leading-7 text-[#52605d]">{detail}</p><div className="mt-8 flex flex-col gap-5 border-t border-[#17201f]/15 pt-6 sm:flex-row sm:items-end sm:justify-between"><div><p className="font-mono text-sm font-medium text-[#8d6c53] line-through">Was {priorPrice}</p><p className="mt-1 font-display text-4xl tracking-[-.05em]">{price}</p></div><a href={href} target="_blank" rel="noreferrer" className="button-dark">Pay securely <ExternalLink size={17} /></a></div></article>;
 }
 
 export default function Home() {
@@ -299,14 +304,12 @@ export default function Home() {
                         </li>
                       ))}
                     </ul>
-                    {activeProduct === "gemini" && (
-                      <div className="mt-7 flex flex-col gap-3 border-t border-[#17201f]/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
-                        <p className="font-mono text-[10px] font-semibold uppercase tracking-[.11em] text-[#63706b]">Secure purchase route / ToyyibPay</p>
-                        <a href={geminiPurchaseUrl} target="_blank" rel="noreferrer" className="button-primary button-small">
-                          Get Gemini Bot EA <ExternalLink size={14} />
-                        </a>
-                      </div>
-                    )}
+                    <div className="mt-7 flex flex-col gap-3 border-t border-[#17201f]/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="font-mono text-[10px] font-semibold uppercase tracking-[.11em] text-[#63706b]">Secure purchase route / ToyyibPay</p>
+                      <a href={activeProduct === "gemini" ? geminiPurchaseUrl : threeSPurchaseUrl} target="_blank" rel="noreferrer" className="button-primary button-small">
+                        Get {activeProduct === "gemini" ? "Gemini Bot EA" : "3S Universal EA"} <ExternalLink size={14} />
+                      </a>
+                    </div>
                   </div>
                 </div>
               </article>
@@ -482,29 +485,13 @@ export default function Home() {
         </section>
 
         <section id="purchase" className="bg-[#fbf9f4] py-20 lg:py-24">
-          <div className="mx-auto grid max-w-[1440px] gap-10 px-5 lg:grid-cols-[.95fr_1.05fr] lg:px-10">
-            <div>
-              <SectionLabel index="07">Gemini Bot purchase route</SectionLabel>
-              <h2 className="mt-7 max-w-2xl font-display text-[clamp(2.8rem,5vw,5.3rem)] leading-[.9] tracking-[-.06em]">Purchase the EA separately from your broker setup.</h2>
-              <p className="mt-6 max-w-xl text-lg leading-8 text-[#52605d]">Gemini Bot EA v11.97 is available through the active ToyyibPay bill supplied by the creator. A purchase decision should follow your own review of system requirements, support terms, and the risk statement—not an expectation of a particular trading result.</p>
+          <div className="mx-auto max-w-[1440px] px-5 lg:px-10">
+            <div className="grid gap-10 lg:grid-cols-[.9fr_1.1fr] lg:items-end"><div><SectionLabel index="07">Secure purchase routes</SectionLabel><h2 className="mt-7 max-w-2xl font-display text-[clamp(2.8rem,5vw,5.3rem)] leading-[.9] tracking-[-.06em]">Choose the EA separately from your broker setup.</h2></div><p className="max-w-xl text-lg leading-8 text-[#52605d]">Each button opens its own active ToyyibPay checkout. Review the system requirements, support terms, licence model, and risk statement before making any purchase decision.</p></div>
+            <div className="mt-12 grid gap-6 lg:grid-cols-2">
+              <PurchaseCard eyebrow="Lifetime package access" title="3 Serangkai UNIVERSAL EA v13.85" price="RM2,999" priorPrice="RM4,300" detail="Lifetime package-download entitlement. After a verified claim and MT5 binding, the Master Server API licence is issued for one year and renewed through support." href={threeSPurchaseUrl} />
+              <PurchaseCard eyebrow="Monthly access" title="Gemini Bot EA v11.97" price="RM450" priorPrice="RM999" detail="Monthly access to the Gemini Bot EA package and required indicators. Renewal is required to retain the monthly entitlement." href={geminiPurchaseUrl} />
             </div>
-            <aside className="flex flex-col justify-between rounded-[2rem] bg-[#d7e1dc] p-7 shadow-[11px_11px_0_#0e716e] lg:p-9">
-              <div className="flex items-start justify-between gap-5">
-                <div>
-                  <p className="font-mono text-[10px] font-bold uppercase tracking-[.14em] text-[#0e716e]">Payment processor</p>
-                  <h3 className="mt-3 font-display text-4xl leading-none tracking-[-.05em]">ToyyibPay</h3>
-                </div>
-                <Sparkles className="text-[#e5a631]" size={31} />
-              </div>
-              <dl className="mt-10 grid gap-4 border-y border-[#17201f]/15 py-5 font-mono text-[10px] uppercase tracking-[.12em] text-[#53605e] sm:grid-cols-2">
-                <div><dt className="text-[#0e716e]">Item</dt><dd className="mt-2 font-semibold text-[#17201f]">Gemini Bot EA v11.97</dd></div>
-                <div><dt className="text-[#0e716e]">Bill code</dt><dd className="mt-2 font-semibold text-[#17201f]">x42sivvj</dd></div>
-              </dl>
-              <a href={geminiPurchaseUrl} target="_blank" rel="noreferrer" className="mt-8 button-dark">
-                Continue to ToyyibPay <ExternalLink size={17} />
-              </a>
-              <p className="mt-4 text-xs leading-5 text-[#596762]">You will leave this site to complete payment. The payment page, transaction terms, and any customer information are handled by ToyyibPay.</p>
-            </aside>
+            <p className="mt-6 text-xs leading-5 text-[#596762]">You will leave this site to complete payment. The payment page, transaction terms, and customer information are handled by ToyyibPay. Payment verification, protected delivery, and any account-binding steps continue in the FizuxCoder portal after payment.</p>
           </div>
         </section>
 
