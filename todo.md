@@ -288,10 +288,10 @@
 - [x] Audit the MQ5 WebRequest URL, CRLF headers, ingest-key header, response-body validation, and HTTP 503 retry handling.
 - [x] Inspect production/local server logs and owner identity resolution for the reported HTTP 503.
 - [x] Run a safe authenticated ping and a redacted screenshot upload smoke test that creates only an approval-gated draft; ping passes, upload remains blocked on the unpublished fallback fix.
-- [ ] Deliver the findings and exact VPS remediation steps; publish the identified owner-fallback code fix and rerun the smoke test.
+- [x] Deliver the findings and exact VPS remediation steps; publish the identified owner-fallback code fix and rerun the smoke test.
 
 - [x] Make event intake resilient when OWNER_OPEN_ID is missing or mismatched by resolving exactly one configured admin owner safely, without allowing arbitrary admin selection.
 - [x] Add regression coverage for owner OpenID fallback and update the manual smoke test to report the exact 503 path.
 
 - [x] Add deterministic owner-email fallback for the known project owner when production OpenID resolution is unavailable, still requiring the exact admin role and refusing ambiguous admins.
-- [ ] Republish and rerun the manual production smoke test until the redacted upload returns 201/200 draft-only response.
+- [x] Republish and rerun the manual production smoke test until the redacted upload returns 201/200 draft-only response.
