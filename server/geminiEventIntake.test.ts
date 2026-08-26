@@ -31,6 +31,9 @@ describe("Gemini VPS event intake", () => {
     expect(routeText).toContain("createGeminiVpsEventDraft");
     expect(routeText).toContain("getOwnerAuditIdentity");
     expect(routeText).toContain("getAdminUsers");
+    expect(routeText).toContain("getUserByEmail");
+    expect(routeText).toContain("ENV.ownerEmail");
+    expect(routeText).toContain("ownerByEmail?.role === \"admin\"");
     expect(routeText).toContain("admins.length === 1");
     expect(routeText).toContain("await upsertUser({ openId: ownerOpenId");
     expect(routeText).toContain('if (!owner || owner.role !== "admin")');

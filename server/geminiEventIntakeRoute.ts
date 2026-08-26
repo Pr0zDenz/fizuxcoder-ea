@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { timingSafeEqual } from "node:crypto";
 import { ENV } from "./_core/env";
-import { getAdminUsers, getUserByOpenId, upsertUser } from "./db";
+import { getAdminUsers, getUserByEmail, getUserByOpenId, upsertUser } from "./db";
 import { createGeminiVpsEventDraft } from "./marketingStudio";
 
 const MAX_SCREENSHOT_BYTES = 8 * 1024 * 1024;
@@ -35,6 +35,12 @@ export async function getOwnerAuditIdentity() {
       owner = await getUserByOpenId(ownerOpenId);
     }
     if (owner?.role === "admin") return owner;
+  }
+
+  const ownerEmail = ENV.ownerEmail.trim().toLowerCase();
+  if (ownerEmail) {
+    const ownerByEmail = await getUserByEmail(ownerEmail);
+    if (ownerByEmail?.role === "admin" && ownerByEmail.email?.toLowerCase() === ownerEmail) return ownerByEmail;
   }
 
   const admins = await getAdminUsers();
