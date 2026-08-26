@@ -279,3 +279,8 @@
 - [x] Align the public marketing portal’s Gemini Bot EA messaging with the new Threads angles while keeping historical evidence clearly bounded.
 - [x] Add regression coverage for the five drafts, portal alignment, caption limits, and macro-state source markers.
 - [x] Run full tests/build, migrate the five drafts as unapproved records, and publish the verified update.
+
+- [x] Diagnose why `/api/threads/gemini-event` cannot resolve the owner audit identity and returns HTTP 503.
+- [x] Repair owner/audit identity resolution without weakening `X-Gemini-Event-Key` authentication or approval gating.
+- [x] Add regression coverage for the unavailable-identity path and successful setup-event draft creation.
+- [x] Publish the fix and provide a safe retry instruction for the failed setup event.

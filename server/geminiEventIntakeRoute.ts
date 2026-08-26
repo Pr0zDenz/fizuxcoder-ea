@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { timingSafeEqual } from "node:crypto";
 import { ENV } from "./_core/env";
-import { getUserByOpenId } from "./db";
+import { getUserByOpenId, upsertUser } from "./db";
 import { createGeminiVpsEventDraft } from "./marketingStudio";
 
 const MAX_SCREENSHOT_BYTES = 8 * 1024 * 1024;
@@ -26,6 +26,18 @@ export function decodeScreenshot(value: unknown, mimeType: unknown) {
   return data;
 }
 
+export async function getOwnerAuditIdentity() {
+  const ownerOpenId = ENV.ownerOpenId.trim();
+  if (!ownerOpenId) return undefined;
+
+  let owner = await getUserByOpenId(ownerOpenId);
+  if (!owner || owner.role !== "admin") {
+    await upsertUser({ openId: ownerOpenId, name: process.env.OWNER_NAME ?? "FizuxCoder owner", role: "admin" });
+    owner = await getUserByOpenId(ownerOpenId);
+  }
+  return owner?.role === "admin" ? owner : undefined;
+}
+
 export function registerGeminiEventIntakeRoute(app: Express) {
   app.get("/api/threads/gemini-event/ping", (req: Request, res: Response) => {
     if (!validSecret(req.header("X-Gemini-Event-Key"))) return res.status(401).json({ ok: false, error: "Unauthorized" });
@@ -40,7 +52,7 @@ export function registerGeminiEventIntakeRoute(app: Express) {
       const eventType = body.eventType === "setup" || body.eventType === "take_profit" ? body.eventType : null;
       if (!eventId || !eventType) return res.status(400).json({ ok: false, error: "eventId and eventType are required" });
       const screenshot = decodeScreenshot(body.screenshotBase64, body.screenshotMimeType);
-      const owner = await getUserByOpenId(ENV.ownerOpenId);
+      const owner = await getOwnerAuditIdentity();
       if (!owner || owner.role !== "admin") return res.status(503).json({ ok: false, error: "Owner audit identity is unavailable" });
       const result = await createGeminiVpsEventDraft({ eventId, eventType, screenshot, screenshotMimeType: body.screenshotMimeType as "image/png" | "image/jpeg" | "image/webp", occurredAt: typeof body.occurredAt === "string" ? body.occurredAt : undefined, accountLabel: typeof body.accountLabel === "string" ? body.accountLabel : undefined, symbol: typeof body.symbol === "string" ? body.symbol : undefined, profitAmount: typeof body.profitAmount === "number" ? body.profitAmount : undefined, actorUserId: owner.id });
       return res.status(result.created ? 201 : 200).json({ ok: true, created: result.created, contentItemId: result.contentItemId, status: result.status, hasImage: Boolean(result.assetUrl) });
