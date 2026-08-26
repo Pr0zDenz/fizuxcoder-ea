@@ -335,3 +335,12 @@
 
 - [x] Audit the newly supplied authenticated MLN direct-upload MQ5 source instead of the previously supplied legacy MQ5.
 - [x] Create and validate a Cloudflare-ready copy from the latest authenticated direct-upload source.
+
+- [ ] Diagnose the dashboard TP mismatch where `Default Minimum Basket Profit` is 150 but runtime `USD TP Goal` displays 30.
+- [ ] Correct target-value precedence in a preserved latest authenticated MQ5 copy and validate the resulting dashboard target flow.
+
+- [x] Audit and document the corrected MasterServer runtime-update route for the iOS Shortcut.
+- [x] Define and validate a secret-safe Shortcut request through `https://signal.fizuxc0der.uk` without changing live runtime values.
+
+- [x] Document the iOS Shortcut `/update` request with Cloudflare URL, headers, JSON fields, and secret-safe storage.
+- [x] Define a no-change Shortcut test and a separately confirmed live runtime-update action.
