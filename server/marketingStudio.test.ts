@@ -123,7 +123,7 @@ describe("private marketing studio safeguards", () => {
     const { insertValues } = mockMissingDatabase();
 
     await expect(applyGeminiBotThreadsRevision(1)).resolves.toEqual({ created: 20, revised: 0, current: 0, skipped: 0, archived: 0 });
-    expect(insertValues).toHaveBeenCalledWith(expect.objectContaining({ title: "A clearer way to explore MT5 automation", language: "en_ms", destinationUrl: "https://fizuxea-jxctlods.manus.space/portal", status: "draft", complianceStatus: "passed" }));
+    expect(insertValues).toHaveBeenCalledWith(expect.objectContaining({ title: "Nak automate MT5 dengan lebih teratur?", language: "en_ms", destinationUrl: "https://fizuxea-jxctlods.manus.space/portal", status: "draft", complianceStatus: "passed" }));
     expect(insertValues).toHaveBeenCalledWith(expect.objectContaining({ actorUserId: 1, action: "revised", note: "Gemini Bot EA 20-day campaign created" }));
   });
 
@@ -139,7 +139,7 @@ describe("private marketing studio safeguards", () => {
 
     expect(GEMINI_BOT_THREADS_REVISION).toHaveLength(20);
     expect(captions).toContain("gemini bot ea");
-    expect(captions).toContain("berminat");
+    expect(captions).toContain("nak explore");
     expect(captions).toContain("portal");
     expect(GEMINI_BOT_THREADS_REVISION.every(item => item.language === "en_ms")).toBe(true);
     expect(captions).not.toMatch(/guaranteed returns?|risk-free automation|passive income|\bwin rate\b|guaranteed profit/);

@@ -268,3 +268,8 @@
 - [x] Preserve one-image-per-post mapping, 3–5 hashtags, Gemini-only positioning, and manual approval before publication.
 - [x] Add regression coverage for bilingual language markers, compliance wording, length limits, portal links, and draft-only status.
 - [x] Run the full test/build verification and publish the revised marketing queue.
+
+- [x] Rewrite the 20 Gemini Bot Threads drafts into natural Malaysian BM/English rojak copy with stronger hooks and direct sales CTAs.
+- [x] Update VPS-event and evergreen replenishment copy to the same rojak style so future drafts remain consistent.
+- [x] Preserve risk disclosures, no-guarantee wording, portal links, image mapping, 3–5 hashtags, and manual approval before posting.
+- [x] Migrate only unposted draft records, test the rojak campaign, and publish the verified update.
