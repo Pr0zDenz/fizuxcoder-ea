@@ -303,18 +303,18 @@
 - [x] Revoke the Cloudflare connector token that was installed on the desktop and issue a fresh token for the Windows VPS.
 - [x] Install and verify the fresh `cloudflared` Windows Service on the correct VPS, then confirm the named tunnel becomes active.
 
-- [ ] Load `MASTER_SERVER_SYNC_KEY` and `TOYYIBPAY_USER_SECRET_KEY` into the correct VPS MasterServer process environment without exposing their values.
-- [ ] Restart the MasterServer using the corrected environment and rerun the non-destructive Cloudflare probes, including investigation of the legacy sync route HTTP 500.
+- [x] Load `MASTER_SERVER_SYNC_KEY` and the corrected `TOYYIBPAY_USER_SECRET` into the correct VPS MasterServer process environment without exposing their values.
+- [x] Restart the MasterServer using the corrected environment and rerun the non-destructive Cloudflare probes; the legacy sync route now returns the expected HTTP 404.
 
 - [x] Audit the supplied `MasterServer_customer_fulfillment.py` for environment-variable names, Cloudflare endpoint compatibility, authentication, callback, licensing, and signal-flow correctness without executing live actions.
 
 - [x] Replace the diagnostic script's null-unsafe curl status handling so network/proxy errors are reported distinctly from HTTP responses.
-- [ ] Restart the PID 8952 MasterServer process with the required environment variables and rerun safe endpoint probes after the diagnostic script is corrected.
+- [x] Restart the prior MasterServer process with the required environment variables and rerun safe endpoint probes after the diagnostic script is corrected; current validated PID is 9556.
 
 - [x] Produce and statically validate a corrected Cloudflare-ready `MasterServer_customer_fulfillment_fixed.py` plus a secret-free VPS environment template.
 
-- [ ] Load `MASTER_SERVER_SYNC_KEY`, `TOYYIBPAY_USER_SECRET`, and `PUBLIC_BASE_URL` into the PowerShell session used for diagnostics, without exposing values.
-- [ ] Replace the VPS copy of `masterserver_cloudflare_check.ps1` with the null-safe version and rerun the final non-destructive probes.
+- [x] Load `MASTER_SERVER_SYNC_KEY`, `TOYYIBPAY_USER_SECRET`, and `PUBLIC_BASE_URL` into the PowerShell session used for diagnostics, without exposing values.
+- [x] Replace the VPS copy of `masterserver_cloudflare_check.ps1` with the null-safe version and rerun the final non-destructive probes.
 
 - [x] Document safe User/Machine environment-variable setup for the Windows MasterServer.
 - [x] Provide and validate a secret-safe PowerShell auto-restart script for the Python MasterServer.
@@ -322,7 +322,7 @@
 
 - [x] Fix the PowerShell checker GET request construction so root and config probes return HTTP statuses instead of `CURL_ERROR_2`.
 
-- [ ] Install and verify `hmmlearn` and its dependencies specifically through the VPS `py -3.11` interpreter, then restart MasterServer with `py -3.11`.
+- [x] Install and verify `hmmlearn` and its dependencies specifically through the VPS `py -3.11` interpreter, then restart MasterServer with `py -3.11`.
 
 - [x] Capture the actual `masterserver.stderr.log` startup error after the Python 3.11 restart failure and resolve the dependency or launch issue.
 
