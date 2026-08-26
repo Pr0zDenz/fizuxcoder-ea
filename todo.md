@@ -327,3 +327,5 @@
 - [x] Capture the actual `masterserver.stderr.log` startup error after the Python 3.11 restart failure and resolve the dependency or launch issue.
 
 - [x] Replace non-ASCII startup logging in `MasterServer_customer_fulfillment.py` so Python 3.11 can start under Windows cp1252 without crashing.
+
+- [x] Simplify GET request handling in the Cloudflare checker so root and config report HTTP 200/403 reliably on the VPS.
