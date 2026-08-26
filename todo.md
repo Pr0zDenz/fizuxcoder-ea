@@ -295,3 +295,10 @@
 
 - [x] Add deterministic owner-email fallback for the known project owner when production OpenID resolution is unavailable, still requiring the exact admin role and refusing ambiguous admins.
 - [x] Republish and rerun the manual production smoke test until the redacted upload returns 201/200 draft-only response.
+
+- [x] Configure `fizuxc0der.uk` with a stable Cloudflare named Tunnel hostname for the MasterServer config/signal API.
+- [x] Configure the Windows VPS `cloudflared` service to route the named hostname to `http://127.0.0.1:5000` without ngrok.
+- [x] Update and validate the supplied MQ5 compatibility copy to use `https://signal.fizuxc0der.uk/config` with WebRequest preserved; compile and apply the latest production direct-upload build on the VPS as an operator-side follow-up.
+
+- [x] Revoke the Cloudflare connector token that was installed on the desktop and issue a fresh token for the Windows VPS.
+- [x] Install and verify the fresh `cloudflared` Windows Service on the correct VPS, then confirm the named tunnel becomes active.
