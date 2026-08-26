@@ -329,3 +329,9 @@
 - [x] Replace non-ASCII startup logging in `MasterServer_customer_fulfillment.py` so Python 3.11 can start under Windows cp1252 without crashing.
 
 - [x] Simplify GET request handling in the Cloudflare checker so root and config report HTTP 200/403 reliably on the VPS.
+
+- [x] Audit the supplied legacy Gemini Bot MQ5 networking and signal contract for the Cloudflare cutover.
+- [x] Create and validate a preserved Cloudflare-ready Gemini Bot MQ5 copy for demo-account testing.
+
+- [x] Audit the newly supplied authenticated MLN direct-upload MQ5 source instead of the previously supplied legacy MQ5.
+- [x] Create and validate a Cloudflare-ready copy from the latest authenticated direct-upload source.
