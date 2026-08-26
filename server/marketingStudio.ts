@@ -61,6 +61,14 @@ export const GEMINI_BOT_THREADS_REVISION: MarketingDraftSeed[] = [
   { contentKey: "threads-gemini-day-20-review", title: "Kalau tak boleh explain, jangan terus automate", language: "en_ms", dayOffset: 20, destinationUrl: "https://fizuxea-jxctlods.manus.space/portal", caption: "Choose only a workflow yang anda faham, boleh monitor and boleh accept risikonya. Gemini Bot EA is an opportunity to evaluate automation, income is never promised. Review the full details before you decide: https://fizuxea-jxctlods.manus.space/portal #GeminiBotEA #MT5 #TradingSystem #RiskFirst" },
 ];
 
+export const GEMINI_BOT_THREADS_ADDITIONS: MarketingDraftSeed[] = [
+  { contentKey: "threads-gemini-day-21-quick-start", title: "Nak start? Jangan skip the checklist", language: "en_ms", dayOffset: 21, destinationUrl: "https://fizuxea-jxctlods.manus.space/portal", caption: "Nak start Gemini Bot EA? Jangan skip the basics—read the guide, check your MT5 environment and run a demo test dulu. If the workflow fits your style, then you can decide with more confidence. Explore now: https://fizuxea-jxctlods.manus.space/portal #GeminiBotEA #MT5 #DemoFirst #TradingMalaysia" },
+  { contentKey: "threads-gemini-day-22-monitor", title: "Automation tak bermaksud boleh tinggal", language: "en_ms", dayOffset: 22, destinationUrl: "https://fizuxea-jxctlods.manus.space/portal", caption: "Gemini Bot EA boleh follow configured rules, but you still need to monitor spread, exposure, drawdown and execution. Nak automation yang lebih disciplined? Start by understanding what you are running: https://fizuxea-jxctlods.manus.space/portal #GeminiBotEA #RiskManagement #MT5 #DemoFirst" },
+  { contentKey: "threads-gemini-day-23-fit", title: "Bukan untuk semua account—check dulu", language: "en_ms", dayOffset: 23, destinationUrl: "https://fizuxea-jxctlods.manus.space/portal", caption: "Different balance, broker and settings can produce different behavior. Sebelum decide nak guna Gemini Bot EA, review the workflow against your own risk limits. Jangan copy blindly—test properly: https://fizuxea-jxctlods.manus.space/portal #GeminiBotEA #TradingMalaysia #RiskFirst #MT5" },
+  { contentKey: "threads-gemini-day-24-system", title: "Kalau serious, treat it like a system", language: "en_ms", dayOffset: 24, destinationUrl: "https://fizuxea-jxctlods.manus.space/portal", caption: "Serious traders know the difference between hype and a process. Gemini Bot EA gives you a structured MT5 workflow to study, configure and monitor. Bukan income guarantee—it's a system you must understand: https://fizuxea-jxctlods.manus.space/portal #GeminiBotEA #AlgorithmicTrading #DemoFirst #TradingMalaysia" },
+  { contentKey: "threads-gemini-day-25-decision", title: "Last step: decide dengan kepala sendiri", language: "en_ms", dayOffset: 25, destinationUrl: "https://fizuxea-jxctlods.manus.space/portal", caption: "Dah review the rules, risk note and demo flow? Then decide whether Gemini Bot EA fits your trading plan. No hype, no shortcut—just clear information before you commit: https://fizuxea-jxctlods.manus.space/portal #GeminiBotEA #MT5 #RiskManagement #DemoFirst" },
+];
+
 function contentHash(item: Pick<MarketingDraftSeed, "title" | "caption" | "language" | "assetUrl" | "assetAlt" | "destinationUrl">) {
   return createHash("sha256").update(JSON.stringify({ title: item.title, caption: item.caption, language: item.language, assetUrl: item.assetUrl ?? null, assetAlt: item.assetAlt ?? null, destinationUrl: item.destinationUrl ?? studioDestination, riskNotice: MARKETING_RISK_NOTICE })).digest("hex");
 }
@@ -185,6 +193,29 @@ export async function applyGeminiBotThreadsRevision(actorUserId: number) {
   return { created, revised, current, skipped, archived };
 }
 
+export async function applyGeminiBotThreadsAdditions(actorUserId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  let created = 0;
+  let current = 0;
+  let skipped = 0;
+  for (const draft of GEMINI_BOT_THREADS_ADDITIONS) {
+    const [existing] = await db.select().from(marketingContentItems).where(eq(marketingContentItems.contentKey, draft.contentKey)).limit(1);
+    const hash = contentHash(draft);
+    if (!existing) {
+      const result = await db.insert(marketingContentItems).values({ contentKey: draft.contentKey, title: draft.title, caption: draft.caption, language: draft.language, assetUrl: draft.assetUrl ?? null, assetAlt: draft.assetAlt ?? null, destinationUrl: draft.destinationUrl ?? studioDestination, riskNotice: MARKETING_RISK_NOTICE, scheduledFor: pilotScheduledFor(draft.dayOffset), status: "draft", complianceStatus: "passed", complianceFlags: JSON.stringify([]), contentHash: hash });
+      const contentItemId = Number(result[0].insertId);
+      await db.insert(marketingContentAudits).values({ contentItemId, actorUserId, action: "revised", contentHash: hash, note: "Gemini Bot EA rojak campaign addition" });
+      created += 1;
+    } else if (existing.status !== "draft") {
+      skipped += 1;
+    } else if (existing.contentHash === hash) {
+      current += 1;
+    }
+  }
+  return { created, current, skipped };
+}
+
 export const GEMINI_EVENT_PORTAL_URL = "https://fizuxea-jxctlods.manus.space/portal";
 
 export async function createGeminiVpsEventDraft({ eventId, eventType, screenshot, screenshotMimeType, occurredAt, accountLabel, symbol, profitAmount, actorUserId }: { eventId: string; eventType: "setup" | "take_profit"; screenshot: Buffer; screenshotMimeType: "image/png" | "image/jpeg" | "image/webp"; occurredAt?: string; accountLabel?: string; symbol?: string; profitAmount?: number; actorUserId: number }) {
@@ -245,6 +276,11 @@ export const EVERGREEN_GEMINI_COPY_BANK = [
   { title: "Banyak trade tak semestinya better result", caption: "Trade frequency alone is not the full story. Tengok size, drawdown, costs, exposure and market conditions sebelum judge Gemini Bot EA. Data should help you investigate, bukan ikut hype: https://fizuxea-jxctlods.manus.space/portal #GeminiBotEA #XAUUSD #RiskManagement #MT5" },
   { title: "Ready nak explore Gemini Bot EA?", caption: "Kalau anda serius nak study MT5 automation, start with the risk note, read the workflow and test on demo. Jangan kejar janji—buat review yang boleh anda explain dan monitor. Visit the portal: https://fizuxea-jxctlods.manus.space/portal #GeminiBotEA #AlgorithmicTrading #TradingMalaysia #DemoFirst" },
   { title: "Kalau tak boleh explain, jangan terus automate", caption: "Choose only a workflow yang anda faham, boleh monitor and boleh accept risikonya. Gemini Bot EA is an opportunity to evaluate automation, income is never promised. Review the full details before you decide: https://fizuxea-jxctlods.manus.space/portal #GeminiBotEA #MT5 #TradingSystem #RiskFirst" },
+  { title: "Nak start? Jangan skip the checklist", caption: "Nak start Gemini Bot EA? Jangan skip the basics—read the guide, check your MT5 environment and run a demo test dulu. If the workflow fits your style, then you can decide with more confidence. Explore now: https://fizuxea-jxctlods.manus.space/portal #GeminiBotEA #MT5 #DemoFirst #TradingMalaysia" },
+  { title: "Automation tak bermaksud boleh tinggal", caption: "Gemini Bot EA boleh follow configured rules, but you still need to monitor spread, exposure, drawdown and execution. Nak automation yang lebih disciplined? Start by understanding what you are running: https://fizuxea-jxctlods.manus.space/portal #GeminiBotEA #RiskManagement #MT5 #DemoFirst" },
+  { title: "Bukan untuk semua account—check dulu", caption: "Different balance, broker and settings can produce different behavior. Sebelum decide nak guna Gemini Bot EA, review the workflow against your own risk limits. Jangan copy blindly—test properly: https://fizuxea-jxctlods.manus.space/portal #GeminiBotEA #TradingMalaysia #RiskFirst #MT5" },
+  { title: "Kalau serious, treat it like a system", caption: "Serious traders know the difference between hype and a process. Gemini Bot EA gives you a structured MT5 workflow to study, configure and monitor. Bukan income guarantee—it's a system you must understand: https://fizuxea-jxctlods.manus.space/portal #GeminiBotEA #AlgorithmicTrading #DemoFirst #TradingMalaysia" },
+  { title: "Last step: decide dengan kepala sendiri", caption: "Dah review the rules, risk note and demo flow? Then decide whether Gemini Bot EA fits your trading plan. No hype, no shortcut—just clear information before you commit: https://fizuxea-jxctlods.manus.space/portal #GeminiBotEA #MT5 #RiskManagement #DemoFirst" },
 ] as const;
 
 export async function createEvergreenGeminiDraftAfterPublish({ item, actorUserId }: { item: typeof marketingContentItems.$inferSelect; actorUserId: number }) {

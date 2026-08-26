@@ -10,7 +10,7 @@ vi.mock("./threadsPublisher", () => ({
   },
 }));
 
-import { GEMINI_BOT_THREADS_REVISION, TWO_WEEK_THREADS_PILOT, applyGeminiBotThreadsRevision, approveMarketingContent, createEvergreenGeminiDraftAfterPublish, markMarketingContentPosted } from "./marketingStudio";
+import { GEMINI_BOT_THREADS_ADDITIONS, GEMINI_BOT_THREADS_REVISION, TWO_WEEK_THREADS_PILOT, applyGeminiBotThreadsAdditions, applyGeminiBotThreadsRevision, approveMarketingContent, createEvergreenGeminiDraftAfterPublish, markMarketingContentPosted } from "./marketingStudio";
 
 function draftItem(overrides: Record<string, unknown> = {}) {
   return {
@@ -125,6 +125,21 @@ describe("private marketing studio safeguards", () => {
     await expect(applyGeminiBotThreadsRevision(1)).resolves.toEqual({ created: 20, revised: 0, current: 0, skipped: 0, archived: 0 });
     expect(insertValues).toHaveBeenCalledWith(expect.objectContaining({ title: "Nak automate MT5 dengan lebih teratur?", language: "en_ms", destinationUrl: "https://fizuxea-jxctlods.manus.space/portal", status: "draft", complianceStatus: "passed" }));
     expect(insertValues).toHaveBeenCalledWith(expect.objectContaining({ actorUserId: 1, action: "revised", note: "Gemini Bot EA 20-day campaign created" }));
+  });
+
+  it("creates five additional rojak drafts as unapproved records without duplicates", async () => {
+    const { insertValues } = mockMissingDatabase();
+
+    await expect(applyGeminiBotThreadsAdditions(1)).resolves.toEqual({ created: 5, current: 0, skipped: 0 });
+    expect(GEMINI_BOT_THREADS_ADDITIONS).toHaveLength(5);
+    expect(insertValues).toHaveBeenCalledWith(expect.objectContaining({ language: "en_ms", destinationUrl: "https://fizuxea-jxctlods.manus.space/portal", status: "draft", complianceStatus: "passed" }));
+    for (const draft of GEMINI_BOT_THREADS_ADDITIONS) {
+      expect(draft.caption).toMatch(/Gemini Bot EA/i);
+      expect(draft.caption).toContain("https://fizuxea-jxctlods.manus.space/portal");
+      expect(draft.caption.length).toBeLessThanOrEqual(500);
+      expect(draft.caption.match(/#[A-Za-z0-9_]+/g)?.length ?? 0).toBeGreaterThanOrEqual(3);
+      expect(draft.caption.match(/#[A-Za-z0-9_]+/g)?.length ?? 0).toBeLessThanOrEqual(5);
+    }
   });
 
   it("does not overwrite an approved or posted caption during the Gemini Bot EA revision", async () => {

@@ -1631,7 +1631,7 @@ void ScanForSetup()
                     }
                 }
 
-                if(is_pullback_phase && macro_pre_tp_cap > 0.0) {
+                if(is_pullback_phase && !is_pullback_exhausted && macro_pre_tp_cap > 0.0) {
                     if(hard_tp > macro_pre_tp_cap) hard_tp = macro_pre_tp_cap;
                 }
                 
@@ -1655,7 +1655,7 @@ void ScanForSetup()
                     }
                 }
 
-                if(is_pullback_phase && macro_pre_tp_cap > 0.0) {
+                if(is_pullback_phase && !is_pullback_exhausted && macro_pre_tp_cap > 0.0) {
                     if(hard_tp < macro_pre_tp_cap) hard_tp = macro_pre_tp_cap;
                 }
                 

@@ -273,3 +273,9 @@
 - [x] Update VPS-event and evergreen replenishment copy to the same rojak style so future drafts remain consistent.
 - [x] Preserve risk disclosures, no-guarantee wording, portal links, image mapping, 3–5 hashtags, and manual approval before posting.
 - [x] Migrate only unposted draft records, test the rojak campaign, and publish the verified update.
+
+- [x] Add five new natural Malaysian BM/English rojak Threads drafts with direct portal CTAs and compliant hard-selling hooks.
+- [x] Preserve or refine the MQ5 macro-timeframe pullback entry gate and pre-TP HIT transition without changing unrelated trading, licensing, or screenshot logic.
+- [x] Align the public marketing portal’s Gemini Bot EA messaging with the new Threads angles while keeping historical evidence clearly bounded.
+- [x] Add regression coverage for the five drafts, portal alignment, caption limits, and macro-state source markers.
+- [x] Run full tests/build, migrate the five drafts as unapproved records, and publish the verified update.

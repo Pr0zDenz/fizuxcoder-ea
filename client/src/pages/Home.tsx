@@ -205,11 +205,11 @@ export default function Home() {
                 <h1 className="mt-9 max-w-3xl font-display text-[clamp(3.5rem,7vw,7.35rem)] leading-[0.88] tracking-[-0.07em] text-[#17201f]">
                   Automation,
                   <br />
-                  <em className="font-display font-normal text-[#0e716e]">with the assumptions</em>
-                  <br />left visible.
+                  <em className="font-display font-normal text-[#0e716e]">with the workflow</em>
+                  <br />left visible—so you can decide.
                 </h1>
                 <p className="mt-8 max-w-xl text-[1.05rem] leading-8 text-[#4a5855] lg:text-[1.18rem]">
-                  Two distinct MT5 Expert Advisor architectures for traders who want to study the system before they configure it. Review the decision logic, compare the controls, and use a measured setup path.
+                  Still watching charts all day? Explore two distinct MT5 Expert Advisor workflows, study the logic, and test the setup properly before you configure. Bukan magic button—just a more systematic way to review automation, with the risk clearly visible.
                 </p>
               </div>
               <div className="mt-10 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
@@ -435,11 +435,11 @@ export default function Home() {
             <div className="grid gap-10 lg:grid-cols-[.82fr_1.18fr] lg:items-end">
               <div>
                 <SectionLabel index="05">Gemini Bot EA · historical account evidence</SectionLabel>
-                <h2 className="mt-7 max-w-3xl font-display text-[clamp(2.8rem,5vw,5.2rem)] leading-[.9] tracking-[-.06em]">Gemini Bot EA results are evidence to inspect—not a promise to buy.</h2>
+                <h2 className="mt-7 max-w-3xl font-display text-[clamp(2.8rem,5vw,5.2rem)] leading-[.9] tracking-[-.06em]">Curious nak explore? Gemini Bot EA results are evidence—not hype.</h2>
               </div>
               <div className="space-y-4 border-l border-[#e5a631] pl-5 text-base leading-7 text-[#4e5e59] lg:mb-2">
                 <p><strong className="text-[#17201f]">Gemini Bot EA owner-stated sample window:</strong> 13–25 August 2026. The supplied platform screenshots visibly show Gemini Bot EA account activity and reports captured on 24–25 August.</p>
-                <p>They are owner-supplied, not independently audited, and do not establish the result of every day in the stated window. The account currency and deposit history are not visible in the screenshots. This material does not describe or support a performance claim for 3S Serangkai UNIVERSAL EA.</p>
+                <p>They are owner-supplied, not independently audited, and do not establish the result of every day in the stated window. Kalau nak evaluate, look at the full picture: gains, losses, drawdown, costs, and execution—not one attractive screenshot. The account currency and deposit history are not visible in the screenshots. This material does not describe or support a performance claim for 3S Serangkai UNIVERSAL EA.</p>
               </div>
             </div>
 
@@ -556,7 +556,7 @@ export default function Home() {
 
         <section id="purchase" className="bg-[#fbf9f4] py-20 lg:py-24">
           <div className="mx-auto max-w-[1440px] px-5 lg:px-10">
-            <div className="grid gap-10 lg:grid-cols-[.9fr_1.1fr] lg:items-end"><div><SectionLabel index="08">Secure purchase routes</SectionLabel><h2 className="mt-7 max-w-2xl font-display text-[clamp(2.8rem,5vw,5.3rem)] leading-[.9] tracking-[-.06em]">Choose the EA separately from your broker setup.</h2></div><p className="max-w-xl text-lg leading-8 text-[#52605d]">Each button opens its own active ToyyibPay checkout. Review the system requirements, support terms, licence model, and risk statement before making any purchase decision.</p></div>
+            <div className="grid gap-10 lg:grid-cols-[.9fr_1.1fr] lg:items-end"><div><SectionLabel index="08">Secure purchase routes</SectionLabel><h2 className="mt-7 max-w-2xl font-display text-[clamp(2.8rem,5vw,5.3rem)] leading-[.9] tracking-[-.06em]">Ready nak explore? Choose the EA separately from your broker setup.</h2></div><p className="max-w-xl text-lg leading-8 text-[#52605d]">Each button opens its own active ToyyibPay checkout. Review the system requirements, support terms, licence model, and risk statement first—then decide whether the workflow fits your setup.</p></div>
             <div className="mt-12 grid gap-6 lg:grid-cols-2">
               <PurchaseCard eyebrow="Lifetime package access" title="3 Serangkai UNIVERSAL EA v13.85" price="RM2,999" priorPrice="RM4,300" detail="Lifetime package-download entitlement. After a verified claim and MT5 binding, the Master Server API licence is issued for one year and renewed through support." href={threeSPurchaseUrl} />
               <PurchaseCard eyebrow="Monthly access" title="Gemini Bot EA v11.97" price="RM450" priorPrice="RM999" detail="Monthly access to the Gemini Bot EA package and required indicators. Renewal is required to retain the monthly entitlement." href={geminiPurchaseUrl} />

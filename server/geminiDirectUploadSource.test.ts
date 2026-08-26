@@ -39,6 +39,7 @@ describe("Gemini direct MQL5 screenshot upload source", () => {
     expect(source).toContain("required_macro = is_pullback_phase && is_pullback_exhausted ? macro_resume_direction");
     expect(source).toContain("MACRO PULLBACK CAP / PRE-TP");
     expect(source).toContain("PRE-TP HIT / GRAND-TREND TP");
+    expect(source).toContain("if(is_pullback_phase && !is_pullback_exhausted && macro_pre_tp_cap > 0.0)");
     expect(source).toContain("macro_pre_tp_hit = false;");
   });
 
