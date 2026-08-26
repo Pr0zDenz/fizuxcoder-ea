@@ -284,3 +284,11 @@
 - [x] Repair owner/audit identity resolution without weakening `X-Gemini-Event-Key` authentication or approval gating.
 - [x] Add regression coverage for the unavailable-identity path and successful setup-event draft creation.
 - [x] Publish the fix and provide a safe retry instruction for the failed setup event.
+
+- [x] Audit the MQ5 WebRequest URL, CRLF headers, ingest-key header, response-body validation, and HTTP 503 retry handling.
+- [x] Inspect production/local server logs and owner identity resolution for the reported HTTP 503.
+- [x] Run a safe authenticated ping and a redacted screenshot upload smoke test that creates only an approval-gated draft; ping passes, upload remains blocked on the unpublished fallback fix.
+- [ ] Deliver the findings and exact VPS remediation steps; publish the identified owner-fallback code fix and rerun the smoke test.
+
+- [ ] Make event intake resilient when OWNER_OPEN_ID is missing or mismatched by resolving exactly one configured admin owner safely, without allowing arbitrary admin selection.
+- [x] Add regression coverage for owner OpenID fallback and update the manual smoke test to report the exact 503 path.

@@ -88,3 +88,13 @@ export async function getUserByOpenId(openId: string) {
 
   return result.length > 0 ? result[0] : undefined;
 }
+
+export async function getAdminUsers() {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get admins: database not available");
+    return [];
+  }
+
+  return db.select().from(users).where(eq(users.role, "admin"));
+}

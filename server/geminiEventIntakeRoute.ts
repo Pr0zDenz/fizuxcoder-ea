@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { timingSafeEqual } from "node:crypto";
 import { ENV } from "./_core/env";
-import { getUserByOpenId, upsertUser } from "./db";
+import { getAdminUsers, getUserByOpenId, upsertUser } from "./db";
 import { createGeminiVpsEventDraft } from "./marketingStudio";
 
 const MAX_SCREENSHOT_BYTES = 8 * 1024 * 1024;
@@ -28,14 +28,17 @@ export function decodeScreenshot(value: unknown, mimeType: unknown) {
 
 export async function getOwnerAuditIdentity() {
   const ownerOpenId = ENV.ownerOpenId.trim();
-  if (!ownerOpenId) return undefined;
-
-  let owner = await getUserByOpenId(ownerOpenId);
-  if (!owner || owner.role !== "admin") {
-    await upsertUser({ openId: ownerOpenId, name: process.env.OWNER_NAME ?? "FizuxCoder owner", role: "admin" });
-    owner = await getUserByOpenId(ownerOpenId);
+  if (ownerOpenId) {
+    let owner = await getUserByOpenId(ownerOpenId);
+    if (!owner || owner.role !== "admin") {
+      await upsertUser({ openId: ownerOpenId, name: process.env.OWNER_NAME ?? "FizuxCoder owner", role: "admin" });
+      owner = await getUserByOpenId(ownerOpenId);
+    }
+    if (owner?.role === "admin") return owner;
   }
-  return owner?.role === "admin" ? owner : undefined;
+
+  const admins = await getAdminUsers();
+  return admins.length === 1 ? admins[0] : undefined;
 }
 
 export function registerGeminiEventIntakeRoute(app: Express) {
