@@ -319,3 +319,11 @@
 - [x] Document safe User/Machine environment-variable setup for the Windows MasterServer.
 - [x] Provide and validate a secret-safe PowerShell auto-restart script for the Python MasterServer.
 - [x] Provide non-destructive ToyyPay callback tests that distinguish validation rejection from successful settlement.
+
+- [x] Fix the PowerShell checker GET request construction so root and config probes return HTTP statuses instead of `CURL_ERROR_2`.
+
+- [ ] Install and verify `hmmlearn` and its dependencies specifically through the VPS `py -3.11` interpreter, then restart MasterServer with `py -3.11`.
+
+- [x] Capture the actual `masterserver.stderr.log` startup error after the Python 3.11 restart failure and resolve the dependency or launch issue.
+
+- [x] Replace non-ASCII startup logging in `MasterServer_customer_fulfillment.py` so Python 3.11 can start under Windows cp1252 without crashing.
