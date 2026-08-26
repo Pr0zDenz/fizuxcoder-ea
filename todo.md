@@ -312,3 +312,10 @@
 - [ ] Restart the PID 8952 MasterServer process with the required environment variables and rerun safe endpoint probes after the diagnostic script is corrected.
 
 - [x] Produce and statically validate a corrected Cloudflare-ready `MasterServer_customer_fulfillment_fixed.py` plus a secret-free VPS environment template.
+
+- [ ] Load `MASTER_SERVER_SYNC_KEY`, `TOYYIBPAY_USER_SECRET`, and `PUBLIC_BASE_URL` into the PowerShell session used for diagnostics, without exposing values.
+- [ ] Replace the VPS copy of `masterserver_cloudflare_check.ps1` with the null-safe version and rerun the final non-destructive probes.
+
+- [x] Document safe User/Machine environment-variable setup for the Windows MasterServer.
+- [x] Provide and validate a secret-safe PowerShell auto-restart script for the Python MasterServer.
+- [x] Provide non-destructive ToyyPay callback tests that distinguish validation rejection from successful settlement.
