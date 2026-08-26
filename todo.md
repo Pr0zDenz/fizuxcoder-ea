@@ -302,3 +302,13 @@
 
 - [x] Revoke the Cloudflare connector token that was installed on the desktop and issue a fresh token for the Windows VPS.
 - [x] Install and verify the fresh `cloudflared` Windows Service on the correct VPS, then confirm the named tunnel becomes active.
+
+- [ ] Load `MASTER_SERVER_SYNC_KEY` and `TOYYIBPAY_USER_SECRET_KEY` into the correct VPS MasterServer process environment without exposing their values.
+- [ ] Restart the MasterServer using the corrected environment and rerun the non-destructive Cloudflare probes, including investigation of the legacy sync route HTTP 500.
+
+- [x] Audit the supplied `MasterServer_customer_fulfillment.py` for environment-variable names, Cloudflare endpoint compatibility, authentication, callback, licensing, and signal-flow correctness without executing live actions.
+
+- [ ] Replace the diagnostic script's null-unsafe curl status handling so network/proxy errors are reported distinctly from HTTP responses.
+- [ ] Restart the PID 8952 MasterServer process with the required environment variables and rerun safe endpoint probes after the diagnostic script is corrected.
+
+- [x] Produce and statically validate a corrected Cloudflare-ready `MasterServer_customer_fulfillment_fixed.py` plus a secret-free VPS environment template.
