@@ -318,3 +318,45 @@ export async function sendTelegramMockEaSetup(input: { actorUserId: number; conf
     throw new Error(reason);
   }
 }
+
+export async function sendTelegramMockFromRejectedEvent(input: { actorUserId: number; confirmation: string; referenceEventId: string }) {
+  if (input.confirmation !== "SEND REJECTED EA MOCK") throw new Error("Type SEND REJECTED EA MOCK to confirm a visible derived mock post");
+  const { db, settings } = await getSettings();
+  if (!deliveryState(settings).armed) throw new Error("Telegram automatic delivery is not armed");
+  const reference = await db.select().from(telegramSignalEvents).where(eq(telegramSignalEvents.eventId, input.referenceEventId)).limit(1);
+  const rejected = reference[0];
+  if (!rejected || rejected.status !== "rejected" || rejected.deliveredAt) throw new Error("Only a stored, undelivered rejected EA event can be used as a mock reference");
+
+  const todayGmt8 = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kuala_Lumpur", day: "2-digit", month: "short", year: "numeric" }).formatToParts(new Date());
+  const part = (type: Intl.DateTimeFormatPartTypes) => todayGmt8.find(item => item.type === type)?.value ?? "";
+  const occurredDate = /^\d{2}-[A-Za-z]{3}-\d{4}$/.test(rejected.eaDate) ? rejected.eaDate : `${part("day")}-${part("month")}-${part("year")}`;
+  const signal = parseTelegramSignalInput({
+    eventId: `mock-derived-${Date.now()}-${randomUUID().slice(0, 8)}`,
+    eventType: "setup",
+    accountNumber: rejected.accountNumber,
+    symbol: rejected.symbol,
+    direction: rejected.direction,
+    entryPrice: rejected.entryPrice,
+    takeProfit: rejected.takeProfit ?? undefined,
+    stopLoss: rejected.stopLoss ?? undefined,
+    occurredDate,
+    occurredAt: rejected.eaTime,
+  });
+  const messageText = formatMockTelegramSignal(signal);
+  const result = await db.insert(telegramSignalEvents).values({ eventId: signal.eventId, eventType: signal.eventType, accountNumber: signal.accountNumber, symbol: signal.symbol, direction: signal.direction, entryPrice: signal.entryPrice, takeProfit: signal.takeProfit ?? null, stopLoss: signal.stopLoss ?? null, riskNote: DEFAULT_RISK_NOTE, messageText, status: "delivering", eaDate: signal.occurredDate, eaTime: signal.occurredAt });
+  const mockEventDbId = Number(result[0].insertId);
+  await recordAudit(mockEventDbId, "test_requested", `Owner confirmed a mock derived from rejected event ${rejected.eventId}.`, input.actorUserId);
+  await recordAudit(mockEventDbId, "validated", "Derived mock payload validated without replaying the real EA event ID.", input.actorUserId);
+  await recordAudit(mockEventDbId, "delivery_started", "Telegram derived mock delivery started.", input.actorUserId);
+  try {
+    const telegramMessageId = await sendTelegramMessage(settings!.channelId!, messageText);
+    await db.update(telegramSignalEvents).set({ status: "delivered", telegramMessageId, deliveredAt: new Date() }).where(eq(telegramSignalEvents.id, mockEventDbId));
+    await recordAudit(mockEventDbId, "delivered", `Derived mock Telegram message ${telegramMessageId} confirmed.`, input.actorUserId);
+    return { status: "delivered" as const, referenceEventId: rejected.eventId, eventId: signal.eventId, telegramMessageId, eaDate: signal.occurredDate, eaTime: signal.occurredAt };
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : "Telegram derived mock delivery failed";
+    await db.update(telegramSignalEvents).set({ status: "failed", failureCode: "telegram_derived_mock_failed", failureReason: reason.slice(0, 255) }).where(eq(telegramSignalEvents.id, mockEventDbId));
+    await recordAudit(mockEventDbId, "failed", reason, input.actorUserId);
+    throw new Error(reason);
+  }
+}
