@@ -368,3 +368,6 @@
 
 - [x] Enable validated automatic Telegram signal delivery for the configured private channel while retaining a reversible administrator kill switch and audit record.
 - [x] Deliver the Telegram-enabled Gemini MQ5 source with `Enable_Telegram_Signal = true` and operator-side MetaEditor compilation instructions.
+
+- [x] Audit the newly supplied `GeminiBotEAv11.97_NewLook.mq5` against the prior Telegram-enabled source and preserve its current UI and trading logic.
+- [x] Integrate and structurally validate the Cloudflare config, account-scoped runtime compatibility, 24-hour Telegram setup event, and enabled signal flag in a NewLook-based deployment MQ5.
