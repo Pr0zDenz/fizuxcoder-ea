@@ -171,7 +171,7 @@
 - [x] Record SHA-256 release manifests for the validated Gemini and 3S ZIP archives before protected-library publication.
 - [x] Preserve a protected-library rollback inventory of the current 3S files before replacing the customer release.
 - [x] Upload only the validated, curated Gemini and 3S release packages to the corresponding protected portal library entries.
-- [ ] Verify authorized protected-release delivery with a non-production customer access check and an audit record.
+- [x] Verify authorized protected-release delivery with a non-production customer access check and audit records: isolated RM1 test entitlement bound to MT5 `1101009306` in `rm1_delivery_audit_snapshot.json`, plus production archive/guide byte verification in `protected_release_delivery_audit_2026-08-27.json`.
 - [x] Close the legacy `ruby-railroad-trimester.ngrok-free.dev` tunnel item as superseded by the verified Cloudflare named tunnel `signal.fizuxc0der.uk`; rerun only the non-destructive Master Server probes through Cloudflare.
 - [x] Verify that customer portal rendering excludes the RM1 test bench, no-charge simulation, provider inspection, and Gmail authorization controls.
 - [x] Harden and regression-test the administrator-only portal control boundary before publishing the corrected portal.
@@ -336,8 +336,8 @@
 - [x] Audit the newly supplied authenticated MLN direct-upload MQ5 source instead of the previously supplied legacy MQ5.
 - [x] Create and validate a Cloudflare-ready copy from the latest authenticated direct-upload source.
 
-- [ ] Diagnose the dashboard TP mismatch where `Default Minimum Basket Profit` is 150 but runtime `USD TP Goal` displays 30.
-- [ ] Correct target-value precedence in a preserved latest authenticated MQ5 copy and validate the resulting dashboard target flow.
+- [x] Diagnose the dashboard TP mismatch where `Default Minimum Basket Profit` is 150 but runtime `USD TP Goal` displays 30; the dashboard value is the server/runtime override multiplied by `target_multi`, not the static input default.
+- [x] Correct target-value precedence in the latest authenticated Cloudflare MQ5 copy: an opposite-direction manual basket no longer receives the current macro pullback cap, while same-direction macro pullback protection remains active.
 
 - [x] Audit and document the corrected MasterServer runtime-update route for the iOS Shortcut.
 - [x] Define and validate a secret-safe Shortcut request through `https://signal.fizuxc0der.uk` without changing live runtime values.
@@ -346,3 +346,5 @@
 - [x] Define a no-change Shortcut test and a separately confirmed live runtime-update action.
 - [x] Increase Gemini Cloudflare `/config` WebRequest timeout to 5000 ms and add sanitized failure diagnostics without changing trading/licensing logic.
 - [x] Deliver the exact VPS replacement instructions for the updated MQ5; MetaEditor compilation remains an operator-side check.
+- [x] Diagnose why a manual entry during `BEARISH (PULLBACK)` did not use the expected bullish Safe TP: the unconditional pullback-cap branch could apply a bearish H4 TP1 to an opposite-direction bullish basket.
+- [x] Correct direction-aware Safe TP selection in both Cloudflare MQ5 copies; the cap now applies only when basket direction matches macro direction, preserving opposite-direction manual baskets and existing spread/trading safeguards.

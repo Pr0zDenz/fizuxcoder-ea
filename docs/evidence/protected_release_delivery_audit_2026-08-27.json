@@ -1,0 +1,55 @@
+{
+  "verified": true,
+  "mode": "privileged-storage-byte-check",
+  "results": [
+    {
+      "productId": "gemini-bot-ea",
+      "kind": "archive",
+      "fileId": 120001,
+      "fileName": "GeminiBotEA-MQL5-v11.97.zip",
+      "contentType": "application/zip",
+      "bytes": 219460,
+      "sha256": "9a1378122de32bf545a797c5deea41d24b1d658f56c67785d635597a34effb16"
+    },
+    {
+      "productId": "gemini-bot-ea",
+      "kind": "guide",
+      "fileId": 120002,
+      "fileName": "README_Gemini_Bot_EA_v11.97.md",
+      "contentType": "text/markdown; charset=utf-8",
+      "bytes": 4675,
+      "sha256": "c429bb9f8a06bd7baabd25a0582f1c203e636319afad369b236864403977d82f"
+    },
+    {
+      "productId": "3s-universal-ea",
+      "kind": "archive",
+      "fileId": 120003,
+      "fileName": "3SUniversalEA-MQL5-customer-license.zip",
+      "contentType": "application/zip",
+      "bytes": 370351,
+      "sha256": "b9388896e42f85c7b77874f4b1bfe16503a0db07db638a0466b9e3a64cbf715c"
+    },
+    {
+      "productId": "3s-universal-ea",
+      "kind": "guide",
+      "fileId": 120004,
+      "fileName": "README_3S_Universal_EA.md",
+      "contentType": "text/markdown; charset=utf-8",
+      "bytes": 6051,
+      "sha256": "eb10c76fc75e9ab5466d37bdf12f0ab5af09d6512b08d66c6edc7dd316eeb1ce"
+    }
+  ]
+}
+[ERROR] Command was killed with SIGHUP (Terminal closed): pnpm install
+
+pnpm: Command was killed with SIGHUP (Terminal closed): pnpm install
+    at getFinalError (file:///home/ubuntu/.nvm/versions/node/v22.13.0/lib/node_modules/pnpm/dist/pnpm.mjs:89024:14)
+    at makeError (file:///home/ubuntu/.nvm/versions/node/v22.13.0/lib/node_modules/pnpm/dist/pnpm.mjs:91331:21)
+    at getSyncResult (file:///home/ubuntu/.nvm/versions/node/v22.13.0/lib/node_modules/pnpm/dist/pnpm.mjs:93175:10)
+    at spawnSubprocessSync (file:///home/ubuntu/.nvm/versions/node/v22.13.0/lib/node_modules/pnpm/dist/pnpm.mjs:93135:14)
+    at execaCoreSync (file:///home/ubuntu/.nvm/versions/node/v22.13.0/lib/node_modules/pnpm/dist/pnpm.mjs:93065:23)
+    at callBoundExeca (file:///home/ubuntu/.nvm/versions/node/v22.13.0/lib/node_modules/pnpm/dist/pnpm.mjs:95593:23)
+    at boundExeca (file:///home/ubuntu/.nvm/versions/node/v22.13.0/lib/node_modules/pnpm/dist/pnpm.mjs:95570:49)
+    at sync2 (file:///home/ubuntu/.nvm/versions/node/v22.13.0/lib/node_modules/pnpm/dist/pnpm.mjs:95725:14)
+    at runPnpmCli (file:///home/ubuntu/.nvm/versions/node/v22.13.0/lib/node_modules/pnpm/dist/pnpm.mjs:269874:5)
+    at runDepsStatusCheck (file:///home/ubuntu/.nvm/versions/node/v22.13.0/lib/node_modules/pnpm/dist/pnpm.mjs:271638:7)
