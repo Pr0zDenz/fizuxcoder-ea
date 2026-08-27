@@ -322,6 +322,7 @@ export const telegramSignalEvents = mysqlTable("telegramSignalEvents", {
   telegramMessageId: varchar("telegramMessageId", { length: 64 }),
   failureCode: varchar("failureCode", { length: 64 }),
   failureReason: varchar("failureReason", { length: 255 }),
+  eaDate: varchar("eaDate", { length: 11 }).notNull().default("Unknown"),
   eaTime: varchar("eaTime", { length: 8 }).notNull(),
   occurredAt: timestamp("occurredAt"),
   deliveredAt: timestamp("deliveredAt"),

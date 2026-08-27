@@ -1,0 +1,1 @@
+ALTER TABLE `telegramSignalEvents` ADD `eaDate` varchar(11) DEFAULT 'Unknown' NOT NULL;

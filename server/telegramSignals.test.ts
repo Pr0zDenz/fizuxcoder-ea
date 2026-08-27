@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deliveryState, formatMockTelegramSignal, formatTelegramSignal, parseTelegramSignalInput } from "./telegramSignals";
+import { brokerNeutralSymbol, deliveryState, formatMockTelegramSignal, formatTelegramSignal, parseTelegramSignalInput } from "./telegramSignals";
 
 describe("Telegram signal contract", () => {
   const validSetup = {
@@ -11,22 +11,27 @@ describe("Telegram signal contract", () => {
     entryPrice: "4599.20",
     takeProfit: "4581.83",
     stopLoss: "4610.00",
+    occurredDate: "27-Aug-2026",
     occurredAt: "09:00:00",
   };
 
   it("accepts a complete setup event and produces a risk-labelled public message", () => {
     const signal = parseTelegramSignalInput(validSetup);
     expect(signal).toMatchObject({ direction: "SELL", symbol: "XAUUSD.vx", takeProfit: "4581.83" });
-    expect(formatTelegramSignal(signal)).toContain("Trading involves risk");
+    expect(formatTelegramSignal(signal)).toContain("⚠️ Automated EA signal for market observation only");
+    expect(formatTelegramSignal(signal)).toContain("📊 Symbol: XAUUSD");
     expect(formatTelegramSignal(signal)).toContain("Safe TP: 4581.83");
-    expect(formatTelegramSignal(signal)).toContain("Event time (EA clock): 09:00:00");
+    expect(formatTelegramSignal(signal)).toContain("📅 Event Date: 27-Aug-2026");
+    expect(formatTelegramSignal(signal)).toContain("🕒 Event Time: 09:00:00 GMT+8");
+    expect(brokerNeutralSymbol("XAUUSD.vx")).toBe("XAUUSD");
   });
 
   it("labels the owner-only mock event as non-trading while preserving the EA clock time", () => {
     const signal = parseTelegramSignalInput(validSetup);
     const text = formatMockTelegramSignal(signal);
     expect(text).toContain("EA SIGNAL MOCK TEST — NOT FOR TRADING");
-    expect(text).toContain("Event time (EA clock): 09:00:00");
+    expect(text).toContain("📅 Event Date: 27-Aug-2026");
+    expect(text).toContain("🕒 Event Time: 09:00:00 GMT+8");
     expect(text).toContain("no MT5 order, licence, or account configuration was changed");
   });
 
@@ -34,6 +39,7 @@ describe("Telegram signal contract", () => {
     expect(() => parseTelegramSignalInput({ ...validSetup, eventId: "bad id" })).toThrow("eventId is invalid");
     expect(() => parseTelegramSignalInput({ ...validSetup, direction: "HOLD" })).toThrow("direction must be BUY or SELL");
     expect(() => parseTelegramSignalInput({ ...validSetup, entryPrice: "market" })).toThrow("entryPrice must be a numeric value");
+    expect(() => parseTelegramSignalInput({ ...validSetup, occurredDate: "2026-08-27" })).toThrow("occurredDate must use DD-MMM-YYYY format");
     expect(() => parseTelegramSignalInput({ ...validSetup, occurredAt: "2026-08-27T01:00:00.000Z" })).toThrow("occurredAt must use 24-hour HH:mm:ss format");
   });
 

@@ -16,6 +16,7 @@ type SignalInput = {
   entryPrice: string;
   takeProfit?: string;
   stopLoss?: string;
+  occurredDate: string;
   occurredAt: string;
 };
 
@@ -39,6 +40,7 @@ export function parseTelegramSignalInput(body: Record<string, unknown>): SignalI
   const entryPrice = safeNumericText(body.entryPrice, "entryPrice", true);
   const takeProfit = safeNumericText(body.takeProfit, "takeProfit");
   const stopLoss = safeNumericText(body.stopLoss, "stopLoss");
+  const occurredDate = cleanText(body.occurredDate, 11);
   const occurredAt = cleanText(body.occurredAt, 8);
 
   if (!/^[A-Za-z0-9_-]{6,96}$/.test(eventId)) throw new Error("eventId is invalid");
@@ -47,9 +49,14 @@ export function parseTelegramSignalInput(body: Record<string, unknown>): SignalI
   if (!/^[A-Za-z0-9_.-]{1,64}$/.test(symbol)) throw new Error("symbol is invalid");
   if (!direction) throw new Error("direction must be BUY or SELL");
   if (!entryPrice) throw new Error("entryPrice must be a numeric value");
+  if (!/^\d{2}-[A-Za-z]{3}-\d{4}$/.test(occurredDate)) throw new Error("occurredDate must use DD-MMM-YYYY format");
   if (!/^(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$/.test(occurredAt)) throw new Error("occurredAt must use 24-hour HH:mm:ss format");
 
-  return { eventId, eventType, accountNumber, symbol, direction, entryPrice, takeProfit, stopLoss, occurredAt };
+  return { eventId, eventType, accountNumber, symbol, direction, entryPrice, takeProfit, stopLoss, occurredDate, occurredAt };
+}
+
+export function brokerNeutralSymbol(symbol: string) {
+  return symbol.split(/[._-]/, 1)[0] || symbol;
 }
 
 export function formatTelegramSignal(signal: SignalInput) {
@@ -59,13 +66,14 @@ export function formatTelegramSignal(signal: SignalInput) {
     signal.stopLoss ? `SL: ${signal.stopLoss}` : null,
   ].filter(Boolean);
   return [
-    "FizuxCoder EA Signal",
-    `Symbol: ${signal.symbol}`,
-    `Direction: ${signal.direction}`,
+    "📡 FizuxCoder EA Signal",
+    `📊 Symbol: ${brokerNeutralSymbol(signal.symbol)}`,
+    `📈 Direction: ${signal.direction}`,
     ...levels,
-    `Event time (EA clock): ${signal.occurredAt}`,
+    `📅 Event Date: ${signal.occurredDate}`,
+    `🕒 Event Time: ${signal.occurredAt} GMT+8`,
     "",
-    DEFAULT_RISK_NOTE,
+    `⚠️ ${DEFAULT_RISK_NOTE}`,
   ].join("\n");
 }
 
@@ -109,7 +117,7 @@ export async function getTelegramSignalDashboard() {
       suppressed: recent.filter(item => item.status === "suppressed").length,
       failed: recent.filter(item => item.status === "failed").length,
     },
-    recent: recent.map(item => ({ id: item.id, eventId: item.eventId, eventType: item.eventType, symbol: item.symbol, direction: item.direction, eaTime: item.eaTime, status: item.status, createdAt: item.createdAt.toISOString(), deliveredAt: item.deliveredAt?.toISOString() ?? null, failureReason: item.failureReason })),
+    recent: recent.map(item => ({ id: item.id, eventId: item.eventId, eventType: item.eventType, symbol: item.symbol, direction: item.direction, eaDate: item.eaDate, eaTime: item.eaTime, status: item.status, createdAt: item.createdAt.toISOString(), deliveredAt: item.deliveredAt?.toISOString() ?? null, failureReason: item.failureReason })),
   };
 }
 
@@ -173,7 +181,7 @@ export async function receiveTelegramSignal(signal: SignalInput) {
   const messageText = formatTelegramSignal(signal);
   const activeEntitlement = await db.select({ id: entitlements.id }).from(entitlements).where(and(eq(entitlements.mt5AccountNumber, signal.accountNumber), eq(entitlements.status, "active"))).limit(1);
   if (!activeEntitlement[0]) {
-    const result = await db.insert(telegramSignalEvents).values({ eventId: signal.eventId, eventType: signal.eventType, accountNumber: signal.accountNumber, symbol: signal.symbol, direction: signal.direction, entryPrice: signal.entryPrice, takeProfit: signal.takeProfit ?? null, stopLoss: signal.stopLoss ?? null, riskNote: DEFAULT_RISK_NOTE, messageText, status: "rejected", failureCode: "account_not_authorized", failureReason: "No active portal entitlement exists for this MT5 account.", eaTime: signal.occurredAt });
+    const result = await db.insert(telegramSignalEvents).values({ eventId: signal.eventId, eventType: signal.eventType, accountNumber: signal.accountNumber, symbol: signal.symbol, direction: signal.direction, entryPrice: signal.entryPrice, takeProfit: signal.takeProfit ?? null, stopLoss: signal.stopLoss ?? null, riskNote: DEFAULT_RISK_NOTE, messageText, status: "rejected", failureCode: "account_not_authorized", failureReason: "No active portal entitlement exists for this MT5 account.", eaDate: signal.occurredDate, eaTime: signal.occurredAt });
     const insertedId = Number(result[0].insertId);
     await recordAudit(insertedId, "received", `EA event received: ${signal.eventType}`);
     await recordAudit(insertedId, "rejected", "The originating MT5 account has no active portal entitlement.");
@@ -184,7 +192,7 @@ export async function receiveTelegramSignal(signal: SignalInput) {
   const status = shouldSuppress ? "suppressed" as const : "received" as const;
   let insertedId: number;
   try {
-    const result = await db.insert(telegramSignalEvents).values({ eventId: signal.eventId, eventType: signal.eventType, accountNumber: signal.accountNumber, symbol: signal.symbol, direction: signal.direction, entryPrice: signal.entryPrice, takeProfit: signal.takeProfit ?? null, stopLoss: signal.stopLoss ?? null, riskNote: DEFAULT_RISK_NOTE, messageText, status, eaTime: signal.occurredAt });
+    const result = await db.insert(telegramSignalEvents).values({ eventId: signal.eventId, eventType: signal.eventType, accountNumber: signal.accountNumber, symbol: signal.symbol, direction: signal.direction, entryPrice: signal.entryPrice, takeProfit: signal.takeProfit ?? null, stopLoss: signal.stopLoss ?? null, riskNote: DEFAULT_RISK_NOTE, messageText, status, eaDate: signal.occurredDate, eaTime: signal.occurredAt });
     insertedId = Number(result[0].insertId);
   } catch (error) {
     const duplicate = await db.select().from(telegramSignalEvents).where(eq(telegramSignalEvents.eventId, signal.eventId)).limit(1);
@@ -219,7 +227,7 @@ export async function sendTelegramConnectionTest(input: { actorUserId: number; c
   const { db, settings } = await getSettings();
   if (!settings?.channelId || !ENV.telegramBotToken) throw new Error("Configure the Telegram bot token and channel identity first");
   const eventId = `test-${Date.now()}-${randomUUID().slice(0, 8)}`;
-  const result = await db.insert(telegramSignalEvents).values({ eventId, eventType: "setup", accountNumber: "0000", symbol: "TEST", direction: "BUY", entryPrice: "0", riskNote: DEFAULT_RISK_NOTE, messageText: "FizuxCoder Telegram connection test\n\nThis owner-authorized test confirms that the Admin Command Center can reach the configured channel. It is not a trading signal.", status: "delivering", eaTime: "00:00:00" });
+  const result = await db.insert(telegramSignalEvents).values({ eventId, eventType: "setup", accountNumber: "0000", symbol: "TEST", direction: "BUY", entryPrice: "0", riskNote: DEFAULT_RISK_NOTE, messageText: "FizuxCoder Telegram connection test\n\nThis owner-authorized test confirms that the Admin Command Center can reach the configured channel. It is not a trading signal.", status: "delivering", eaDate: "Unknown", eaTime: "00:00:00" });
   const eventIdDb = Number(result[0].insertId);
   await recordAudit(eventIdDb, "test_requested", "Owner confirmed a visible Telegram connection test.", input.actorUserId);
   await recordAudit(eventIdDb, "delivery_started", "Telegram connection test started.", input.actorUserId);
@@ -239,7 +247,10 @@ export async function sendTelegramConnectionTest(input: { actorUserId: number; c
 export async function sendTelegramMockEaSetup(input: { actorUserId: number; confirmation: string }) {
   if (input.confirmation !== "SEND EA MOCK TEST") throw new Error("Type SEND EA MOCK TEST to confirm a visible mock setup post");
   const now = new Date();
-  const eaTime = now.toLocaleTimeString("en-GB", { hour12: false, timeZone: "UTC" });
+  const gmt8 = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kuala_Lumpur", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" }).formatToParts(now);
+  const datePart = (type: Intl.DateTimeFormatPartTypes) => gmt8.find(part => part.type === type)?.value ?? "";
+  const eaDate = `${datePart("day")}-${datePart("month")}-${datePart("year")}`;
+  const eaTime = `${datePart("hour")}:${datePart("minute")}:${datePart("second")}`;
   const signal = parseTelegramSignalInput({
     eventId: `mock-ea-${Date.now()}-${randomUUID().slice(0, 8)}`,
     eventType: "setup",
@@ -247,12 +258,13 @@ export async function sendTelegramMockEaSetup(input: { actorUserId: number; conf
     symbol: "XAUUSD.vx",
     direction: "BUY",
     entryPrice: "0.00",
+    occurredDate: eaDate,
     occurredAt: eaTime,
   });
   const { db, settings } = await getSettings();
   if (!deliveryState(settings).armed) throw new Error("Telegram automatic delivery is not armed");
   const messageText = formatMockTelegramSignal(signal);
-  const result = await db.insert(telegramSignalEvents).values({ eventId: signal.eventId, eventType: signal.eventType, accountNumber: signal.accountNumber, symbol: signal.symbol, direction: signal.direction, entryPrice: signal.entryPrice, riskNote: DEFAULT_RISK_NOTE, messageText, status: "delivering", eaTime: signal.occurredAt });
+  const result = await db.insert(telegramSignalEvents).values({ eventId: signal.eventId, eventType: signal.eventType, accountNumber: signal.accountNumber, symbol: signal.symbol, direction: signal.direction, entryPrice: signal.entryPrice, riskNote: DEFAULT_RISK_NOTE, messageText, status: "delivering", eaDate: signal.occurredDate, eaTime: signal.occurredAt });
   const eventIdDb = Number(result[0].insertId);
   await recordAudit(eventIdDb, "test_requested", "Owner confirmed an EA-contract mock signal.", input.actorUserId);
   await recordAudit(eventIdDb, "validated", "Mock payload validated against the EA setup event contract.", input.actorUserId);

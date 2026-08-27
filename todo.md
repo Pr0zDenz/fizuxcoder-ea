@@ -373,3 +373,5 @@
 - [x] Integrate and structurally validate the Cloudflare config, account-scoped runtime compatibility, 24-hour Telegram setup event, and enabled signal flag in a NewLook-based deployment MQ5.
 
 - [x] Run one owner-authorized, clearly labelled non-trading mock EA setup event through the authenticated Telegram signal endpoint and verify the resulting audit record; Telegram message ID 5 was delivered with HH:mm:ss EA time and no MT5, licence, or account changes.
+
+- [x] Update the Telegram signal template with broker-neutral symbols, a date and GMT+8 time display, and concise attention icons while retaining mock/risk safeguards.
