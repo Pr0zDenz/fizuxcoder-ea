@@ -384,3 +384,6 @@
 - [x] Send one owner-authorized, clearly labelled non-trading Telegram mock derived from the stored rejected EA event without replaying the real event ID.
 - [x] Add current M1 setup Fibonacci TP1, TP2, and TP3 values to the NewLook EA Telegram payload and public signal template without changing EA trade execution or risk controls.
 - [x] Add the current M1 setup Fibonacci −1.0 level as an informational Telegram stop-reference field without changing EA stop-loss execution.
+- [ ] Run the prepared NewLook Telegram-enabled MQ5 through the Windows VPS MetaEditor compilation and attach it to the owner-selected MT5 test chart after operator confirmation of zero compiler errors and warnings.
+- [x] Send one owner-authorized, clearly labelled non-trading Telegram mock preview that renders the new M1 TP1, TP2, TP3, and −1.0 stop-reference fields with test-only values; delivered as Telegram message ID 7.
+- [x] Remove the phrase “M1 Fibo” from the Telegram TP and SL reference labels without changing their source values or delivery behavior.

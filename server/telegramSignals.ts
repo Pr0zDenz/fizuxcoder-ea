@@ -84,10 +84,10 @@ export function resolveTelegramSignalEligibility(input: { hasActiveCustomerEntit
 export function formatTelegramSignal(signal: SignalInput) {
   const levels = [
     `Reference entry: ${signal.entryPrice}`,
-    signal.fiboTp1 ? `🎯 M1 Fibo TP1: ${signal.fiboTp1}` : null,
-    signal.fiboTp2 ? `🎯 M1 Fibo TP2: ${signal.fiboTp2}` : null,
-    signal.fiboTp3 ? `🎯 M1 Fibo TP3: ${signal.fiboTp3}` : null,
-    signal.fiboSlNeg100 ? `🛡️ M1 Fibo SL (-1.0): ${signal.fiboSlNeg100}` : null,
+    signal.fiboTp1 ? `🎯 TP1: ${signal.fiboTp1}` : null,
+    signal.fiboTp2 ? `🎯 TP2: ${signal.fiboTp2}` : null,
+    signal.fiboTp3 ? `🎯 TP3: ${signal.fiboTp3}` : null,
+    signal.fiboSlNeg100 ? `🛡️ SL (-1.0): ${signal.fiboSlNeg100}` : null,
     signal.takeProfit ? `Safe TP: ${signal.takeProfit}` : null,
     signal.stopLoss ? `SL: ${signal.stopLoss}` : null,
   ].filter(Boolean);
@@ -307,13 +307,17 @@ export async function sendTelegramMockEaSetup(input: { actorUserId: number; conf
     symbol: "XAUUSD.vx",
     direction: "BUY",
     entryPrice: "0.00",
+    fiboTp1: "0.00",
+    fiboTp2: "0.00",
+    fiboTp3: "0.00",
+    fiboSlNeg100: "0.00",
     occurredDate: eaDate,
     occurredAt: eaTime,
   });
   const { db, settings } = await getSettings();
   if (!deliveryState(settings).armed) throw new Error("Telegram automatic delivery is not armed");
   const messageText = formatMockTelegramSignal(signal);
-  const result = await db.insert(telegramSignalEvents).values({ eventId: signal.eventId, eventType: signal.eventType, accountNumber: signal.accountNumber, symbol: signal.symbol, direction: signal.direction, entryPrice: signal.entryPrice, riskNote: DEFAULT_RISK_NOTE, messageText, status: "delivering", eaDate: signal.occurredDate, eaTime: signal.occurredAt });
+  const result = await db.insert(telegramSignalEvents).values({ eventId: signal.eventId, eventType: signal.eventType, accountNumber: signal.accountNumber, symbol: signal.symbol, direction: signal.direction, entryPrice: signal.entryPrice, fiboTp1: signal.fiboTp1 ?? null, fiboTp2: signal.fiboTp2 ?? null, fiboTp3: signal.fiboTp3 ?? null, fiboSlNeg100: signal.fiboSlNeg100 ?? null, riskNote: DEFAULT_RISK_NOTE, messageText, status: "delivering", eaDate: signal.occurredDate, eaTime: signal.occurredAt });
   const eventIdDb = Number(result[0].insertId);
   await recordAudit(eventIdDb, "test_requested", "Owner confirmed an EA-contract mock signal.", input.actorUserId);
   await recordAudit(eventIdDb, "validated", "Mock payload validated against the EA setup event contract.", input.actorUserId);
