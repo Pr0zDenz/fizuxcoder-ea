@@ -40,4 +40,19 @@ describe("Telegram signal intake route", () => {
     expect(res.json).toHaveBeenCalledWith({ ok: false, error: "direction must be BUY or SELL" });
     expect(receiveTelegramSignalMock).not.toHaveBeenCalled();
   });
+
+  it("forwards validated optional M1 Fibonacci TP and −1.0 stop-reference fields without exposing the ingest key", async () => {
+    const parsed = { eventId: "signal-123456", eventType: "setup", accountNumber: "230069105", symbol: "XAUUSD.vx", direction: "SELL", entryPrice: "4588.21", fiboTp1: "4580.00", fiboTp2: "4570.00", fiboTp3: "4550.00", fiboSlNeg100: "4610.00", occurredDate: "27-Aug-2026", occurredAt: "14:01:00" };
+    vi.mocked(validSecret).mockReturnValueOnce(true);
+    vi.mocked(parseTelegramSignalInput).mockReturnValueOnce(parsed as never);
+    receiveTelegramSignalMock.mockResolvedValueOnce({ created: true, id: 1, status: "suppressed", delivered: false });
+    const app = { get: vi.fn(), post: vi.fn() };
+    registerTelegramSignalRoute(app as never);
+    const handler = app.post.mock.calls[0][1];
+    const res = response();
+    await handler({ header: () => "valid-key", body: { ...parsed, ignored: "not forwarded" } }, res);
+    expect(parseTelegramSignalInput).toHaveBeenCalledWith(expect.objectContaining({ fiboTp1: "4580.00", fiboTp2: "4570.00", fiboTp3: "4550.00", fiboSlNeg100: "4610.00" }));
+    expect(receiveTelegramSignalMock).toHaveBeenCalledWith(parsed);
+    expect(res.status).toHaveBeenCalledWith(201);
+  });
 });

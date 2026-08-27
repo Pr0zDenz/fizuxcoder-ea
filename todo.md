@@ -380,5 +380,7 @@
 - [x] Add an administrator-controlled internal Telegram signal-source registry that permits approved owner accounts without creating customer entitlements.
 - [x] Authorize account `230069105` as the initial owner-approved signal source and verify a matching real EA setup event becomes eligible for Telegram delivery.
 - [x] Add interactive Admin Command Center controls to list, create, label, enable/disable, and revoke owner-approved Telegram signal-source accounts without granting customer entitlement access.
-- [ ] Verify the prepared NewLook Telegram-enabled MQ5 deployment source and provide the safe VPS MetaEditor compilation, chart attachment, and non-posting validation procedure.
+- [x] Verify the prepared NewLook Telegram-enabled MQ5 deployment source and provide the safe VPS MetaEditor compilation, chart attachment, and non-posting validation procedure; MetaEditor execution remains operator-side on the Windows VPS.
 - [x] Send one owner-authorized, clearly labelled non-trading Telegram mock derived from the stored rejected EA event without replaying the real event ID.
+- [x] Add current M1 setup Fibonacci TP1, TP2, and TP3 values to the NewLook EA Telegram payload and public signal template without changing EA trade execution or risk controls.
+- [x] Add the current M1 setup Fibonacci −1.0 level as an informational Telegram stop-reference field without changing EA stop-loss execution.

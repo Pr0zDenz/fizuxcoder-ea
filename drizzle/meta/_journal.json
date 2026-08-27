@@ -141,6 +141,13 @@
       "when": 1787829083741,
       "tag": "0019_messy_lilandra",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "5",
+      "when": 1787830257858,
+      "tag": "0020_acoustic_mauler",
+      "breakpoints": true
     }
   ]
 }

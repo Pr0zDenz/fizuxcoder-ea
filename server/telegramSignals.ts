@@ -15,6 +15,10 @@ type SignalInput = {
   direction: "BUY" | "SELL";
   entryPrice: string;
   takeProfit?: string;
+  fiboTp1?: string;
+  fiboTp2?: string;
+  fiboTp3?: string;
+  fiboSlNeg100?: string;
   stopLoss?: string;
   occurredDate: string;
   occurredAt: string;
@@ -39,6 +43,10 @@ export function parseTelegramSignalInput(body: Record<string, unknown>): SignalI
   const direction = body.direction === "BUY" || body.direction === "SELL" ? body.direction : null;
   const entryPrice = safeNumericText(body.entryPrice, "entryPrice", true);
   const takeProfit = safeNumericText(body.takeProfit, "takeProfit");
+  const fiboTp1 = safeNumericText(body.fiboTp1, "fiboTp1");
+  const fiboTp2 = safeNumericText(body.fiboTp2, "fiboTp2");
+  const fiboTp3 = safeNumericText(body.fiboTp3, "fiboTp3");
+  const fiboSlNeg100 = safeNumericText(body.fiboSlNeg100, "fiboSlNeg100");
   const stopLoss = safeNumericText(body.stopLoss, "stopLoss");
   const occurredDate = cleanText(body.occurredDate, 11);
   const occurredAt = cleanText(body.occurredAt, 8);
@@ -52,7 +60,7 @@ export function parseTelegramSignalInput(body: Record<string, unknown>): SignalI
   if (!/^\d{2}-[A-Za-z]{3}-\d{4}$/.test(occurredDate)) throw new Error("occurredDate must use DD-MMM-YYYY format");
   if (!/^(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$/.test(occurredAt)) throw new Error("occurredAt must use 24-hour HH:mm:ss format");
 
-  return { eventId, eventType, accountNumber, symbol, direction, entryPrice, takeProfit, stopLoss, occurredDate, occurredAt };
+  return { eventId, eventType, accountNumber, symbol, direction, entryPrice, takeProfit, fiboTp1, fiboTp2, fiboTp3, fiboSlNeg100, stopLoss, occurredDate, occurredAt };
 }
 
 export function brokerNeutralSymbol(symbol: string) {
@@ -76,6 +84,10 @@ export function resolveTelegramSignalEligibility(input: { hasActiveCustomerEntit
 export function formatTelegramSignal(signal: SignalInput) {
   const levels = [
     `Reference entry: ${signal.entryPrice}`,
+    signal.fiboTp1 ? `🎯 M1 Fibo TP1: ${signal.fiboTp1}` : null,
+    signal.fiboTp2 ? `🎯 M1 Fibo TP2: ${signal.fiboTp2}` : null,
+    signal.fiboTp3 ? `🎯 M1 Fibo TP3: ${signal.fiboTp3}` : null,
+    signal.fiboSlNeg100 ? `🛡️ M1 Fibo SL (-1.0): ${signal.fiboSlNeg100}` : null,
     signal.takeProfit ? `Safe TP: ${signal.takeProfit}` : null,
     signal.stopLoss ? `SL: ${signal.stopLoss}` : null,
   ].filter(Boolean);
@@ -135,7 +147,7 @@ export async function getTelegramSignalDashboard() {
       failed: recent.filter(item => item.status === "failed").length,
     },
     sources: sources.map(source => ({ accountNumber: source.accountNumber, label: source.label, active: source.active === "yes", updatedAt: source.updatedAt.toISOString() })),
-    recent: recent.map(item => ({ id: item.id, eventId: item.eventId, eventType: item.eventType, symbol: item.symbol, direction: item.direction, eaDate: item.eaDate, eaTime: item.eaTime, status: item.status, createdAt: item.createdAt.toISOString(), deliveredAt: item.deliveredAt?.toISOString() ?? null, failureReason: item.failureReason })),
+    recent: recent.map(item => ({ id: item.id, eventId: item.eventId, eventType: item.eventType, symbol: item.symbol, direction: item.direction, fiboTp1: item.fiboTp1, fiboTp2: item.fiboTp2, fiboTp3: item.fiboTp3, fiboSlNeg100: item.fiboSlNeg100, eaDate: item.eaDate, eaTime: item.eaTime, status: item.status, createdAt: item.createdAt.toISOString(), deliveredAt: item.deliveredAt?.toISOString() ?? null, failureReason: item.failureReason })),
   };
 }
 
@@ -217,7 +229,7 @@ export async function receiveTelegramSignal(signal: SignalInput) {
   ]);
   const eligibility = resolveTelegramSignalEligibility({ hasActiveCustomerEntitlement: Boolean(activeEntitlement[0]), hasEnabledInternalSource: Boolean(ownerApprovedSource[0]) });
   if (!eligibility.eligible) {
-    const result = await db.insert(telegramSignalEvents).values({ eventId: signal.eventId, eventType: signal.eventType, accountNumber: signal.accountNumber, symbol: signal.symbol, direction: signal.direction, entryPrice: signal.entryPrice, takeProfit: signal.takeProfit ?? null, stopLoss: signal.stopLoss ?? null, riskNote: DEFAULT_RISK_NOTE, messageText, status: "rejected", failureCode: "account_not_authorized", failureReason: "No active portal entitlement or approved internal signal-source record exists for this MT5 account.", eaDate: signal.occurredDate, eaTime: signal.occurredAt });
+    const result = await db.insert(telegramSignalEvents).values({ eventId: signal.eventId, eventType: signal.eventType, accountNumber: signal.accountNumber, symbol: signal.symbol, direction: signal.direction, entryPrice: signal.entryPrice, takeProfit: signal.takeProfit ?? null, fiboTp1: signal.fiboTp1 ?? null, fiboTp2: signal.fiboTp2 ?? null, fiboTp3: signal.fiboTp3 ?? null, fiboSlNeg100: signal.fiboSlNeg100 ?? null, stopLoss: signal.stopLoss ?? null, riskNote: DEFAULT_RISK_NOTE, messageText, status: "rejected", failureCode: "account_not_authorized", failureReason: "No active portal entitlement or approved internal signal-source record exists for this MT5 account.", eaDate: signal.occurredDate, eaTime: signal.occurredAt });
     const insertedId = Number(result[0].insertId);
     await recordAudit(insertedId, "received", `EA event received: ${signal.eventType}`);
     await recordAudit(insertedId, "rejected", "The originating MT5 account has no active portal entitlement or approved internal signal-source record.");
@@ -228,7 +240,7 @@ export async function receiveTelegramSignal(signal: SignalInput) {
   const status = shouldSuppress ? "suppressed" as const : "received" as const;
   let insertedId: number;
   try {
-    const result = await db.insert(telegramSignalEvents).values({ eventId: signal.eventId, eventType: signal.eventType, accountNumber: signal.accountNumber, symbol: signal.symbol, direction: signal.direction, entryPrice: signal.entryPrice, takeProfit: signal.takeProfit ?? null, stopLoss: signal.stopLoss ?? null, riskNote: DEFAULT_RISK_NOTE, messageText, status, eaDate: signal.occurredDate, eaTime: signal.occurredAt });
+    const result = await db.insert(telegramSignalEvents).values({ eventId: signal.eventId, eventType: signal.eventType, accountNumber: signal.accountNumber, symbol: signal.symbol, direction: signal.direction, entryPrice: signal.entryPrice, takeProfit: signal.takeProfit ?? null, fiboTp1: signal.fiboTp1 ?? null, fiboTp2: signal.fiboTp2 ?? null, fiboTp3: signal.fiboTp3 ?? null, fiboSlNeg100: signal.fiboSlNeg100 ?? null, stopLoss: signal.stopLoss ?? null, riskNote: DEFAULT_RISK_NOTE, messageText, status, eaDate: signal.occurredDate, eaTime: signal.occurredAt });
     insertedId = Number(result[0].insertId);
   } catch (error) {
     const duplicate = await db.select().from(telegramSignalEvents).where(eq(telegramSignalEvents.eventId, signal.eventId)).limit(1);
@@ -343,7 +355,7 @@ export async function sendTelegramMockFromRejectedEvent(input: { actorUserId: nu
     occurredAt: rejected.eaTime,
   });
   const messageText = formatMockTelegramSignal(signal);
-  const result = await db.insert(telegramSignalEvents).values({ eventId: signal.eventId, eventType: signal.eventType, accountNumber: signal.accountNumber, symbol: signal.symbol, direction: signal.direction, entryPrice: signal.entryPrice, takeProfit: signal.takeProfit ?? null, stopLoss: signal.stopLoss ?? null, riskNote: DEFAULT_RISK_NOTE, messageText, status: "delivering", eaDate: signal.occurredDate, eaTime: signal.occurredAt });
+  const result = await db.insert(telegramSignalEvents).values({ eventId: signal.eventId, eventType: signal.eventType, accountNumber: signal.accountNumber, symbol: signal.symbol, direction: signal.direction, entryPrice: signal.entryPrice, takeProfit: signal.takeProfit ?? null, fiboTp1: signal.fiboTp1 ?? null, fiboTp2: signal.fiboTp2 ?? null, fiboTp3: signal.fiboTp3 ?? null, fiboSlNeg100: signal.fiboSlNeg100 ?? null, stopLoss: signal.stopLoss ?? null, riskNote: DEFAULT_RISK_NOTE, messageText, status: "delivering", eaDate: signal.occurredDate, eaTime: signal.occurredAt });
   const mockEventDbId = Number(result[0].insertId);
   await recordAudit(mockEventDbId, "test_requested", `Owner confirmed a mock derived from rejected event ${rejected.eventId}.`, input.actorUserId);
   await recordAudit(mockEventDbId, "validated", "Derived mock payload validated without replaying the real EA event ID.", input.actorUserId);

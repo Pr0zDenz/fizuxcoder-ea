@@ -10,6 +10,10 @@ describe("Telegram signal contract", () => {
     direction: "SELL",
     entryPrice: "4599.20",
     takeProfit: "4581.83",
+    fiboTp1: "4588.00",
+    fiboTp2: "4578.00",
+    fiboTp3: "4560.00",
+    fiboSlNeg100: "4620.00",
     stopLoss: "4610.00",
     occurredDate: "27-Aug-2026",
     occurredAt: "09:00:00",
@@ -20,6 +24,10 @@ describe("Telegram signal contract", () => {
     expect(signal).toMatchObject({ direction: "SELL", symbol: "XAUUSD.vx", takeProfit: "4581.83" });
     expect(formatTelegramSignal(signal)).toContain("⚠️ Automated EA signal for market observation only");
     expect(formatTelegramSignal(signal)).toContain("📊 Symbol: XAUUSD");
+    expect(formatTelegramSignal(signal)).toContain("🎯 M1 Fibo TP1: 4588.00");
+    expect(formatTelegramSignal(signal)).toContain("🎯 M1 Fibo TP2: 4578.00");
+    expect(formatTelegramSignal(signal)).toContain("🎯 M1 Fibo TP3: 4560.00");
+    expect(formatTelegramSignal(signal)).toContain("🛡️ M1 Fibo SL (-1.0): 4620.00");
     expect(formatTelegramSignal(signal)).toContain("Safe TP: 4581.83");
     expect(formatTelegramSignal(signal)).toContain("📅 Event Date: 27-Aug-2026");
     expect(formatTelegramSignal(signal)).toContain("🕒 Event Time: 09:00:00 GMT+8");
@@ -39,6 +47,8 @@ describe("Telegram signal contract", () => {
     expect(() => parseTelegramSignalInput({ ...validSetup, eventId: "bad id" })).toThrow("eventId is invalid");
     expect(() => parseTelegramSignalInput({ ...validSetup, direction: "HOLD" })).toThrow("direction must be BUY or SELL");
     expect(() => parseTelegramSignalInput({ ...validSetup, entryPrice: "market" })).toThrow("entryPrice must be a numeric value");
+    expect(() => parseTelegramSignalInput({ ...validSetup, fiboTp1: "not-a-price" })).toThrow("fiboTp1 must be a numeric value");
+    expect(() => parseTelegramSignalInput({ ...validSetup, fiboSlNeg100: "not-a-price" })).toThrow("fiboSlNeg100 must be a numeric value");
     expect(() => parseTelegramSignalInput({ ...validSetup, occurredDate: "2026-08-27" })).toThrow("occurredDate must use DD-MMM-YYYY format");
     expect(() => parseTelegramSignalInput({ ...validSetup, occurredAt: "2026-08-27T01:00:00.000Z" })).toThrow("occurredAt must use 24-hour HH:mm:ss format");
   });
