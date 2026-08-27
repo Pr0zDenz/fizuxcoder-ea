@@ -12,7 +12,7 @@ vi.mock("./threadsPublisher", () => ({
 }));
 vi.mock("./storage", () => ({ storagePut: vi.fn() }));
 
-import { DEFAULT_THREADS_MARKETING_CRON, runScheduledThreadsMarketing, validateTelegramMarketingInviteLink } from "./threadsMarketingAutomation";
+import { approveInitialTelegramGrowthTemplateSet, DEFAULT_THREADS_MARKETING_CRON, runScheduledThreadsMarketing, validateTelegramMarketingInviteLink } from "./threadsMarketingAutomation";
 
 const source = readFileSync(new URL("./threadsMarketingAutomation.ts", import.meta.url), "utf8");
 const routeSource = readFileSync(new URL("./threadsMarketingScheduleRoute.ts", import.meta.url), "utf8");
@@ -52,6 +52,27 @@ describe("private Telegram invite Threads automation safeguards", () => {
     expect(source).toContain("Jangan rush sebab one screenshot. Join the channel:");
   });
 
+  it("approves only the agreed template set and leaves a VPS screenshot out of the bulk queue", async () => {
+    const settings = { settingKey: "owner_threads_marketing", ownerUserId: 1 };
+    const template = { id: 10, contentKey: "threads-telegram-growth-process-abc123", status: "draft", complianceStatus: "passed", contentHash: "template-hash" };
+    const screenshot = { id: 11, contentKey: "threads-gemini-vps-event-event-123", status: "draft", complianceStatus: "passed", contentHash: "screenshot-hash" };
+    const updateWhere = vi.fn().mockResolvedValue([{ affectedRows: 1 }]);
+    const insertValues = vi.fn().mockResolvedValue([{ insertId: 1 }]);
+    const db = {
+      select: vi.fn()
+        .mockReturnValueOnce(nestedSelect([settings]))
+        .mockReturnValueOnce({ from: vi.fn(() => ({ where: vi.fn().mockResolvedValue([template, screenshot]) })) }),
+      update: vi.fn(() => ({ set: vi.fn(() => ({ where: updateWhere })) })),
+      insert: vi.fn(() => ({ values: insertValues })),
+    };
+    getDbMock.mockResolvedValue(db);
+
+    await expect(approveInitialTelegramGrowthTemplateSet(1)).resolves.toEqual({ approved: 1, eligible: true });
+    expect(updateWhere).toHaveBeenCalledTimes(1);
+    expect(insertValues).toHaveBeenCalledWith(expect.objectContaining({ contentItemId: 10 }));
+    expect(insertValues).toHaveBeenCalledWith(expect.objectContaining({ note: expect.stringContaining("VPS screenshots remain excluded") }));
+  });
+
   it("uses the proposed three-per-day Malaysia schedule as a UTC six-field cron expression", () => {
     expect(DEFAULT_THREADS_MARKETING_CRON).toBe("0 0 1,5,13 * * *");
   });
@@ -87,6 +108,10 @@ describe("private Telegram invite Threads automation safeguards", () => {
     expect(intakeSource).toContain('status: "draft"');
     expect(source).toContain('eq(marketingContentItems.automationEligible, "yes")');
     expect(source).toContain("Owner approved exact draft for scheduled Threads queue");
+    expect(source).toContain("approveInitialTelegramGrowthTemplateSet");
+    expect(source).toContain("This deliberately cannot select any VPS event/screenshot record");
+    expect(source).toContain("threads-telegram-growth-");
+    expect(source).not.toContain("threads-gemini-vps-event-templates");
   });
 
   it("requires cron identity and a verified task UID at the scheduled HTTP boundary", () => {

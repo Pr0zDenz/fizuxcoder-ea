@@ -150,7 +150,7 @@ export async function verifyTelegramGrowthInviteLink(ownerUserId: number) {
   return getThreadsMarketingAutomationStatus(ownerUserId);
 }
 
-/** Creates invitation drafts only. It never enrols a draft for auto-publication. */
+/** Creates invitation drafts only. The agreed initial template set may later be approved as one audited campaign; screenshots never use that path. */
 export async function prepareTelegramGrowthDrafts(ownerUserId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database is unavailable");
@@ -180,7 +180,7 @@ export async function prepareTelegramGrowthDrafts(ownerUserId: number) {
       scheduledFor: null,
       status: "draft",
       complianceStatus: "passed",
-      complianceFlags: JSON.stringify(["telegram_private_invite", "owner_review_required", "not_signal_evidence"]),
+      complianceFlags: JSON.stringify(["telegram_private_invite", "initial_template_approval_required", "not_signal_evidence"]),
       contentHash: copyHash({ ...seed, caption }),
       automationEligible: "no",
     });
@@ -190,11 +190,55 @@ export async function prepareTelegramGrowthDrafts(ownerUserId: number) {
       actorUserId: ownerUserId,
       action: "revised",
       contentHash: copyHash({ ...seed, caption }),
-      note: "Private Telegram invite marketing draft created; owner review required",
+      note: "Private Telegram invite template created; campaign approval is required before scheduling",
     });
     created += 1;
   }
   return { created, existing };
+}
+
+/**
+ * Approves only the three fixed private-invite templates as one owner-audited
+ * campaign. This deliberately cannot select any VPS event/screenshot record.
+ */
+export async function approveInitialTelegramGrowthTemplateSet(actorUserId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  await ensureSettings(actorUserId);
+  const templatePrefixes = TELEGRAM_GROWTH_SEEDS.map(seed => `${seed.contentKey}-`);
+  const candidates = (await db.select().from(marketingContentItems).where(and(
+    eq(marketingContentItems.status, "draft"),
+    eq(marketingContentItems.complianceStatus, "passed"),
+  ))).filter(item => templatePrefixes.some(prefix => item.contentKey.startsWith(prefix)));
+  let approved = 0;
+  for (const item of candidates) {
+    const transition = await db.update(marketingContentItems).set({
+      status: "approved",
+      approvedByUserId: actorUserId,
+      approvedAt: new Date(),
+      automationEligible: "yes",
+    }).where(and(
+      eq(marketingContentItems.id, item.id),
+      eq(marketingContentItems.status, "draft"),
+      eq(marketingContentItems.complianceStatus, "passed"),
+    ));
+    if (!transition[0].affectedRows) continue;
+    await db.insert(marketingContentAudits).values({
+      contentItemId: item.id,
+      actorUserId,
+      action: "approved",
+      contentHash: item.contentHash,
+      note: "Owner approved agreed private Telegram-growth template campaign for scheduled Threads posting",
+    });
+    approved += 1;
+  }
+  await db.insert(threadsMarketingAutomationAudits).values({
+    settingKey: THREADS_MARKETING_AUTOMATION_KEY,
+    actorUserId,
+    action: "settings_updated",
+    note: `Owner approved ${approved} agreed private Telegram-growth templates; VPS screenshots remain excluded`,
+  });
+  return { approved, eligible: approved > 0 };
 }
 
 /**

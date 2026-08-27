@@ -34,6 +34,7 @@ type LifecycleInput = {
   direction: "BUY" | "SELL";
   stage: LifecycleStage;
   hitPrice: string;
+  positionSetClosed: boolean;
   occurredDate: string;
   occurredAt: string;
 };
@@ -85,6 +86,8 @@ export function parseTelegramLifecycleInput(body: Record<string, unknown>): Life
   const symbol = cleanText(body.symbol, 64);
   const direction = body.direction === "BUY" || body.direction === "SELL" ? body.direction : null;
   const hitPrice = safeNumericText(body.hitPrice, "hitPrice", true);
+  if (body.positionSetClosed !== undefined && typeof body.positionSetClosed !== "boolean") throw new Error("positionSetClosed must be a boolean when supplied");
+  const positionSetClosed = body.positionSetClosed === true;
   const occurredDate = cleanText(body.occurredDate, 11);
   const occurredAt = cleanText(body.occurredAt, 8);
   if (!/^[A-Za-z0-9_-]{6,96}$/.test(eventId)) throw new Error("eventId is invalid");
@@ -96,14 +99,15 @@ export function parseTelegramLifecycleInput(body: Record<string, unknown>): Life
   if (!/^\d{2}-[A-Za-z]{3}-\d{4}$/.test(occurredDate)) throw new Error("occurredDate must use DD-MMM-YYYY format");
   if (!/^(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$/.test(occurredAt)) throw new Error("occurredAt must use 24-hour HH:mm:ss format");
   const stage = eventType === "sl_hit" ? "SL" : eventType.slice(0, 3).toUpperCase() as LifecycleStage;
-  return { eventId, originalEventId, eventType, accountNumber, symbol, direction, stage, hitPrice: hitPrice!, occurredDate, occurredAt };
+  return { eventId, originalEventId, eventType, accountNumber, symbol, direction, stage, hitPrice: hitPrice!, positionSetClosed, occurredDate, occurredAt };
 }
 
 export function formatTelegramLifecycleUpdate(update: LifecycleInput) {
   const icon = update.stage === "SL" ? "🛑" : "✅";
   const label = update.stage === "SL" ? "SL HIT" : `${update.stage} HIT`;
+  const closureLabel = update.stage !== "SL" && update.positionSetClosed ? " (Closed all) 💸" : "";
   return [
-    `${icon} ${label}`,
+    `${icon} ${label}${closureLabel}`,
     `📡 Gemini Bot EA Signal update`,
     `📊 Symbol: ${brokerNeutralSymbol(update.symbol)}`,
     `📈 Direction: ${update.direction}`,
@@ -310,7 +314,7 @@ export async function receiveTelegramLifecycleUpdate(update: LifecycleInput) {
   const stageDecision = isLifecycleStageAllowed(prior.map(item => item.stage as LifecycleStage), update.stage);
   if (!stageDecision.allowed && stageDecision.reason === "stage_already_recorded") return { created: false, id: original.id, status: "rejected" as const, delivered: false, reason: stageDecision.reason };
   if (!stageDecision.allowed && stageDecision.reason === "out_of_order") throw new Error("Lifecycle event arrived out of order");
-  const result = await db.insert(telegramSignalLifecycleUpdates).values({ originalSignalEventId: original.id, lifecycleEventId: update.eventId, accountNumber: update.accountNumber, symbol: update.symbol, direction: update.direction, stage: update.stage, hitPrice: update.hitPrice, eaDate: update.occurredDate, eaTime: update.occurredAt, status: "received" });
+  const result = await db.insert(telegramSignalLifecycleUpdates).values({ originalSignalEventId: original.id, lifecycleEventId: update.eventId, accountNumber: update.accountNumber, symbol: update.symbol, direction: update.direction, stage: update.stage, hitPrice: update.hitPrice, positionSetClosed: update.positionSetClosed ? "yes" : "no", eaDate: update.occurredDate, eaTime: update.occurredAt, status: "received" });
   const lifecycleId = Number(result[0].insertId);
   await recordAudit(original.id, "received", `EA lifecycle event received: ${update.stage}`);
   const state = deliveryState(settings);

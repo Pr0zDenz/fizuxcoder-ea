@@ -51,6 +51,8 @@ describe("customer portal administrator boundary", () => {
     expect(studio).toContain("The join link is intentionally held only as server configuration");
     expect(studio).toContain("Screenshot review required");
     expect(studio).toContain("Approve for schedule");
+    expect(studio).toContain("APPROVE PRIVATE THREADS TEMPLATE SET");
+    expect(studio).toContain("Approve template set");
     expect(studio).toContain('href="/api/threads/oauth/start"');
     expect(studio).toContain("trpc.marketing.");
     expect(app).toContain('<Route path="/admin/marketing" component={MarketingStudio} />');
@@ -61,6 +63,7 @@ describe("customer portal administrator boundary", () => {
     expect(routers).toContain("threadsConnection: adminProcedure");
     expect(routers).toContain("automationStatus: adminProcedure");
     expect(routers).toContain("enableThreeDailyPublishing: adminProcedure");
+    expect(routers).toContain("approveInitialTelegramGrowthTemplates: adminProcedure");
   });
 
   it("keeps the midnight Telegram summary behind the command-center administrator gate", () => {

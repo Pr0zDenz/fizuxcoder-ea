@@ -1,0 +1,1 @@
+ALTER TABLE `telegramSignalLifecycleUpdates` ADD `positionSetClosed` enum('yes','no') DEFAULT 'no' NOT NULL;

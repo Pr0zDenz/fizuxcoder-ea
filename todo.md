@@ -434,3 +434,8 @@
 - [x] Add an owner-only, default-paused daily-summary schedule with duplicate prevention, task-UID lookup, audit evidence, and a visible kill switch.
 - [ ] Validate midnight GMT+8 reporting boundaries and no-signal behaviour without sending a Telegram message, then obtain final owner authorization before scheduling or sending summaries.
 - [ ] Apply the owner-selected automated daily-summary mode at 00:00 GMT+8 and retain the supplied Threads audience-activity context as administrator-only posting guidance.
+- [x] Keep midnight Telegram daily summaries silent when no eligible delivered signals or lifecycle updates exist.
+- [x] Extend Gemini Bot EA Telegram lifecycle reporting with an authenticated display-only closure-state flag so TP1/TP2/TP3 labels distinguish milestones from confirmed “Closed all” outcomes.
+- [x] Preserve existing Safe TP, Stop Loss, entry, order-management, licensing, and signal-delivery behaviour while adding closure-aware reporting.
+- [x] Support an owner-approved initial Threads template set that may be scheduled without per-item re-approval, while preserving screenshot review as an explicit separate safeguard.
+- [ ] Configure at least three daily Threads campaign slots over a 24-hour Malaysia-time cycle, with no scheduler activation or external post until final owner confirmation of exact times and campaign scope.

@@ -63,18 +63,24 @@ describe("Telegram signal contract", () => {
   });
 
   it("parses and formats display-only TP and SL lifecycle updates", () => {
-    const tp = parseTelegramLifecycleInput({ eventId: "gemini-230069105-XAUUSD-tp1-1787819001", originalEventId: "gemini-230069105-XAUUSD-signal-1787839260", eventType: "tp1_hit", accountNumber: "230069105", symbol: "XAUUSD.vx", direction: "SELL", hitPrice: "4596.58", occurredDate: "27-Aug-2026", occurredAt: "20:05:00" });
+    const tp = parseTelegramLifecycleInput({ eventId: "gemini-230069105-XAUUSD-tp1-1787819001", originalEventId: "gemini-230069105-XAUUSD-signal-1787839260", eventType: "tp1_hit", accountNumber: "230069105", symbol: "XAUUSD.vx", direction: "SELL", hitPrice: "4596.58", positionSetClosed: true, occurredDate: "27-Aug-2026", occurredAt: "20:05:00" });
     const sl = parseTelegramLifecycleInput({ eventId: "gemini-230069105-XAUUSD-sl-1787819002", originalEventId: "gemini-230069105-XAUUSD-signal-1787839260", eventType: "sl_hit", accountNumber: "230069105", symbol: "XAUUSD.vx", direction: "SELL", hitPrice: "4603.75", occurredDate: "27-Aug-2026", occurredAt: "20:06:00" });
     expect(tp.stage).toBe("TP1");
-    expect(formatTelegramLifecycleUpdate(tp)).toContain("✅ TP1 HIT");
+    expect(tp.positionSetClosed).toBe(true);
+    expect(formatTelegramLifecycleUpdate(tp)).toContain("✅ TP1 HIT (Closed all) 💸");
     expect(formatTelegramLifecycleUpdate(tp)).toContain("Hit price: 4596.58");
     expect(formatTelegramLifecycleUpdate(tp)).toContain("\n📡 Gemini Bot EA Signal update\n");
     expect(formatTelegramLifecycleUpdate(tp)).not.toContain("\\n");
     expect(formatTelegramLifecycleUpdate(tp)).toContain("Display update only");
     expect(sl.stage).toBe("SL");
     expect(formatTelegramLifecycleUpdate(sl)).toContain("🛑 SL HIT");
+    expect(formatTelegramLifecycleUpdate(sl)).not.toContain("Closed all");
+    const tp3Open = parseTelegramLifecycleInput({ eventId: "gemini-230069105-XAUUSD-tp3-1787819003", originalEventId: "gemini-230069105-XAUUSD-signal-1787839260", eventType: "tp3_hit", accountNumber: "230069105", symbol: "XAUUSD", direction: "SELL", hitPrice: "4589.40", positionSetClosed: false, occurredDate: "27-Aug-2026", occurredAt: "20:10:00" });
+    expect(formatTelegramLifecycleUpdate(tp3Open)).toContain("✅ TP3 HIT");
+    expect(formatTelegramLifecycleUpdate(tp3Open)).not.toContain("Closed all");
     expect(() => parseTelegramLifecycleInput({ eventId: "bad", originalEventId: "signal-123456", eventType: "tp1_hit", accountNumber: "230069105", symbol: "XAUUSD", direction: "SELL", hitPrice: "4596.58", occurredDate: "27-Aug-2026", occurredAt: "20:05:00" })).toThrow("eventId is invalid");
     expect(() => parseTelegramLifecycleInput({ eventId: "lifecycle-123456", originalEventId: "signal-123456", eventType: "tp4_hit", accountNumber: "230069105", symbol: "XAUUSD", direction: "SELL", hitPrice: "4596.58", occurredDate: "27-Aug-2026", occurredAt: "20:05:00" })).toThrow("eventType must be tp1_hit, tp2_hit, tp3_hit, or sl_hit");
+    expect(() => parseTelegramLifecycleInput({ eventId: "lifecycle-123456", originalEventId: "signal-123456", eventType: "tp1_hit", accountNumber: "230069105", symbol: "XAUUSD", direction: "SELL", hitPrice: "4596.58", positionSetClosed: "yes", occurredDate: "27-Aug-2026", occurredAt: "20:05:00" })).toThrow("positionSetClosed must be a boolean when supplied");
   });
 
   it("enforces lifecycle stage ordering and duplicate protection without blocking an SL report", () => {

@@ -16,7 +16,7 @@ import { getDb } from "./db";
 import { getAdminCommandCenterSnapshot } from "./adminCommandCenter";
 import { getTelegramSignalDashboard, sendTelegramConnectionTest, updateTelegramSignalSettings, updateTelegramSignalSource } from "./telegramSignals";
 import { createHeartbeatJob, updateHeartbeatJob } from "./_core/heartbeat";
-import { activateThreadsMarketingSchedule, engageThreadsMarketingKillSwitch, getThreadsMarketingAutomationStatus, getThreadsMarketingTaskUid, prepareTelegramGrowthDrafts, setMarketingScheduleEligibility, verifyTelegramGrowthInviteLink, DEFAULT_THREADS_MARKETING_CRON } from "./threadsMarketingAutomation";
+import { activateThreadsMarketingSchedule, approveInitialTelegramGrowthTemplateSet, engageThreadsMarketingKillSwitch, getThreadsMarketingAutomationStatus, getThreadsMarketingTaskUid, prepareTelegramGrowthDrafts, setMarketingScheduleEligibility, verifyTelegramGrowthInviteLink, DEFAULT_THREADS_MARKETING_CRON } from "./threadsMarketingAutomation";
 import { activateTelegramDailySummary, DAILY_SUMMARY_CRON, engageTelegramDailySummaryKillSwitch, getTelegramDailySummaryStatus, getTelegramDailySummaryTaskUid, setTelegramDailySummaryEmptyPolicy } from "./telegramDailySummary";
 import { productFiles, products } from "../drizzle/schema";
 
@@ -206,6 +206,7 @@ export const appRouter = router({
     automationStatus: adminProcedure.query(({ ctx }) => getThreadsMarketingAutomationStatus(ctx.user.id)),
     verifyPrivateInviteLink: adminProcedure.mutation(({ ctx }) => verifyTelegramGrowthInviteLink(ctx.user.id)),
     prepareTelegramGrowthDrafts: adminProcedure.mutation(({ ctx }) => prepareTelegramGrowthDrafts(ctx.user.id)),
+    approveInitialTelegramGrowthTemplates: adminProcedure.input(z.object({ confirmationPhrase: z.literal("APPROVE PRIVATE THREADS TEMPLATE SET") })).mutation(({ ctx }) => approveInitialTelegramGrowthTemplateSet(ctx.user.id)),
     setScheduleEligibility: adminProcedure.input(z.object({ contentItemId: z.number().int().positive(), eligible: z.boolean() })).mutation(({ ctx, input }) => setMarketingScheduleEligibility({ contentItemId: input.contentItemId, actorUserId: ctx.user.id, eligible: input.eligible })),
     engageAutomationKillSwitch: adminProcedure.mutation(({ ctx }) => engageThreadsMarketingKillSwitch(ctx.user.id)),
     enableThreeDailyPublishing: adminProcedure.input(z.object({ confirmationPhrase: z.literal("ENABLE THREADS AUTO POSTING") })).mutation(async ({ ctx }) => {
