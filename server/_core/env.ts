@@ -15,4 +15,5 @@ export const ENV = {
   threadsAppSecret: process.env.THREADS_APP_SECRET ?? "",
   masterServerSyncKey: process.env.MASTER_SERVER_SYNC_KEY ?? "",
   geminiEventIngestKey: process.env.GEMINI_EVENT_INGEST_KEY ?? "",
+  telegramBotToken: process.env.TELEGRAM_BOT_TOKEN ?? "",
 };

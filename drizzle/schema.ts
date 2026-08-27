@@ -271,6 +271,67 @@ export const threadsAuthorizations = mysqlTable("threadsAuthorizations", {
   uniqueIndex("threadsAuthorizations_threadsUserId_unique").on(table.threadsUserId),
 ]);
 
+/**
+ * Owner-controlled Telegram channel configuration. The bot token is never
+ * stored in the database: it is supplied only through the server environment.
+ */
+export const telegramSignalSettings = mysqlTable("telegramSignalSettings", {
+  settingKey: varchar("settingKey", { length: 32 }).primaryKey(),
+  ownerUserId: int("ownerUserId").references(() => users.id, { onDelete: "set null" }),
+  channelId: varchar("channelId", { length: 64 }),
+  channelLabel: varchar("channelLabel", { length: 160 }),
+  automaticDeliveryEnabled: mysqlEnum("automaticDeliveryEnabled", ["yes", "no"]).notNull().default("no"),
+  killSwitchEngaged: mysqlEnum("killSwitchEngaged", ["yes", "no"]).notNull().default("yes"),
+  updatedByUserId: int("updatedByUserId").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+/**
+ * One record per EA event ID. The unique event key prevents repeated MQL5
+ * retries from emitting duplicate public channel alerts.
+ */
+export const telegramSignalEvents = mysqlTable("telegramSignalEvents", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("eventId", { length: 96 }).notNull(),
+  eventType: mysqlEnum("eventType", ["setup", "take_profit"]).notNull().default("setup"),
+  accountNumber: varchar("accountNumber", { length: 20 }).notNull(),
+  symbol: varchar("symbol", { length: 64 }).notNull(),
+  direction: mysqlEnum("direction", ["BUY", "SELL"]).notNull(),
+  entryPrice: varchar("entryPrice", { length: 32 }).notNull(),
+  takeProfit: varchar("takeProfit", { length: 32 }),
+  stopLoss: varchar("stopLoss", { length: 32 }),
+  riskNote: varchar("riskNote", { length: 255 }).notNull(),
+  sourceScreenshotUrl: varchar("sourceScreenshotUrl", { length: 512 }),
+  messageText: text("messageText").notNull(),
+  status: mysqlEnum("status", ["received", "suppressed", "delivering", "delivered", "failed", "rejected"]).notNull().default("received"),
+  deliveryAttemptKey: varchar("deliveryAttemptKey", { length: 64 }),
+  telegramMessageId: varchar("telegramMessageId", { length: 64 }),
+  failureCode: varchar("failureCode", { length: 64 }),
+  failureReason: varchar("failureReason", { length: 255 }),
+  eaTime: varchar("eaTime", { length: 8 }).notNull(),
+  occurredAt: timestamp("occurredAt"),
+  deliveredAt: timestamp("deliveredAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [
+  uniqueIndex("telegramSignalEvents_event_unique").on(table.eventId),
+  index("telegramSignalEvents_status_created_idx").on(table.status, table.createdAt),
+  index("telegramSignalEvents_account_created_idx").on(table.accountNumber, table.createdAt),
+]);
+
+/** Append-only Telegram signal lifecycle log. Bot credentials are never stored here. */
+export const telegramSignalAudits = mysqlTable("telegramSignalAudits", {
+  id: int("id").autoincrement().primaryKey(),
+  signalEventId: int("signalEventId").notNull().references(() => telegramSignalEvents.id, { onDelete: "cascade" }),
+  action: mysqlEnum("action", ["received", "validated", "suppressed", "delivery_started", "delivered", "failed", "rejected", "settings_changed", "test_requested"]).notNull(),
+  actorUserId: int("actorUserId").references(() => users.id, { onDelete: "set null" }),
+  note: varchar("note", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, table => [
+  index("telegramSignalAudits_event_created_idx").on(table.signalEventId, table.createdAt),
+]);
+
 export type Product = typeof products.$inferSelect;
 export type PaymentOrder = typeof paymentOrders.$inferSelect;
 export type Entitlement = typeof entitlements.$inferSelect;
@@ -284,3 +345,6 @@ export type ThreeSLicenceIssuance = typeof threeSLicenceIssuances.$inferSelect;
 export type MarketingContentItem = typeof marketingContentItems.$inferSelect;
 export type MarketingContentAudit = typeof marketingContentAudits.$inferSelect;
 export type ThreadsAuthorization = typeof threadsAuthorizations.$inferSelect;
+export type TelegramSignalSetting = typeof telegramSignalSettings.$inferSelect;
+export type TelegramSignalEvent = typeof telegramSignalEvents.$inferSelect;
+export type TelegramSignalAudit = typeof telegramSignalAudits.$inferSelect;

@@ -12,6 +12,8 @@ import { applyGeminiBotThreadsRevision, approveMarketingContent, listMarketingCo
 import { getThreadsConnectionStatus } from "./threadsOAuth";
 import { storageGetSignedUrl, storagePut } from "./storage";
 import { getDb } from "./db";
+import { getAdminCommandCenterSnapshot } from "./adminCommandCenter";
+import { getTelegramSignalDashboard, sendTelegramConnectionTest, updateTelegramSignalSettings } from "./telegramSignals";
 import { productFiles, products } from "../drizzle/schema";
 
 export const appRouter = router({
@@ -162,6 +164,7 @@ export const appRouter = router({
     }),
   }),
   admin: router({
+    commandCenter: adminProcedure.query(() => getAdminCommandCenterSnapshot()),
     uploadPackage: adminProcedure.input(z.object({ productId: z.string().min(1), displayName: z.string().min(1).max(255), fileName: z.string().min(1).max(255), base64: z.string().min(1) })).mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database is unavailable" });
@@ -172,6 +175,11 @@ export const appRouter = router({
       await db.insert(productFiles).values({ productId: input.productId, displayName: input.displayName, fileName, storageKey: uploaded.key, contentType: "application/octet-stream" });
       return { success: true };
     }),
+  }),
+  telegram: router({
+    status: adminProcedure.query(() => getTelegramSignalDashboard()),
+    updateSettings: adminProcedure.input(z.object({ channelId: z.string().min(1).max(64), channelLabel: z.string().max(160).optional(), automaticDeliveryEnabled: z.boolean(), killSwitchEngaged: z.boolean() })).mutation(({ ctx, input }) => updateTelegramSignalSettings({ actorUserId: ctx.user.id, ...input })),
+    sendConnectionTest: adminProcedure.input(z.object({ confirmation: z.string().max(32) })).mutation(({ ctx, input }) => sendTelegramConnectionTest({ actorUserId: ctx.user.id, confirmation: input.confirmation })),
   }),
   marketing: router({
     list: adminProcedure.query(() => listMarketingContent()),

@@ -349,12 +349,16 @@
 - [x] Diagnose why a manual entry during `BEARISH (PULLBACK)` did not use the expected bullish Safe TP: the unconditional pullback-cap branch could apply a bearish H4 TP1 to an opposite-direction bullish basket.
 - [x] Correct direction-aware Safe TP selection in both Cloudflare MQ5 copies; the cap now applies only when basket direction matches macro direction, preserving opposite-direction manual baskets and existing spread/trading safeguards.
 
-- [ ] Audit the existing owner-only admin pages, dashboards, EA-event intake, and database models for a unified interactive operations dashboard.
-- [ ] Define the Telegram channel signal lifecycle, content fields, owner approval boundary, error handling, and delivery audit requirements.
-- [ ] Build a protected interactive admin dashboard for MasterServer health, EA configurations, signal events, marketing intake, entitlement/delivery evidence, and Telegram queue management.
-- [ ] Add validated automatic Telegram signal delivery for eligible EA setup events, with duplicate protection, delivery auditing, and an owner-controlled kill switch.
+- [x] Audit the existing owner-only admin pages, dashboards, EA-event intake, and database models for a unified interactive operations dashboard.
+- [x] Define the Telegram channel signal lifecycle, content fields, automatic-delivery validation boundary, error handling, and append-only delivery audit requirements.
+- [x] Build a protected interactive admin dashboard foundation for MasterServer health evidence, signal-event/marketing intake, entitlement and delivery records, and staged Telegram queue management.
+- [x] Add validated automatic Telegram signal delivery for eligible EA setup events, with duplicate protection, active-entitlement validation, delivery auditing, and an owner-controlled kill switch.
 - [ ] Configure Telegram Bot API credentials and authorized channel identity through secure project secrets only after owner confirmation.
 - [ ] Verify administrator access control, signal audit records, and one owner-authorized Telegram test delivery before enabling operational use.
+
+- [x] Remove the optional `occurredAt` timestamp from Telegram signal examples and regression fixtures; retain server-side receipt timestamps.
+
+- [x] Require EA-supplied `occurredAt` in 24-hour `HH:mm:ss` format for Telegram signal events, while retaining the portal receipt time separately.
 
 - [x] Patch the supplied production `MasterServer_customer_fulfillment_fixed.py` so `/update` requires and validates an authorized `account_number`.
 - [x] Store runtime overrides per account and merge only the requesting account’s override into `/config` responses.

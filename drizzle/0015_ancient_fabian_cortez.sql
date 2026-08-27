@@ -1,0 +1,2 @@
+ALTER TABLE `telegramSignalSettings` ADD `ownerUserId` int;--> statement-breakpoint
+ALTER TABLE `telegramSignalSettings` ADD CONSTRAINT `telegramSignalSettings_ownerUserId_users_id_fk` FOREIGN KEY (`ownerUserId`) REFERENCES `users`(`id`) ON DELETE set null ON UPDATE no action;

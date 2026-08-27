@@ -1,0 +1,1 @@
+ALTER TABLE `telegramSignalEvents` ADD `eaTime` varchar(8) NOT NULL;
