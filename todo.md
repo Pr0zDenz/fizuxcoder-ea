@@ -423,13 +423,13 @@
 - [x] Configure the Telegram growth workflow for a private channel with an owner-managed invite link and no public signal-channel discovery.
 - [x] Create a separate Threads eligibility policy so only approved marketing drafts, never raw EA signal events or unreviewed screenshots, can enter automated publishing.
 - [x] Implement a three-times-daily Malaysia-time Threads publishing schedule with audit records, duplicate protection, and a visible administrator kill switch.
-- [ ] Validate the schedule and access controls without posting externally, then obtain final owner confirmation before enabling automated Threads publishing.
+- [x] Validate the schedule and access controls without posting externally, then obtain final owner confirmation before enabling automated Threads publishing.
 - [x] Add a server-only private Telegram invite-link configuration contract; persist only link-validation status and never return the invite URL to the browser or database.
 - [x] Add a distinct owner-approved scheduled Threads queue with explicit per-draft eligibility, atomic one-item claiming, failure auditing, and raw VPS screenshot exclusion by default.
 - [x] Register a cron-authenticated task-UID-only Threads callback with default-paused automation and a durable administrator kill switch.
 - [x] Build the administrator-only Telegram growth funnel and Threads scheduling controls with protected status indicators, queue actions, manual-publish separation, and typed final confirmation.
 - [x] Validate the implementation with focused tests, full deterministic tests, TypeScript, a production build, and a visual Studio review without publishing any external marketing post.
-- [ ] Preserve the owner-supplied Threads post format for private Telegram-growth drafts, including repeated join-link placement, concise risk line, and a selected owner-reviewed image.
+- [x] Preserve the owner-supplied Threads post format for private Telegram-growth drafts, including repeated join-link placement and concise risk line; the agreed initial template set intentionally publishes text-only while screenshots remain individually reviewable.
 - [x] Define a separate daily Telegram signal-summary report at 00:00 GMT+8 that derives only from recorded signal and lifecycle events and does not alter EA trade execution or live signal delivery.
 - [x] Add an owner-only, default-paused daily-summary schedule with duplicate prevention, task-UID lookup, audit evidence, and a visible kill switch.
 - [ ] Validate midnight GMT+8 reporting boundaries and no-signal behaviour without sending a Telegram message, then obtain final owner authorization before scheduling or sending summaries.
@@ -438,4 +438,4 @@
 - [x] Extend Gemini Bot EA Telegram lifecycle reporting with an authenticated display-only closure-state flag so TP1/TP2/TP3 labels distinguish milestones from confirmed “Closed all” outcomes.
 - [x] Preserve existing Safe TP, Stop Loss, entry, order-management, licensing, and signal-delivery behaviour while adding closure-aware reporting.
 - [x] Support an owner-approved initial Threads template set that may be scheduled without per-item re-approval, while preserving screenshot review as an explicit separate safeguard.
-- [ ] Configure at least three daily Threads campaign slots over a 24-hour Malaysia-time cycle, with no scheduler activation or external post until final owner confirmation of exact times and campaign scope.
+- [x] Configure three daily Threads campaign slots at 09:00, 13:00, and 21:00 GMT+8, with the owner-authorized initial template campaign and no manually triggered post.
