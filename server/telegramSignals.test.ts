@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { brokerNeutralSymbol, deliveryState, formatMockTelegramSignal, formatTelegramSignal, parseTelegramSignalInput } from "./telegramSignals";
+import { brokerNeutralSymbol, deliveryState, formatMockTelegramSignal, formatTelegramSignal, parseTelegramSignalInput, parseTelegramSignalSourceInput, resolveTelegramSignalEligibility } from "./telegramSignals";
 
 describe("Telegram signal contract", () => {
   const validSetup = {
@@ -47,5 +47,17 @@ describe("Telegram signal contract", () => {
     expect(deliveryState(undefined)).toMatchObject({ armed: false, state: "not_configured" });
     expect(deliveryState({ channelId: "@fizuxsignal", automaticDeliveryEnabled: "yes", killSwitchEngaged: "yes" })).toMatchObject({ armed: false, state: "kill_switch" });
     expect(deliveryState({ channelId: "@fizuxsignal", automaticDeliveryEnabled: "no", killSwitchEngaged: "no" })).toMatchObject({ armed: false, state: "paused" });
+  });
+
+  it("validates an owner-approved source without granting customer entitlement data", () => {
+    expect(parseTelegramSignalSourceInput({ accountNumber: "230069105", label: "Admin demo account", active: true })).toEqual({ accountNumber: "230069105", label: "Admin demo account", active: true });
+    expect(() => parseTelegramSignalSourceInput({ accountNumber: "account-x", label: "Admin demo account", active: true })).toThrow("Enter a valid numeric MT5 account number");
+    expect(() => parseTelegramSignalSourceInput({ accountNumber: "230069105", label: " ", active: true })).toThrow("Enter a label for this internal signal source");
+  });
+
+  it("permits an active customer entitlement or enabled internal source, but rejects disabled or unknown sources", () => {
+    expect(resolveTelegramSignalEligibility({ hasActiveCustomerEntitlement: true, hasEnabledInternalSource: false })).toEqual({ eligible: true, origin: "customer_entitlement" });
+    expect(resolveTelegramSignalEligibility({ hasActiveCustomerEntitlement: false, hasEnabledInternalSource: true })).toEqual({ eligible: true, origin: "owner_approved_internal_source" });
+    expect(resolveTelegramSignalEligibility({ hasActiveCustomerEntitlement: false, hasEnabledInternalSource: false })).toEqual({ eligible: false, origin: "none" });
   });
 });

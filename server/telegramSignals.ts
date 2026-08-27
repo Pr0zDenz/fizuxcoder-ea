@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { and, desc, eq } from "drizzle-orm";
-import { entitlements, telegramSignalAudits, telegramSignalEvents, telegramSignalSettings, telegramSignalSettingsAudits } from "../drizzle/schema";
+import { entitlements, telegramSignalAudits, telegramSignalEvents, telegramSignalSettings, telegramSignalSettingsAudits, telegramSignalSourceAudits, telegramSignalSources } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import { getDb } from "./db";
 
@@ -59,6 +59,20 @@ export function brokerNeutralSymbol(symbol: string) {
   return symbol.split(/[._-]/, 1)[0] || symbol;
 }
 
+export function parseTelegramSignalSourceInput(input: { accountNumber: string; label: string; active: boolean }) {
+  const accountNumber = input.accountNumber.trim();
+  const label = input.label.trim().slice(0, 120);
+  if (!/^\d{4,20}$/.test(accountNumber)) throw new Error("Enter a valid numeric MT5 account number");
+  if (!label) throw new Error("Enter a label for this internal signal source");
+  return { accountNumber, label, active: input.active };
+}
+
+export function resolveTelegramSignalEligibility(input: { hasActiveCustomerEntitlement: boolean; hasEnabledInternalSource: boolean }) {
+  if (input.hasActiveCustomerEntitlement) return { eligible: true, origin: "customer_entitlement" as const };
+  if (input.hasEnabledInternalSource) return { eligible: true, origin: "owner_approved_internal_source" as const };
+  return { eligible: false, origin: "none" as const };
+}
+
 export function formatTelegramSignal(signal: SignalInput) {
   const levels = [
     `Reference entry: ${signal.entryPrice}`,
@@ -102,7 +116,10 @@ async function getSettings() {
 
 export async function getTelegramSignalDashboard() {
   const { db, settings } = await getSettings();
-  const recent = await db.select().from(telegramSignalEvents).orderBy(desc(telegramSignalEvents.createdAt)).limit(8);
+  const [recent, sources] = await Promise.all([
+    db.select().from(telegramSignalEvents).orderBy(desc(telegramSignalEvents.createdAt)).limit(8),
+    db.select().from(telegramSignalSources).orderBy(desc(telegramSignalSources.updatedAt)).limit(20),
+  ]);
   const state = deliveryState(settings);
   return {
     state: state.state,
@@ -117,8 +134,23 @@ export async function getTelegramSignalDashboard() {
       suppressed: recent.filter(item => item.status === "suppressed").length,
       failed: recent.filter(item => item.status === "failed").length,
     },
+    sources: sources.map(source => ({ accountNumber: source.accountNumber, label: source.label, active: source.active === "yes", updatedAt: source.updatedAt.toISOString() })),
     recent: recent.map(item => ({ id: item.id, eventId: item.eventId, eventType: item.eventType, symbol: item.symbol, direction: item.direction, eaDate: item.eaDate, eaTime: item.eaTime, status: item.status, createdAt: item.createdAt.toISOString(), deliveredAt: item.deliveredAt?.toISOString() ?? null, failureReason: item.failureReason })),
   };
+}
+
+export async function updateTelegramSignalSource(input: { actorUserId: number; accountNumber: string; label: string; active: boolean }) {
+  const source = parseTelegramSignalSourceInput(input);
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  const existing = await db.select({ accountNumber: telegramSignalSources.accountNumber, active: telegramSignalSources.active }).from(telegramSignalSources).where(eq(telegramSignalSources.accountNumber, source.accountNumber)).limit(1);
+  const active = source.active ? "yes" : "no" as const;
+  await db.insert(telegramSignalSources).values({ accountNumber: source.accountNumber, label: source.label, active, addedByUserId: input.actorUserId, updatedByUserId: input.actorUserId }).onDuplicateKeyUpdate({
+    set: { label: source.label, active, updatedByUserId: input.actorUserId, updatedAt: new Date() },
+  });
+  const action = !existing[0] ? "authorized" : source.active ? "enabled" : "disabled" as const;
+  await db.insert(telegramSignalSourceAudits).values({ accountNumber: source.accountNumber, label: source.label, action, actorUserId: input.actorUserId });
+  return getTelegramSignalDashboard();
 }
 
 export async function updateTelegramSignalSettings(input: { actorUserId: number; channelId: string; channelLabel?: string; automaticDeliveryEnabled: boolean; killSwitchEngaged: boolean }) {
@@ -179,12 +211,16 @@ export async function receiveTelegramSignal(signal: SignalInput) {
   if (existing[0]) return { created: false, id: existing[0].id, status: existing[0].status, delivered: existing[0].status === "delivered" };
 
   const messageText = formatTelegramSignal(signal);
-  const activeEntitlement = await db.select({ id: entitlements.id }).from(entitlements).where(and(eq(entitlements.mt5AccountNumber, signal.accountNumber), eq(entitlements.status, "active"))).limit(1);
-  if (!activeEntitlement[0]) {
-    const result = await db.insert(telegramSignalEvents).values({ eventId: signal.eventId, eventType: signal.eventType, accountNumber: signal.accountNumber, symbol: signal.symbol, direction: signal.direction, entryPrice: signal.entryPrice, takeProfit: signal.takeProfit ?? null, stopLoss: signal.stopLoss ?? null, riskNote: DEFAULT_RISK_NOTE, messageText, status: "rejected", failureCode: "account_not_authorized", failureReason: "No active portal entitlement exists for this MT5 account.", eaDate: signal.occurredDate, eaTime: signal.occurredAt });
+  const [activeEntitlement, ownerApprovedSource] = await Promise.all([
+    db.select({ id: entitlements.id }).from(entitlements).where(and(eq(entitlements.mt5AccountNumber, signal.accountNumber), eq(entitlements.status, "active"))).limit(1),
+    db.select({ accountNumber: telegramSignalSources.accountNumber }).from(telegramSignalSources).where(and(eq(telegramSignalSources.accountNumber, signal.accountNumber), eq(telegramSignalSources.active, "yes"))).limit(1),
+  ]);
+  const eligibility = resolveTelegramSignalEligibility({ hasActiveCustomerEntitlement: Boolean(activeEntitlement[0]), hasEnabledInternalSource: Boolean(ownerApprovedSource[0]) });
+  if (!eligibility.eligible) {
+    const result = await db.insert(telegramSignalEvents).values({ eventId: signal.eventId, eventType: signal.eventType, accountNumber: signal.accountNumber, symbol: signal.symbol, direction: signal.direction, entryPrice: signal.entryPrice, takeProfit: signal.takeProfit ?? null, stopLoss: signal.stopLoss ?? null, riskNote: DEFAULT_RISK_NOTE, messageText, status: "rejected", failureCode: "account_not_authorized", failureReason: "No active portal entitlement or approved internal signal-source record exists for this MT5 account.", eaDate: signal.occurredDate, eaTime: signal.occurredAt });
     const insertedId = Number(result[0].insertId);
     await recordAudit(insertedId, "received", `EA event received: ${signal.eventType}`);
-    await recordAudit(insertedId, "rejected", "The originating MT5 account has no active portal entitlement.");
+    await recordAudit(insertedId, "rejected", "The originating MT5 account has no active portal entitlement or approved internal signal-source record.");
     return { created: true, id: insertedId, status: "rejected" as const, delivered: false };
   }
   const state = deliveryState(settings);
@@ -200,6 +236,7 @@ export async function receiveTelegramSignal(signal: SignalInput) {
     throw error;
   }
   await recordAudit(insertedId, "received", `EA event received: ${signal.eventType}`);
+  if (eligibility.origin === "owner_approved_internal_source") await recordAudit(insertedId, "validated", "Originating MT5 account is an approved internal Telegram signal source.");
   if (shouldSuppress) {
     await recordAudit(insertedId, "suppressed", signal.eventType !== "setup" ? "Only setup events are eligible for automatic Telegram delivery." : state.message);
     return { created: true, id: insertedId, status, delivered: false };

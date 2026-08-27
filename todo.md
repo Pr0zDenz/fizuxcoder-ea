@@ -375,3 +375,8 @@
 - [x] Run one owner-authorized, clearly labelled non-trading mock EA setup event through the authenticated Telegram signal endpoint and verify the resulting audit record; Telegram message ID 5 was delivered with HH:mm:ss EA time and no MT5, licence, or account changes.
 
 - [x] Update the Telegram signal template with broker-neutral symbols, a date and GMT+8 time display, and concise attention icons while retaining mock/risk safeguards.
+
+- [x] Diagnose and correct the Telegram signal rejection for real EA event `gemini-230069105-XAUUSD-signal-1787839260` without altering trades, licences, or automatic-delivery safeguards.
+- [x] Add an administrator-controlled internal Telegram signal-source registry that permits approved owner accounts without creating customer entitlements.
+- [x] Authorize account `230069105` as the initial owner-approved signal source and verify a matching real EA setup event becomes eligible for Telegram delivery.
+- [x] Add interactive Admin Command Center controls to list, create, label, enable/disable, and revoke owner-approved Telegram signal-source accounts without granting customer entitlement access.

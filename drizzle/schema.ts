@@ -300,6 +300,29 @@ export const telegramSignalSettingsAudits = mysqlTable("telegramSignalSettingsAu
   index("telegramSignalSettingsAudits_setting_created_idx").on(table.settingKey, table.createdAt),
 ]);
 
+/** Internal MT5 accounts permitted to originate Telegram alerts without receiving customer access. */
+export const telegramSignalSources = mysqlTable("telegramSignalSources", {
+  accountNumber: varchar("accountNumber", { length: 20 }).primaryKey(),
+  label: varchar("label", { length: 120 }).notNull(),
+  active: mysqlEnum("active", ["yes", "no"]).notNull().default("yes"),
+  addedByUserId: int("addedByUserId").references(() => users.id, { onDelete: "set null" }),
+  updatedByUserId: int("updatedByUserId").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+/** Append-only record of administrator changes to the owner-approved signal source registry. */
+export const telegramSignalSourceAudits = mysqlTable("telegramSignalSourceAudits", {
+  id: int("id").autoincrement().primaryKey(),
+  accountNumber: varchar("accountNumber", { length: 20 }).notNull(),
+  action: mysqlEnum("action", ["authorized", "enabled", "disabled"]).notNull(),
+  label: varchar("label", { length: 120 }).notNull(),
+  actorUserId: int("actorUserId").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, table => [
+  index("telegramSignalSourceAudits_account_created_idx").on(table.accountNumber, table.createdAt),
+]);
+
 /**
  * One record per EA event ID. The unique event key prevents repeated MQL5
  * retries from emitting duplicate public channel alerts.

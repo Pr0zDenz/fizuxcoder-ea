@@ -13,7 +13,7 @@ import { getThreadsConnectionStatus } from "./threadsOAuth";
 import { storageGetSignedUrl, storagePut } from "./storage";
 import { getDb } from "./db";
 import { getAdminCommandCenterSnapshot } from "./adminCommandCenter";
-import { getTelegramSignalDashboard, sendTelegramConnectionTest, updateTelegramSignalSettings } from "./telegramSignals";
+import { getTelegramSignalDashboard, sendTelegramConnectionTest, updateTelegramSignalSettings, updateTelegramSignalSource } from "./telegramSignals";
 import { productFiles, products } from "../drizzle/schema";
 
 export const appRouter = router({
@@ -179,6 +179,7 @@ export const appRouter = router({
   telegram: router({
     status: adminProcedure.query(() => getTelegramSignalDashboard()),
     updateSettings: adminProcedure.input(z.object({ channelId: z.string().min(1).max(64), channelLabel: z.string().max(160).optional(), automaticDeliveryEnabled: z.boolean(), killSwitchEngaged: z.boolean() })).mutation(({ ctx, input }) => updateTelegramSignalSettings({ actorUserId: ctx.user.id, ...input })),
+    updateSource: adminProcedure.input(z.object({ accountNumber: z.string().regex(/^\d{4,20}$/, "Enter a valid numeric MT5 account number"), label: z.string().min(1).max(120), active: z.boolean() })).mutation(({ ctx, input }) => updateTelegramSignalSource({ actorUserId: ctx.user.id, ...input })),
     sendConnectionTest: adminProcedure.input(z.object({ confirmation: z.string().max(32) })).mutation(({ ctx, input }) => sendTelegramConnectionTest({ actorUserId: ctx.user.id, confirmation: input.confirmation })),
   }),
   marketing: router({
