@@ -183,6 +183,13 @@
       "when": 1787872702924,
       "tag": "0025_keen_patch",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "5",
+      "when": 1787873578249,
+      "tag": "0026_thin_dazzler",
+      "breakpoints": true
     }
   ]
 }

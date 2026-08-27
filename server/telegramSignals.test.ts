@@ -84,9 +84,14 @@ describe("Telegram signal contract", () => {
     expect(basketClosed.stage).toBe("BASKET_CLOSED");
     expect(formatTelegramLifecycleUpdate(basketClosed)).toContain("✅ BASKET CLOSED (All basket positions closed) 💸");
     expect(formatTelegramLifecycleUpdate(basketClosed)).toContain("All managed basket positions are closed.");
+    const basketCancelled = parseTelegramLifecycleInput({ eventId: "gemini-230069105-XAUUSD-cancel-1787819005", originalEventId: "gemini-230069105-XAUUSD-signal-1787839260", eventType: "basket_cancelled", accountNumber: "230069105", symbol: "XAUUSD", direction: "SELL", basketId: "basket-230069105-XAUUSD-PERIOD_M1-1787839260", hitPrice: "4610.87", positionSetClosed: false, occurredDate: "27-Aug-2026", occurredAt: "20:13:00" });
+    expect(basketCancelled.stage).toBe("BASKET_CANCELLED");
+    expect(formatTelegramLifecycleUpdate(basketCancelled)).toContain("⚠️ BASKET PENDING ORDERS CLEARED");
+    expect(formatTelegramLifecycleUpdate(basketCancelled)).toContain("Any open position remains managed by the EA.");
     expect(() => parseTelegramLifecycleInput({ eventId: "bad", originalEventId: "signal-123456", eventType: "tp1_hit", accountNumber: "230069105", symbol: "XAUUSD", direction: "SELL", hitPrice: "4596.58", occurredDate: "27-Aug-2026", occurredAt: "20:05:00" })).toThrow("eventId is invalid");
-    expect(() => parseTelegramLifecycleInput({ eventId: "lifecycle-123456", originalEventId: "signal-123456", eventType: "tp4_hit", accountNumber: "230069105", symbol: "XAUUSD", direction: "SELL", hitPrice: "4596.58", occurredDate: "27-Aug-2026", occurredAt: "20:05:00" })).toThrow("eventType must be tp1_hit, tp2_hit, tp3_hit, sl_hit, or basket_closed");
-    expect(() => parseTelegramLifecycleInput({ eventId: "lifecycle-123456", originalEventId: "signal-123456", eventType: "basket_closed", accountNumber: "230069105", symbol: "XAUUSD", direction: "SELL", hitPrice: "4596.58", positionSetClosed: true, occurredDate: "27-Aug-2026", occurredAt: "20:05:00" })).toThrow("basketId is required for basket_closed");
+    expect(() => parseTelegramLifecycleInput({ eventId: "lifecycle-123456", originalEventId: "signal-123456", eventType: "tp4_hit", accountNumber: "230069105", symbol: "XAUUSD", direction: "SELL", hitPrice: "4596.58", occurredDate: "27-Aug-2026", occurredAt: "20:05:00" })).toThrow("eventType must be tp1_hit, tp2_hit, tp3_hit, sl_hit, basket_closed, or basket_cancelled");
+    expect(() => parseTelegramLifecycleInput({ eventId: "lifecycle-123456", originalEventId: "signal-123456", eventType: "basket_closed", accountNumber: "230069105", symbol: "XAUUSD", direction: "SELL", hitPrice: "4596.58", positionSetClosed: true, occurredDate: "27-Aug-2026", occurredAt: "20:05:00" })).toThrow("basketId is required for basket outcome events");
+    expect(() => parseTelegramLifecycleInput({ eventId: "lifecycle-123456", originalEventId: "signal-123456", eventType: "basket_cancelled", accountNumber: "230069105", symbol: "XAUUSD", direction: "SELL", basketId: "basket-230069105-XAUUSD-PERIOD_M1-1787839260", hitPrice: "4596.58", positionSetClosed: true, occurredDate: "27-Aug-2026", occurredAt: "20:05:00" })).toThrow("basket_cancelled requires positionSetClosed=false");
     expect(() => parseTelegramLifecycleInput({ eventId: "lifecycle-123456", originalEventId: "signal-123456", eventType: "tp1_hit", accountNumber: "230069105", symbol: "XAUUSD", direction: "SELL", hitPrice: "4596.58", positionSetClosed: "yes", occurredDate: "27-Aug-2026", occurredAt: "20:05:00" })).toThrow("positionSetClosed must be a boolean when supplied");
   });
 
@@ -97,6 +102,7 @@ describe("Telegram signal contract", () => {
     expect(isLifecycleStageAllowed(["TP1", "TP2", "TP3"], "SL")).toEqual({ allowed: true });
     expect(isLifecycleStageAllowed(["SL"], "SL")).toEqual({ allowed: false, reason: "stage_already_recorded" });
     expect(isLifecycleStageAllowed(["TP1", "TP2"], "BASKET_CLOSED")).toEqual({ allowed: true });
+    expect(isLifecycleStageAllowed(["TP1"], "BASKET_CANCELLED")).toEqual({ allowed: true });
   });
 
   it("matches a basket closure only to delivered setup signals with the exact account, normalized symbol, direction, and basket identity", () => {

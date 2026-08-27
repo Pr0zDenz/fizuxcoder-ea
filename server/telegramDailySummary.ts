@@ -56,6 +56,7 @@ export function formatTelegramDailySummary({ summaryDate, setups, lifecycleUpdat
   const tpCount = lifecycleUpdates.filter(item => item.stage === "TP1" || item.stage === "TP2" || item.stage === "TP3").length;
   const slCount = lifecycleUpdates.filter(item => item.stage === "SL").length;
   const basketClosedCount = lifecycleUpdates.filter(item => item.stage === "BASKET_CLOSED").length;
+  const basketCancelledCount = lifecycleUpdates.filter(item => item.stage === "BASKET_CANCELLED").length;
   const details = setups.slice(0, 8).map(setup => {
     const outcome = outcomes.get(setup.id)?.join(", ") ?? "no lifecycle update recorded";
     return `• ${brokerNeutralSymbol(setup.symbol)} ${setup.direction} — ${outcome}`;
@@ -69,6 +70,7 @@ export function formatTelegramDailySummary({ summaryDate, setups, lifecycleUpdat
     `✅ TP lifecycle updates: ${tpCount}`,
     `🛑 SL lifecycle updates: ${slCount}`,
     `💼 Confirmed basket-closure updates: ${basketClosedCount}`,
+    `⚠️ Pending-order cancellation updates: ${basketCancelledCount}`,
     "",
     ...(details.length ? ["Signal record:", ...details, ...(omitted > 0 ? [`• +${omitted} additional delivered setup signal(s) recorded`] : [])] : ["No delivered setup signals or TP/SL lifecycle updates were recorded for this Malaysia trading day."]),
     "",

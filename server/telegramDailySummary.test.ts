@@ -34,13 +34,14 @@ describe("midnight Telegram daily signal summary", () => {
     const text = formatTelegramDailySummary({
       summaryDate: "28-Aug-2026",
       setups: [{ id: 7, symbol: "XAUUSD.vx", direction: "SELL" }],
-      lifecycleUpdates: [{ originalSignalEventId: 7, stage: "TP1" }, { originalSignalEventId: 7, stage: "SL" }, { originalSignalEventId: 7, stage: "BASKET_CLOSED" }],
+      lifecycleUpdates: [{ originalSignalEventId: 7, stage: "TP1" }, { originalSignalEventId: 7, stage: "SL" }, { originalSignalEventId: 7, stage: "BASKET_CLOSED" }, { originalSignalEventId: 7, stage: "BASKET_CANCELLED" }],
     });
     expect(text).toContain("📡 Gemini Bot EA — Daily Signal Summary");
     expect(text).toContain("📅 Trading day: 28-Aug-2026 (GMT+8)");
-    expect(text).toContain("• XAUUSD SELL — TP1, SL, BASKET_CLOSED");
+    expect(text).toContain("• XAUUSD SELL — TP1, SL, BASKET_CLOSED, BASKET_CANCELLED");
     expect(text).toContain("✅ TP lifecycle updates: 1");
     expect(text).toContain("💼 Confirmed basket-closure updates: 1");
+    expect(text).toContain("⚠️ Pending-order cancellation updates: 1");
     expect(text).toContain("Summary of channel notifications only, not a performance statement or forecast.");
     expect(text).not.toMatch(/230069105|profit|guaranteed/i);
   });

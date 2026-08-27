@@ -25,11 +25,11 @@ type SignalInput = {
   occurredAt: string;
 };
 
-type LifecycleStage = "TP1" | "TP2" | "TP3" | "SL" | "BASKET_CLOSED";
+type LifecycleStage = "TP1" | "TP2" | "TP3" | "SL" | "BASKET_CLOSED" | "BASKET_CANCELLED";
 type LifecycleInput = {
   eventId: string;
   originalEventId: string;
-  eventType: "tp1_hit" | "tp2_hit" | "tp3_hit" | "sl_hit" | "basket_closed";
+  eventType: "tp1_hit" | "tp2_hit" | "tp3_hit" | "sl_hit" | "basket_closed" | "basket_cancelled";
   accountNumber: string;
   symbol: string;
   direction: "BUY" | "SELL";
@@ -85,7 +85,7 @@ export function parseTelegramSignalInput(body: Record<string, unknown>): SignalI
 export function parseTelegramLifecycleInput(body: Record<string, unknown>): LifecycleInput {
   const eventId = cleanText(body.eventId, 96);
   const originalEventId = cleanText(body.originalEventId, 96);
-  const eventType = body.eventType === "tp1_hit" || body.eventType === "tp2_hit" || body.eventType === "tp3_hit" || body.eventType === "sl_hit" || body.eventType === "basket_closed" ? body.eventType : null;
+  const eventType = body.eventType === "tp1_hit" || body.eventType === "tp2_hit" || body.eventType === "tp3_hit" || body.eventType === "sl_hit" || body.eventType === "basket_closed" || body.eventType === "basket_cancelled" ? body.eventType : null;
   const accountNumber = cleanText(body.accountNumber, 20);
   const symbol = cleanText(body.symbol, 64);
   const direction = body.direction === "BUY" || body.direction === "SELL" ? body.direction : null;
@@ -97,16 +97,17 @@ export function parseTelegramLifecycleInput(body: Record<string, unknown>): Life
   const occurredAt = cleanText(body.occurredAt, 8);
   if (!/^[A-Za-z0-9_-]{6,96}$/.test(eventId)) throw new Error("eventId is invalid");
   if (!/^[A-Za-z0-9_-]{6,96}$/.test(originalEventId)) throw new Error("originalEventId is invalid");
-  if (!eventType) throw new Error("eventType must be tp1_hit, tp2_hit, tp3_hit, sl_hit, or basket_closed");
+  if (!eventType) throw new Error("eventType must be tp1_hit, tp2_hit, tp3_hit, sl_hit, basket_closed, or basket_cancelled");
   if (!/^\d{4,20}$/.test(accountNumber)) throw new Error("accountNumber is invalid");
   if (!/^[A-Za-z0-9_.-]{1,64}$/.test(symbol)) throw new Error("symbol is invalid");
   if (!direction) throw new Error("direction must be BUY or SELL");
   if (basketId && !/^[A-Za-z0-9_-]{6,128}$/.test(basketId)) throw new Error("basketId is invalid");
-  if (eventType === "basket_closed" && !basketId) throw new Error("basketId is required for basket_closed");
+  if ((eventType === "basket_closed" || eventType === "basket_cancelled") && !basketId) throw new Error("basketId is required for basket outcome events");
   if (eventType === "basket_closed" && !positionSetClosed) throw new Error("basket_closed requires positionSetClosed=true");
+  if (eventType === "basket_cancelled" && positionSetClosed) throw new Error("basket_cancelled requires positionSetClosed=false");
   if (!/^\d{2}-[A-Za-z]{3}-\d{4}$/.test(occurredDate)) throw new Error("occurredDate must use DD-MMM-YYYY format");
   if (!/^(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$/.test(occurredAt)) throw new Error("occurredAt must use 24-hour HH:mm:ss format");
-  const stage = eventType === "sl_hit" ? "SL" : eventType === "basket_closed" ? "BASKET_CLOSED" : eventType.slice(0, 3).toUpperCase() as LifecycleStage;
+  const stage = eventType === "sl_hit" ? "SL" : eventType === "basket_closed" ? "BASKET_CLOSED" : eventType === "basket_cancelled" ? "BASKET_CANCELLED" : eventType.slice(0, 3).toUpperCase() as LifecycleStage;
   return { eventId, originalEventId, eventType, accountNumber, symbol, direction, stage, hitPrice: hitPrice!, positionSetClosed, basketId, occurredDate, occurredAt };
 }
 
@@ -118,6 +119,20 @@ export function formatTelegramLifecycleUpdate(update: LifecycleInput) {
       `📊 Symbol: ${brokerNeutralSymbol(update.symbol)}`,
       `📈 Direction: ${update.direction}`,
       "💼 Basket status: All managed basket positions are closed.",
+      `📅 Event Date: ${update.occurredDate}`,
+      `🕒 Event Time: ${update.occurredAt} GMT+8`,
+      "",
+      `⚠️ ${DEFAULT_RISK_NOTE}`,
+      "Display update only: no MT5 order was placed, modified, or closed by this notification.",
+    ].join("\n");
+  }
+  if (update.stage === "BASKET_CANCELLED") {
+    return [
+      "⚠️ BASKET PENDING ORDERS CLEARED",
+      "📡 Gemini Bot EA Signal update",
+      `📊 Symbol: ${brokerNeutralSymbol(update.symbol)}`,
+      `📈 Direction: ${update.direction}`,
+      "💼 Basket status: Managed pending orders were cancelled or deleted. Any open position remains managed by the EA.",
       `📅 Event Date: ${update.occurredDate}`,
       `🕒 Event Time: ${update.occurredAt} GMT+8`,
       "",
@@ -160,7 +175,7 @@ export function resolveTelegramSignalEligibility(input: { hasActiveCustomerEntit
   return { eligible: false, origin: "none" as const };
 }
 
-const LIFECYCLE_STAGE_ORDER: Record<LifecycleStage, number> = { TP1: 1, TP2: 2, TP3: 3, SL: 4, BASKET_CLOSED: 5 };
+const LIFECYCLE_STAGE_ORDER: Record<LifecycleStage, number> = { TP1: 1, TP2: 2, TP3: 3, SL: 4, BASKET_CLOSED: 5, BASKET_CANCELLED: 6 };
 
 export function isLifecycleStageAllowed(priorStages: LifecycleStage[], nextStage: LifecycleStage) {
   if (priorStages.includes(nextStage)) return { allowed: false, reason: "stage_already_recorded" as const };
@@ -346,15 +361,20 @@ async function assertLifecycleAccountAuthorization(db: Awaited<ReturnType<typeof
 
 /**
  * Fan-out is deliberately scoped to delivered setup messages with the exact EA-supplied basket ID.
- * It is a Telegram reporting operation only; it does not inspect, change, or close MT5 positions.
+ * It is a Telegram reporting operation only; it does not inspect, change, or close MT5 positions or orders.
  */
-export async function receiveTelegramBasketClosure(update: LifecycleInput) {
-  if (update.stage !== "BASKET_CLOSED" || !update.basketId || !update.positionSetClosed) throw new Error("A confirmed basket closure with basketId is required");
+export async function receiveTelegramBasketOutcome(update: LifecycleInput) {
+  const isClosure = update.stage === "BASKET_CLOSED";
+  const isCancellation = update.stage === "BASKET_CANCELLED";
+  if ((!isClosure && !isCancellation) || !update.basketId) throw new Error("A basket outcome with basketId is required");
+  if (isClosure && !update.positionSetClosed) throw new Error("A confirmed basket closure requires positionSetClosed=true");
+  if (isCancellation && update.positionSetClosed) throw new Error("A basket cancellation requires positionSetClosed=false");
+  const outcomeLabel = isClosure ? "basket closure" : "pending-order cancellation";
   const { db, settings } = await getSettings();
   const [reference] = await db.select().from(telegramSignalEvents).where(eq(telegramSignalEvents.eventId, update.originalEventId)).limit(1);
   if (!reference || reference.status !== "delivered" || !reference.telegramMessageId) throw new Error("Original delivered Telegram signal was not found");
   if (reference.accountNumber !== update.accountNumber || brokerNeutralSymbol(reference.symbol) !== brokerNeutralSymbol(update.symbol) || reference.direction !== update.direction || reference.basketId !== update.basketId) {
-    throw new Error("Basket closure does not match the referenced delivered setup signal");
+    throw new Error("Basket outcome does not match the referenced delivered setup signal");
   }
   await assertLifecycleAccountAuthorization(db, update.accountNumber);
 
@@ -366,7 +386,7 @@ export async function receiveTelegramBasketClosure(update: LifecycleInput) {
     eq(telegramSignalEvents.basketId, update.basketId),
   ));
   const originals = candidates.filter(signal => isMatchingBasketClosureSignal(signal, update));
-  if (!originals.length) throw new Error("No delivered Telegram setup signals match this basket closure");
+  if (!originals.length) throw new Error("No delivered Telegram setup signals match this basket outcome");
 
   const state = deliveryState(settings);
   let created = 0;
@@ -376,7 +396,7 @@ export async function receiveTelegramBasketClosure(update: LifecycleInput) {
   for (const original of originals) {
     const [existing] = await db.select({ id: telegramSignalLifecycleUpdates.id, status: telegramSignalLifecycleUpdates.status })
       .from(telegramSignalLifecycleUpdates)
-      .where(and(eq(telegramSignalLifecycleUpdates.originalSignalEventId, original.id), eq(telegramSignalLifecycleUpdates.stage, "BASKET_CLOSED")))
+      .where(and(eq(telegramSignalLifecycleUpdates.originalSignalEventId, original.id), eq(telegramSignalLifecycleUpdates.stage, update.stage)))
       .limit(1);
     if (existing) {
       if (!firstId) firstId = existing.id;
@@ -392,9 +412,9 @@ export async function receiveTelegramBasketClosure(update: LifecycleInput) {
       symbol: update.symbol,
       direction: update.direction,
       basketId: update.basketId,
-      stage: "BASKET_CLOSED",
+      stage: update.stage,
       hitPrice: update.hitPrice,
-      positionSetClosed: "yes",
+      positionSetClosed: update.positionSetClosed ? "yes" : "no",
       eaDate: update.occurredDate,
       eaTime: update.occurredAt,
       status: "received",
@@ -402,25 +422,25 @@ export async function receiveTelegramBasketClosure(update: LifecycleInput) {
     const lifecycleId = Number(insert[0].insertId);
     if (!firstId) firstId = lifecycleId;
     created++;
-    await recordAudit(original.id, "received", `EA basket closure received for basket ${update.basketId}.`);
+    await recordAudit(original.id, "received", `EA ${outcomeLabel} received for basket ${update.basketId}.`);
 
     if (!state.armed) {
       await db.update(telegramSignalLifecycleUpdates).set({ status: "rejected", failureReason: state.message }).where(eq(telegramSignalLifecycleUpdates.id, lifecycleId));
-      await recordAudit(original.id, "suppressed", `Basket closure recorded but not posted: ${state.message}`);
+      await recordAudit(original.id, "suppressed", `Basket ${outcomeLabel} recorded but not posted: ${state.message}`);
       continue;
     }
 
     await db.update(telegramSignalLifecycleUpdates).set({ status: "delivering" }).where(eq(telegramSignalLifecycleUpdates.id, lifecycleId));
-    await recordAudit(original.id, "delivery_started", "Telegram basket-closure reply delivery started.");
+    await recordAudit(original.id, "delivery_started", `Telegram ${outcomeLabel} reply delivery started.`);
     try {
       const replyMessageId = await sendTelegramMessage(settings!.channelId!, formatTelegramLifecycleUpdate(update), original.telegramMessageId!);
       await db.update(telegramSignalLifecycleUpdates).set({ status: "delivered", replyMessageId }).where(eq(telegramSignalLifecycleUpdates.id, lifecycleId));
-      await recordAudit(original.id, "delivered", `Telegram basket-closure reply ${replyMessageId} confirmed.`);
+      await recordAudit(original.id, "delivered", `Telegram ${outcomeLabel} reply ${replyMessageId} confirmed.`);
       delivered++;
     } catch (error) {
-      const reason = error instanceof Error ? error.message : "Telegram basket-closure reply failed";
+      const reason = error instanceof Error ? error.message : `Telegram ${outcomeLabel} reply failed`;
       await db.update(telegramSignalLifecycleUpdates).set({ status: "failed", failureReason: reason.slice(0, 255) }).where(eq(telegramSignalLifecycleUpdates.id, lifecycleId));
-      await recordAudit(original.id, "failed", `Basket closure: ${reason}`);
+      await recordAudit(original.id, "failed", `Basket ${outcomeLabel}: ${reason}`);
       failed++;
     }
   }
@@ -428,7 +448,7 @@ export async function receiveTelegramBasketClosure(update: LifecycleInput) {
 }
 
 export async function receiveTelegramLifecycleUpdate(update: LifecycleInput) {
-  if (update.stage === "BASKET_CLOSED") return receiveTelegramBasketClosure(update);
+  if (update.stage === "BASKET_CLOSED" || update.stage === "BASKET_CANCELLED") return receiveTelegramBasketOutcome(update);
   const { db, settings } = await getSettings();
   const [original] = await db.select().from(telegramSignalEvents).where(eq(telegramSignalEvents.eventId, update.originalEventId)).limit(1);
   if (!original || original.status !== "delivered" || !original.telegramMessageId) throw new Error("Original delivered Telegram signal was not found");

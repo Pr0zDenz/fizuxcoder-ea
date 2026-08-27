@@ -446,3 +446,7 @@
 - [x] Add a basket identifier to Gemini setup and lifecycle reporting so each confirmed managed basket can be distinguished from unrelated or later setups.
 - [x] On a confirmed full managed-basket closure, fan out one display-only “All basket positions closed” reply to every delivered Telegram setup signal recorded for that exact basket.
 - [x] Preserve strict account, symbol, direction, and basket matching; do not retrospectively close signals that lack the new basket identity and do not send any live replay during implementation.
+- [x] Add an authenticated, display-only Gemini basket-cancelled lifecycle event when the EA observes that its managed positions and pending orders have been cancelled or deleted.
+- [x] Fan out one “Basket cancelled / orders cleared” reply only to delivered setup signals that share the exact active basket identity, while keeping confirmed basket-profit closure distinct.
+- [x] Preserve all order cancellation, deletion, position closing, Safe TP, SL, and entry logic; validate the new report cannot trigger or modify any MT5 action and never replay a historical signal during implementation.
+- [x] Deliver the latest compile-ready Gemini Telegram MQ5 source containing both basket-wide closure and basket-cancellation reporting after validation.

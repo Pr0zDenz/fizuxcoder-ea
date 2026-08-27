@@ -1,0 +1,1 @@
+ALTER TABLE `telegramSignalLifecycleUpdates` MODIFY COLUMN `stage` enum('TP1','TP2','TP3','SL','BASKET_CLOSED','BASKET_CANCELLED') NOT NULL;

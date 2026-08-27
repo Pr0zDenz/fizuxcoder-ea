@@ -189,6 +189,9 @@ int      telegram_last_tp_stage_reported = 0;
 bool     telegram_sl_reported = false;
 datetime telegram_basket_started_at = 0;
 bool     telegram_basket_closed_reported = false;
+bool     telegram_basket_cancelled_reported = false;
+bool     telegram_basket_had_open_position = false;
+bool     telegram_pending_order_cancellation_observed = false;
 double   locked_fibo_sl_neg100 = 0.0;
 
 //+------------------------------------------------------------------+
@@ -533,6 +536,7 @@ if(status == 201 || status == 200)
     if(stage >= 1 && stage <= 3) telegram_last_tp_stage_reported = stage;
     if(stage == 4) telegram_sl_reported = true;
     if(stage == 5) telegram_basket_closed_reported = true;
+    if(stage == 6) telegram_basket_cancelled_reported = true;
     PersistTelegramLifecycleState(0);
         return true;
     }
@@ -544,8 +548,28 @@ bool ReportTelegramBasketClosure(datetime event_time)
     if(!Enable_Telegram_Signal || Gemini_Event_Ingest_Key == "" || last_telegram_signal_event_id == "" || telegram_basket_started_at <= 0 || telegram_basket_closed_reported) return false;
     // Observer only: this check runs after the existing management has closed positions and pending orders.
     if(HasManagedExposure()) return false;
+    if(!telegram_basket_had_open_position) return false;
     double observed_price = (last_telegram_signal_direction == 1) ? SymbolInfoDouble(_Symbol, SYMBOL_BID) : SymbolInfoDouble(_Symbol, SYMBOL_ASK);
     return SendTelegramLifecycleUpdate("basket_closed", 5, observed_price, true, event_time);
+}
+
+bool HasManagedPendingOrder()
+{
+    for(int i = 0; i < OrdersTotal(); i++)
+    {
+        ulong ticket = OrderGetTicket(i);
+        if(ticket > 0 && IsManagedOrder(ticket)) return true;
+    }
+    return false;
+}
+
+bool ReportTelegramBasketCancellation(datetime event_time)
+{
+    if(!Enable_Telegram_Signal || Gemini_Event_Ingest_Key == "" || last_telegram_signal_event_id == "" || telegram_basket_started_at <= 0 || telegram_basket_cancelled_reported) return false;
+    // Observer only: report only after an existing managed pending order was successfully deleted and none remain.
+    if(!telegram_pending_order_cancellation_observed || HasManagedPendingOrder()) return false;
+    double observed_price = (last_telegram_signal_direction == 1) ? SymbolInfoDouble(_Symbol, SYMBOL_BID) : SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+    return SendTelegramLifecycleUpdate("basket_cancelled", 6, observed_price, false, event_time);
 }
 
 void MonitorTelegramLifecycle()
@@ -556,6 +580,8 @@ void MonitorTelegramLifecycle()
     datetime now = TimeCurrent();
     // Observer only: evaluated after existing basket-management logic; never changes positions or orders.
     bool position_set_closed = !HasManagedOpenPosition();
+    if(!position_set_closed) telegram_basket_had_open_position = true;
+    ReportTelegramBasketCancellation(now);
     if(last_telegram_signal_direction == 1)
     {
         if(locked_fibo_tp1 > 0.0 && bid >= locked_fibo_tp1 && telegram_last_tp_stage_reported < 1) SendTelegramLifecycleUpdate("tp1_hit", 1, locked_fibo_tp1, position_set_closed, now);
@@ -593,12 +619,18 @@ void ClearTelegramLifecycleState()
     GlobalVariableDel(TelegramStateKey("stage"));
     GlobalVariableDel(TelegramStateKey("sl_sent"));
     GlobalVariableDel(TelegramStateKey("basket_closed"));
+    GlobalVariableDel(TelegramStateKey("basket_cancelled"));
+    GlobalVariableDel(TelegramStateKey("had_position"));
+    GlobalVariableDel(TelegramStateKey("pending_cancel"));
     last_telegram_signal_event_id = "";
     last_telegram_signal_direction = 0;
     telegram_last_tp_stage_reported = 0;
     telegram_sl_reported = false;
     telegram_basket_started_at = 0;
     telegram_basket_closed_reported = false;
+    telegram_basket_cancelled_reported = false;
+    telegram_basket_had_open_position = false;
+    telegram_pending_order_cancellation_observed = false;
     locked_fibo_sl_neg100 = 0.0;
 }
 
@@ -635,6 +667,9 @@ void PersistTelegramLifecycleState(datetime setup_time)
     GlobalVariableSet(TelegramStateKey("stage"), (double)telegram_last_tp_stage_reported);
     GlobalVariableSet(TelegramStateKey("sl_sent"), telegram_sl_reported ? 1.0 : 0.0);
     GlobalVariableSet(TelegramStateKey("basket_closed"), telegram_basket_closed_reported ? 1.0 : 0.0);
+    GlobalVariableSet(TelegramStateKey("basket_cancelled"), telegram_basket_cancelled_reported ? 1.0 : 0.0);
+    GlobalVariableSet(TelegramStateKey("had_position"), telegram_basket_had_open_position ? 1.0 : 0.0);
+    GlobalVariableSet(TelegramStateKey("pending_cancel"), telegram_pending_order_cancellation_observed ? 1.0 : 0.0);
 }
 
 void RestoreTelegramLifecycleState()
@@ -653,6 +688,9 @@ void RestoreTelegramLifecycleState()
     telegram_sl_reported = GlobalVariableGet(TelegramStateKey("sl_sent")) > 0.5;
     telegram_basket_started_at = setup_time;
     telegram_basket_closed_reported = GlobalVariableCheck(TelegramStateKey("basket_closed")) && GlobalVariableGet(TelegramStateKey("basket_closed")) > 0.5;
+    telegram_basket_cancelled_reported = GlobalVariableCheck(TelegramStateKey("basket_cancelled")) && GlobalVariableGet(TelegramStateKey("basket_cancelled")) > 0.5;
+    telegram_basket_had_open_position = GlobalVariableCheck(TelegramStateKey("had_position")) && GlobalVariableGet(TelegramStateKey("had_position")) > 0.5;
+    telegram_pending_order_cancellation_observed = GlobalVariableCheck(TelegramStateKey("pending_cancel")) && GlobalVariableGet(TelegramStateKey("pending_cancel")) > 0.5;
     if(locked_fibo_tp1 <= 0.0 || locked_fibo_tp2 <= 0.0 || locked_fibo_tp3 <= 0.0 || locked_fibo_sl_neg100 <= 0.0) { ClearTelegramLifecycleState(); return; }
     long account_number = AccountInfoInteger(ACCOUNT_LOGIN);
     last_telegram_signal_event_id = StringFormat("gemini-%I64d-%s-%s-signal-%I64d", account_number, _Symbol, EnumToString(_Period), (long)setup_time);
@@ -2428,11 +2466,16 @@ if(locked_trend == 1 && bid >= locked_fibo_tp1) del = true;
 if(locked_trend == -1 && ask <= locked_fibo_tp1) del = true;
 
 if(del) {
+    bool managed_order_deleted = false;
     for(int i = OrdersTotal() - 1; i >= 0; i--) {
         ulong t = OrderGetTicket(i); 
         if(t > 0 && IsManagedOrder(t)) {
-            trade.OrderDelete(t);
+            if(trade.OrderDelete(t)) managed_order_deleted = true;
         }
+    }
+    if(managed_order_deleted) {
+        telegram_pending_order_cancellation_observed = true;
+        PersistTelegramLifecycleState(0);
     }
 }
 

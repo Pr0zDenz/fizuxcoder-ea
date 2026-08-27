@@ -38,4 +38,16 @@ describe("Gemini Telegram closure-aware MQL5 release", () => {
     expect(reporter).not.toContain("trade.PositionModify");
     expect(reporter).not.toContain("trade.OrderDelete");
   });
+
+  it("reports only a successful existing pending-order deletion and never performs a cancellation from its reporter", async () => {
+    const source = await readFile(sourceUrl, "utf8");
+    expect(source).toContain("if(trade.OrderDelete(t)) managed_order_deleted = true;");
+    expect(source).toContain("telegram_pending_order_cancellation_observed = true;");
+    expect(source).toContain('SendTelegramLifecycleUpdate("basket_cancelled", 6, observed_price, false, event_time)');
+    const reporter = source.slice(source.indexOf("bool ReportTelegramBasketCancellation"), source.indexOf("void MonitorTelegramLifecycle"));
+    expect(reporter).toContain("if(!telegram_pending_order_cancellation_observed || HasManagedPendingOrder()) return false;");
+    expect(reporter).not.toContain("trade.PositionClose");
+    expect(reporter).not.toContain("trade.PositionModify");
+    expect(reporter).not.toContain("trade.OrderDelete");
+  });
 });

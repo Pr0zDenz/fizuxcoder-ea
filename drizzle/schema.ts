@@ -409,7 +409,7 @@ export const telegramSignalLifecycleUpdates = mysqlTable("telegramSignalLifecycl
   symbol: varchar("symbol", { length: 64 }).notNull(),
   direction: mysqlEnum("direction", ["BUY", "SELL"]).notNull(),
   basketId: varchar("basketId", { length: 128 }),
-  stage: mysqlEnum("stage", ["TP1", "TP2", "TP3", "SL", "BASKET_CLOSED"]).notNull(),
+  stage: mysqlEnum("stage", ["TP1", "TP2", "TP3", "SL", "BASKET_CLOSED", "BASKET_CANCELLED"]).notNull(),
   hitPrice: varchar("hitPrice", { length: 32 }).notNull(),
   positionSetClosed: mysqlEnum("positionSetClosed", ["yes", "no"]).notNull().default("no"),
   eaDate: varchar("eaDate", { length: 11 }).notNull(),
