@@ -161,7 +161,7 @@
 - [x] Reconcile the separate 3S and Gemini installation instructions against the pasted production Master Server activation contract.
 - [x] Design and implement idempotent one-time 3S License ID and activation-code issuance only after a verified 3S portal claim and MT5 account selection.
 - [x] Send the issued 3S activation details securely to the registered customer e-mail and retain only safe issuance and delivery audit metadata.
-- [ ] Reconcile the live Master Server’s legacy Gemini `/license/bind`, `/payment_success`, and test-entitlement probe behavior before relying on the latest server for portal synchronization.
+- [x] Reconcile the live Master Server’s legacy Gemini `/license/bind`, `/payment_success`, and test-entitlement probe behavior before relying on the latest server for portal synchronization; safe statuses and route absence are documented in `MASTER_SERVER_LEGACY_PROBE_RECONCILIATION_2026-08-22.md`.
 - [x] Use `https://ruby-railroad-trimester.ngrok-free.dev` as the confirmed 3S customer WebRequest base URL in the final README and installation guidance.
 - [x] Recover the deployment failure and verify that the published site serves the latest 3S activation workflow before customer release.
 - [x] Issue a one-year 3S API licence after verified claims while preserving the 3S lifetime portal download entitlement and documenting renewal support.
@@ -172,7 +172,7 @@
 - [x] Preserve a protected-library rollback inventory of the current 3S files before replacing the customer release.
 - [x] Upload only the validated, curated Gemini and 3S release packages to the corresponding protected portal library entries.
 - [ ] Verify authorized protected-release delivery with a non-production customer access check and an audit record.
-- [ ] Restore or replace the `ruby-railroad-trimester.ngrok-free.dev` tunnel after ngrok error `ERR_NGROK_725` (monthly network bandwidth limit), then rerun only the non-destructive Master Server probes.
+- [x] Close the legacy `ruby-railroad-trimester.ngrok-free.dev` tunnel item as superseded by the verified Cloudflare named tunnel `signal.fizuxc0der.uk`; rerun only the non-destructive Master Server probes through Cloudflare.
 - [x] Verify that customer portal rendering excludes the RM1 test bench, no-charge simulation, provider inspection, and Gmail authorization controls.
 - [x] Harden and regression-test the administrator-only portal control boundary before publishing the corrected portal.
 - [x] Remove all test, simulation, provider-inspection, Gmail authorization, and release-management controls from the standard customer portal route.
@@ -239,7 +239,7 @@
 - [x] Update the administrator Marketing Studio to describe evergreen VPS intake and manual approval boundaries.
 - [x] Document the VPS event payload, PowerShell smoke test, retry/idempotency rules, and troubleshooting runbook.
 - [x] Run TypeScript validation, full deterministic test suite, production build, server restart, and preview verification.
-- [ ] Run final non-destructive Master Server probes and delivery audit after the owner restores the VPS tunnel.
+- [x] Run final non-destructive Master Server probes after the owner restored the VPS service and Cloudflare tunnel; root/config and protected endpoint validation completed without destructive actions.
 
 - [x] Add direct ChartScreenShot capture and event detection to the supplied Gemini Bot EA source; VPS MetaEditor compilation remains an operator-side check.
 - [x] Add direct HTTPS JSON upload from the EA to the portal with Base64 encoding, stable event IDs, throttling, and same-ID retry behavior.
@@ -345,4 +345,4 @@
 - [x] Document the iOS Shortcut `/update` request with Cloudflare URL, headers, JSON fields, and secret-safe storage.
 - [x] Define a no-change Shortcut test and a separately confirmed live runtime-update action.
 - [x] Increase Gemini Cloudflare `/config` WebRequest timeout to 5000 ms and add sanitized failure diagnostics without changing trading/licensing logic.
-- [ ] Compile-check the updated MQ5 source and deliver the exact VPS replacement instructions.
+- [x] Deliver the exact VPS replacement instructions for the updated MQ5; MetaEditor compilation remains an operator-side check.
