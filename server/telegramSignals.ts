@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { and, desc, eq } from "drizzle-orm";
-import { entitlements, telegramSignalAudits, telegramSignalEvents, telegramSignalSettings } from "../drizzle/schema";
+import { entitlements, telegramSignalAudits, telegramSignalEvents, telegramSignalSettings, telegramSignalSettingsAudits } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import { getDb } from "./db";
 
@@ -119,6 +119,13 @@ export async function updateTelegramSignalSettings(input: { actorUserId: number;
   const { db } = await getSettings();
   await db.insert(telegramSignalSettings).values({ settingKey: SETTINGS_KEY, ownerUserId: input.actorUserId, channelId, channelLabel, automaticDeliveryEnabled: input.automaticDeliveryEnabled ? "yes" : "no", killSwitchEngaged: input.killSwitchEngaged ? "yes" : "no", updatedByUserId: input.actorUserId }).onDuplicateKeyUpdate({
     set: { ownerUserId: input.actorUserId, channelId, channelLabel, automaticDeliveryEnabled: input.automaticDeliveryEnabled ? "yes" : "no", killSwitchEngaged: input.killSwitchEngaged ? "yes" : "no", updatedByUserId: input.actorUserId, updatedAt: new Date() },
+  });
+  await db.insert(telegramSignalSettingsAudits).values({
+    settingKey: SETTINGS_KEY,
+    actorUserId: input.actorUserId,
+    automaticDeliveryEnabled: input.automaticDeliveryEnabled ? "yes" : "no",
+    killSwitchEngaged: input.killSwitchEngaged ? "yes" : "no",
+    note: input.automaticDeliveryEnabled && !input.killSwitchEngaged ? "Automatic Telegram delivery armed by administrator." : "Telegram delivery settings updated by administrator.",
   });
   return getTelegramSignalDashboard();
 }

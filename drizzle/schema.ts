@@ -287,6 +287,19 @@ export const telegramSignalSettings = mysqlTable("telegramSignalSettings", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
+/** Append-only owner configuration history for Telegram channel arming and kill-switch changes. */
+export const telegramSignalSettingsAudits = mysqlTable("telegramSignalSettingsAudits", {
+  id: int("id").autoincrement().primaryKey(),
+  settingKey: varchar("settingKey", { length: 32 }).notNull(),
+  actorUserId: int("actorUserId").references(() => users.id, { onDelete: "set null" }),
+  automaticDeliveryEnabled: mysqlEnum("automaticDeliveryEnabled", ["yes", "no"]).notNull(),
+  killSwitchEngaged: mysqlEnum("killSwitchEngaged", ["yes", "no"]).notNull(),
+  note: varchar("note", { length: 255 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, table => [
+  index("telegramSignalSettingsAudits_setting_created_idx").on(table.settingKey, table.createdAt),
+]);
+
 /**
  * One record per EA event ID. The unique event key prevents repeated MQL5
  * retries from emitting duplicate public channel alerts.

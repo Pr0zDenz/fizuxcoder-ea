@@ -365,3 +365,6 @@
 - [x] Patch the supplied production `MasterServer_customer_fulfillment_fixed.py` so `/update` requires and validates an authorized `account_number`.
 - [x] Store runtime overrides per account and merge only the requesting account’s override into `/config` responses.
 - [x] Syntax-check the patched MasterServer and provide non-destructive VPS restart and two-account isolation tests.
+
+- [x] Enable validated automatic Telegram signal delivery for the configured private channel while retaining a reversible administrator kill switch and audit record.
+- [x] Deliver the Telegram-enabled Gemini MQ5 source with `Enable_Telegram_Signal = true` and operator-side MetaEditor compilation instructions.
