@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deliveryState, formatTelegramSignal, parseTelegramSignalInput } from "./telegramSignals";
+import { deliveryState, formatMockTelegramSignal, formatTelegramSignal, parseTelegramSignalInput } from "./telegramSignals";
 
 describe("Telegram signal contract", () => {
   const validSetup = {
@@ -20,6 +20,14 @@ describe("Telegram signal contract", () => {
     expect(formatTelegramSignal(signal)).toContain("Trading involves risk");
     expect(formatTelegramSignal(signal)).toContain("Safe TP: 4581.83");
     expect(formatTelegramSignal(signal)).toContain("Event time (EA clock): 09:00:00");
+  });
+
+  it("labels the owner-only mock event as non-trading while preserving the EA clock time", () => {
+    const signal = parseTelegramSignalInput(validSetup);
+    const text = formatMockTelegramSignal(signal);
+    expect(text).toContain("EA SIGNAL MOCK TEST — NOT FOR TRADING");
+    expect(text).toContain("Event time (EA clock): 09:00:00");
+    expect(text).toContain("no MT5 order, licence, or account configuration was changed");
   });
 
   it("rejects event data that cannot be used as an actionable signal", () => {

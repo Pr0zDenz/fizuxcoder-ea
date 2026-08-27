@@ -69,6 +69,10 @@ export function formatTelegramSignal(signal: SignalInput) {
   ].join("\n");
 }
 
+export function formatMockTelegramSignal(signal: SignalInput) {
+  return `[EA SIGNAL MOCK TEST — NOT FOR TRADING]\n\n${formatTelegramSignal(signal)}\n\nMock path only: no MT5 order, licence, or account configuration was changed.`;
+}
+
 function isTelegramChannelId(value: string) {
   return /^@[A-Za-z0-9_]{5,}$/.test(value) || /^-100\d{5,20}$/.test(value);
 }
@@ -227,6 +231,40 @@ export async function sendTelegramConnectionTest(input: { actorUserId: number; c
   } catch (error) {
     const reason = error instanceof Error ? error.message : "Telegram test delivery failed";
     await db.update(telegramSignalEvents).set({ status: "failed", failureCode: "telegram_test_failed", failureReason: reason.slice(0, 255) }).where(eq(telegramSignalEvents.id, eventIdDb));
+    await recordAudit(eventIdDb, "failed", reason, input.actorUserId);
+    throw new Error(reason);
+  }
+}
+
+export async function sendTelegramMockEaSetup(input: { actorUserId: number; confirmation: string }) {
+  if (input.confirmation !== "SEND EA MOCK TEST") throw new Error("Type SEND EA MOCK TEST to confirm a visible mock setup post");
+  const now = new Date();
+  const eaTime = now.toLocaleTimeString("en-GB", { hour12: false, timeZone: "UTC" });
+  const signal = parseTelegramSignalInput({
+    eventId: `mock-ea-${Date.now()}-${randomUUID().slice(0, 8)}`,
+    eventType: "setup",
+    accountNumber: "0000",
+    symbol: "XAUUSD.vx",
+    direction: "BUY",
+    entryPrice: "0.00",
+    occurredAt: eaTime,
+  });
+  const { db, settings } = await getSettings();
+  if (!deliveryState(settings).armed) throw new Error("Telegram automatic delivery is not armed");
+  const messageText = formatMockTelegramSignal(signal);
+  const result = await db.insert(telegramSignalEvents).values({ eventId: signal.eventId, eventType: signal.eventType, accountNumber: signal.accountNumber, symbol: signal.symbol, direction: signal.direction, entryPrice: signal.entryPrice, riskNote: DEFAULT_RISK_NOTE, messageText, status: "delivering", eaTime: signal.occurredAt });
+  const eventIdDb = Number(result[0].insertId);
+  await recordAudit(eventIdDb, "test_requested", "Owner confirmed an EA-contract mock signal.", input.actorUserId);
+  await recordAudit(eventIdDb, "validated", "Mock payload validated against the EA setup event contract.", input.actorUserId);
+  await recordAudit(eventIdDb, "delivery_started", "Telegram mock signal delivery started.", input.actorUserId);
+  try {
+    const telegramMessageId = await sendTelegramMessage(settings!.channelId!, messageText);
+    await db.update(telegramSignalEvents).set({ status: "delivered", telegramMessageId, deliveredAt: new Date() }).where(eq(telegramSignalEvents.id, eventIdDb));
+    await recordAudit(eventIdDb, "delivered", `Mock Telegram message ${telegramMessageId} confirmed.`, input.actorUserId);
+    return { status: "delivered" as const, eventId: signal.eventId, telegramMessageId, eaTime: signal.occurredAt };
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : "Telegram mock signal delivery failed";
+    await db.update(telegramSignalEvents).set({ status: "failed", failureCode: "telegram_mock_failed", failureReason: reason.slice(0, 255) }).where(eq(telegramSignalEvents.id, eventIdDb));
     await recordAudit(eventIdDb, "failed", reason, input.actorUserId);
     throw new Error(reason);
   }

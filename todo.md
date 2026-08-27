@@ -371,3 +371,5 @@
 
 - [x] Audit the newly supplied `GeminiBotEAv11.97_NewLook.mq5` against the prior Telegram-enabled source and preserve its current UI and trading logic.
 - [x] Integrate and structurally validate the Cloudflare config, account-scoped runtime compatibility, 24-hour Telegram setup event, and enabled signal flag in a NewLook-based deployment MQ5.
+
+- [x] Run one owner-authorized, clearly labelled non-trading mock EA setup event through the authenticated Telegram signal endpoint and verify the resulting audit record; Telegram message ID 5 was delivered with HH:mm:ss EA time and no MT5, licence, or account changes.
