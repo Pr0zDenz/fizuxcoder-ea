@@ -400,3 +400,7 @@
 - [x] Include the attached chart timeframe in NewLook Telegram setup and lifecycle event IDs to prevent same-second multi-timeframe collisions.
 - [x] Add restart-safe setup-state persistence and validation so MT5 restarts cannot produce lifecycle replies from stale or incomplete state.
 - [x] Add regression coverage and update the VPS handoff for timeframe identity, restart recovery, and display-only lifecycle safety; MetaEditor compilation remains operator-side.
+
+- [x] Audit the supplied 3S Universal EA against the current Cloudflare MasterServer and account-scoped fulfilment contract.
+- [x] Revise the 3S Universal EA only where necessary for current MasterServer/environment compatibility, preserving trading and licence behavior.
+- [x] Statically validate the revised 3S source and provide safe VPS compilation and attachment instructions; MetaEditor compilation remains operator-side.

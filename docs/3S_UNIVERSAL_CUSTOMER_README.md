@@ -12,7 +12,7 @@ This guide explains the customer setup for **3S Serangkai UNIVERSAL EA**. Your p
 | Protected package | Download the current 3S release only from the active portal library. |
 | MT5 account | Enter the numeric MT5 account in the portal. This creates the initial one-year Master Server API licence. |
 | Activation e-mail | The registered e-mail receives a **License ID**, one-time activation code, authorized MT5 account number, and API expiry date. |
-| Master Server | Add `https://ruby-railroad-trimester.ngrok-free.dev` to MT5’s allowed WebRequest list. |
+| Master Server | Add `https://signal.fizuxc0der.uk` to MT5’s allowed WebRequest list. |
 
 ## 1. Verify your purchase and obtain activation details
 
@@ -43,7 +43,7 @@ Restart MT5 after copying the files. From the Navigator panel, attach **3SUniver
 Open **Tools → Options → Expert Advisors** in MT5. Enable **Allow WebRequest for listed URL**, add the exact base URL below, and save the change.
 
 ```text
-https://ruby-railroad-trimester.ngrok-free.dev
+https://signal.fizuxc0der.uk
 ```
 
 The EA uses this connection for its one-time `/license/activate` request and its permitted MLN prediction and feedback services. Gmail is **not** part of the EA configuration. Gmail is used separately by the portal to send your payment and activation notices.
@@ -78,4 +78,4 @@ Your portal download entitlement remains lifetime. The Master Server API licence
 ## References
 
 [1]: https://fizuxea-jxctlods.manus.space/portal "FizuxCoder Customer Portal"
-[2]: https://ruby-railroad-trimester.ngrok-free.dev "FizuxCoder 3S Master Server base URL"
+[2]: https://signal.fizuxc0der.uk "FizuxCoder 3S Master Server base URL"
