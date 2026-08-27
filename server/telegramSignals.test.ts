@@ -27,8 +27,10 @@ describe("Telegram signal contract", () => {
     expect(formatTelegramSignal(signal)).toContain("🎯 TP1: 4588.00");
     expect(formatTelegramSignal(signal)).toContain("🎯 TP2: 4578.00");
     expect(formatTelegramSignal(signal)).toContain("🎯 TP3: 4560.00");
-    expect(formatTelegramSignal(signal)).toContain("🛡️ SL (-1.0): 4620.00");
+    expect(formatTelegramSignal(signal)).toContain("🛡️ SL: 4620.00");
     expect(formatTelegramSignal(signal)).not.toContain("M1 Fibo");
+    expect(formatTelegramSignal(signal)).toContain("📡 Gemini Bot EA Signal");
+    expect(formatTelegramSignal(signal)).not.toContain("SL (-1.0)");
     expect(formatTelegramSignal(signal)).toContain("Safe TP: 4581.83");
     expect(formatTelegramSignal(signal)).toContain("📅 Event Date: 27-Aug-2026");
     expect(formatTelegramSignal(signal)).toContain("🕒 Event Time: 09:00:00 GMT+8");

@@ -87,12 +87,12 @@ export function formatTelegramSignal(signal: SignalInput) {
     signal.fiboTp1 ? `🎯 TP1: ${signal.fiboTp1}` : null,
     signal.fiboTp2 ? `🎯 TP2: ${signal.fiboTp2}` : null,
     signal.fiboTp3 ? `🎯 TP3: ${signal.fiboTp3}` : null,
-    signal.fiboSlNeg100 ? `🛡️ SL (-1.0): ${signal.fiboSlNeg100}` : null,
+    signal.fiboSlNeg100 ? `🛡️ SL: ${signal.fiboSlNeg100}` : null,
     signal.takeProfit ? `Safe TP: ${signal.takeProfit}` : null,
     signal.stopLoss ? `SL: ${signal.stopLoss}` : null,
   ].filter(Boolean);
   return [
-    "📡 FizuxCoder EA Signal",
+    "📡 Gemini Bot EA Signal",
     `📊 Symbol: ${brokerNeutralSymbol(signal.symbol)}`,
     `📈 Direction: ${signal.direction}`,
     ...levels,

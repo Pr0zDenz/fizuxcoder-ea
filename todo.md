@@ -387,3 +387,5 @@
 - [ ] Run the prepared NewLook Telegram-enabled MQ5 through the Windows VPS MetaEditor compilation and attach it to the owner-selected MT5 test chart after operator confirmation of zero compiler errors and warnings.
 - [x] Send one owner-authorized, clearly labelled non-trading Telegram mock preview that renders the new M1 TP1, TP2, TP3, and −1.0 stop-reference fields with test-only values; delivered as Telegram message ID 7.
 - [x] Remove the phrase “M1 Fibo” from the Telegram TP and SL reference labels without changing their source values or delivery behavior.
+- [x] Send one owner-authorized, clearly labelled non-trading Telegram mock using the simplified TP1, TP2, TP3, and SL (−1.0) wording for visual confirmation; delivered as Telegram message ID 8.
+- [x] Change the Telegram header to “Gemini Bot EA Signal” and render the informational stop field as “SL” without exposing the internal −1.0 calculation label.
