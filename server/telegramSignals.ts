@@ -136,6 +136,18 @@ async function sendTelegramMessage(channelId: string, text: string) {
   return String(payload.result.message_id);
 }
 
+export async function validateTelegramBotCredential() {
+  if (!ENV.telegramBotToken) throw new Error("Telegram bot token is not configured");
+  const response = await fetch(`https://api.telegram.org/bot${ENV.telegramBotToken}/getMe`, {
+    signal: AbortSignal.timeout(10_000),
+  });
+  const payload = await response.json().catch(() => null) as { ok?: boolean; description?: string; result?: { id?: number; username?: string; is_bot?: boolean } } | null;
+  if (!response.ok || !payload?.ok || !payload.result?.is_bot || !payload.result.username) {
+    throw new Error(payload?.description?.slice(0, 220) || `Telegram returned HTTP ${response.status}`);
+  }
+  return { id: payload.result.id ?? 0, username: payload.result.username };
+}
+
 async function recordAudit(signalEventId: number, action: "received" | "validated" | "suppressed" | "delivery_started" | "delivered" | "failed" | "rejected" | "test_requested", note: string, actorUserId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database is unavailable");

@@ -353,8 +353,10 @@
 - [x] Define the Telegram channel signal lifecycle, content fields, automatic-delivery validation boundary, error handling, and append-only delivery audit requirements.
 - [x] Build a protected interactive admin dashboard foundation for MasterServer health evidence, signal-event/marketing intake, entitlement and delivery records, and staged Telegram queue management.
 - [x] Add validated automatic Telegram signal delivery for eligible EA setup events, with duplicate protection, active-entitlement validation, delivery auditing, and an owner-controlled kill switch.
-- [ ] Configure Telegram Bot API credentials and authorized channel identity through secure project secrets only after owner confirmation.
-- [ ] Verify administrator access control, signal audit records, and one owner-authorized Telegram test delivery before enabling operational use.
+- [x] Configure Telegram Bot API credentials and authorized channel identity through secure project secrets only after owner confirmation.
+- [x] Verify administrator access control, signal audit records, and one owner-authorized Telegram test delivery before enabling operational use.
+
+- [x] Confirm the selected private Telegram channel’s bot administrator permission, securely obtain its numeric `-100...` channel ID, and run one owner-authorized non-trading connection test.
 
 - [x] Remove the optional `occurredAt` timestamp from Telegram signal examples and regression fixtures; retain server-side receipt timestamps.
 
