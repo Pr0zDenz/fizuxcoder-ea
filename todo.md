@@ -406,3 +406,16 @@
 - [x] Statically validate the revised 3S source and provide safe VPS compilation and attachment instructions; MetaEditor compilation remains operator-side.
 
 - [x] Correct Telegram lifecycle replies that render literal `\n` text instead of line breaks, preserving their quoted display-only status behavior.
+
+- [ ] Diagnose the 3S Y10 fallback status and correct any Cloudflare MasterServer compatibility issue while retaining a safe local fallback when live server data is unavailable.
+- [ ] Validate the corrected 3S source and provide focused VPS log checks without changing trade-management logic.
+
+- [ ] Configure a valid FRED API key in the Windows VPS MasterServer environment and verify the 3S EA receives a non-fallback Python Y10 status.
+
+- [ ] Define the public-versus-private Telegram channel recommendation and compliance boundaries for promoting the EA signal community.
+- [ ] Add an owner-approved Telegram-growth marketing workflow that is isolated from EA signal delivery and Threads publishing automation.
+- [ ] Support marketing draft assets selected from authorised signal screenshots without exposing EA credentials, customer data, or automated trading controls.
+- [ ] Prepare compliant Telegram group-join copywriting and validate that customers cannot access owner marketing/signal controls.
+
+- [x] Review the Telegram-growth marketing templates and signal-screenshot workflow for separation from live EA signal delivery, presentation quality, and owner approval.
+- [x] Refine the Telegram join-marketing copy and documented screenshot-formatting rules without publishing any campaign content.

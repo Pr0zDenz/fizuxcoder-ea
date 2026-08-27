@@ -36,6 +36,8 @@ describe("Gemini VPS event draft intake", () => {
     expect(values.mock.calls[0][0].caption).toContain("Semak konteks penuh");
     expect(values.mock.calls[0][0].language).toBe("en_ms");
     expect(values.mock.calls[0][0].caption).toContain(GEMINI_EVENT_PORTAL_URL);
+    expect(values.mock.calls[0][0].complianceFlags).toContain("signal_screenshot_owner_review");
+    expect(values.mock.calls[0][0].complianceFlags).toContain("approval_required");
     expect(values.mock.calls[1][0]).toEqual(expect.objectContaining({ action: "revised", actorUserId: 7 }));
     expect(db.select).toHaveBeenCalledTimes(1);
   });

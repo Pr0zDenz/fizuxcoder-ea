@@ -247,7 +247,7 @@ export async function createGeminiVpsEventDraft({ eventId, eventType, screenshot
     scheduledFor: null,
     status: "draft",
     complianceStatus: "passed",
-    complianceFlags: JSON.stringify(["evergreen_vps_event", "no_expiry", `event_type_${eventType}`]),
+    complianceFlags: JSON.stringify(["evergreen_vps_event", "no_expiry", "signal_screenshot_owner_review", "approval_required", `event_type_${eventType}`]),
     contentHash: hash,
   });
   const contentItemId = Number(result[0].insertId);
