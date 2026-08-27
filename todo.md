@@ -344,3 +344,5 @@
 
 - [x] Document the iOS Shortcut `/update` request with Cloudflare URL, headers, JSON fields, and secret-safe storage.
 - [x] Define a no-change Shortcut test and a separately confirmed live runtime-update action.
+- [x] Increase Gemini Cloudflare `/config` WebRequest timeout to 5000 ms and add sanitized failure diagnostics without changing trading/licensing logic.
+- [ ] Compile-check the updated MQ5 source and deliver the exact VPS replacement instructions.
