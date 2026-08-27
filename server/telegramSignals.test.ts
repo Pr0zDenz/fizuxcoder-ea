@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { brokerNeutralSymbol, deliveryState, formatMockTelegramSignal, formatTelegramLifecycleUpdate, formatTelegramSignal, isLifecycleStageAllowed, parseTelegramLifecycleInput, parseTelegramSignalInput, parseTelegramSignalSourceInput, resolveTelegramSignalEligibility } from "./telegramSignals";
+import { brokerNeutralSymbol, deliveryState, formatMockTelegramSignal, formatTelegramLifecycleUpdate, formatTelegramSignal, isLifecycleStageAllowed, isMatchingBasketClosureSignal, parseTelegramLifecycleInput, parseTelegramSignalInput, parseTelegramSignalSourceInput, resolveTelegramSignalEligibility } from "./telegramSignals";
 
 describe("Telegram signal contract", () => {
   const validSetup = {
@@ -20,8 +20,9 @@ describe("Telegram signal contract", () => {
   };
 
   it("accepts a complete setup event and produces a risk-labelled public message", () => {
-    const signal = parseTelegramSignalInput(validSetup);
+    const signal = parseTelegramSignalInput({ ...validSetup, basketId: "basket-230069105-XAUUSD-PERIOD_M1-1787839260" });
     expect(signal).toMatchObject({ direction: "SELL", symbol: "XAUUSD.vx", takeProfit: "4581.83" });
+    expect(signal.basketId).toBe("basket-230069105-XAUUSD-PERIOD_M1-1787839260");
     expect(formatTelegramSignal(signal)).toContain("⚠️ Automated EA signal for market observation only");
     expect(formatTelegramSignal(signal)).toContain("📊 Symbol: XAUUSD");
     expect(formatTelegramSignal(signal)).toContain("🎯 TP1: 4588.00");
@@ -54,6 +55,7 @@ describe("Telegram signal contract", () => {
     expect(() => parseTelegramSignalInput({ ...validSetup, fiboSlNeg100: "not-a-price" })).toThrow("fiboSlNeg100 must be a numeric value");
     expect(() => parseTelegramSignalInput({ ...validSetup, occurredDate: "2026-08-27" })).toThrow("occurredDate must use DD-MMM-YYYY format");
     expect(() => parseTelegramSignalInput({ ...validSetup, occurredAt: "2026-08-27T01:00:00.000Z" })).toThrow("occurredAt must use 24-hour HH:mm:ss format");
+    expect(() => parseTelegramSignalInput({ ...validSetup, basketId: "basket id" })).toThrow("basketId is invalid");
   });
 
   it("does not arm automatic publication while configuration is incomplete or the kill switch is engaged", () => {
@@ -78,8 +80,13 @@ describe("Telegram signal contract", () => {
     const tp3Open = parseTelegramLifecycleInput({ eventId: "gemini-230069105-XAUUSD-tp3-1787819003", originalEventId: "gemini-230069105-XAUUSD-signal-1787839260", eventType: "tp3_hit", accountNumber: "230069105", symbol: "XAUUSD", direction: "SELL", hitPrice: "4589.40", positionSetClosed: false, occurredDate: "27-Aug-2026", occurredAt: "20:10:00" });
     expect(formatTelegramLifecycleUpdate(tp3Open)).toContain("✅ TP3 HIT");
     expect(formatTelegramLifecycleUpdate(tp3Open)).not.toContain("Closed all");
+    const basketClosed = parseTelegramLifecycleInput({ eventId: "gemini-230069105-XAUUSD-basket-1787819004", originalEventId: "gemini-230069105-XAUUSD-signal-1787839260", eventType: "basket_closed", accountNumber: "230069105", symbol: "XAUUSD", direction: "SELL", basketId: "basket-230069105-XAUUSD-PERIOD_M1-1787839260", hitPrice: "4601.89", positionSetClosed: true, occurredDate: "27-Aug-2026", occurredAt: "20:12:00" });
+    expect(basketClosed.stage).toBe("BASKET_CLOSED");
+    expect(formatTelegramLifecycleUpdate(basketClosed)).toContain("✅ BASKET CLOSED (All basket positions closed) 💸");
+    expect(formatTelegramLifecycleUpdate(basketClosed)).toContain("All managed basket positions are closed.");
     expect(() => parseTelegramLifecycleInput({ eventId: "bad", originalEventId: "signal-123456", eventType: "tp1_hit", accountNumber: "230069105", symbol: "XAUUSD", direction: "SELL", hitPrice: "4596.58", occurredDate: "27-Aug-2026", occurredAt: "20:05:00" })).toThrow("eventId is invalid");
-    expect(() => parseTelegramLifecycleInput({ eventId: "lifecycle-123456", originalEventId: "signal-123456", eventType: "tp4_hit", accountNumber: "230069105", symbol: "XAUUSD", direction: "SELL", hitPrice: "4596.58", occurredDate: "27-Aug-2026", occurredAt: "20:05:00" })).toThrow("eventType must be tp1_hit, tp2_hit, tp3_hit, or sl_hit");
+    expect(() => parseTelegramLifecycleInput({ eventId: "lifecycle-123456", originalEventId: "signal-123456", eventType: "tp4_hit", accountNumber: "230069105", symbol: "XAUUSD", direction: "SELL", hitPrice: "4596.58", occurredDate: "27-Aug-2026", occurredAt: "20:05:00" })).toThrow("eventType must be tp1_hit, tp2_hit, tp3_hit, sl_hit, or basket_closed");
+    expect(() => parseTelegramLifecycleInput({ eventId: "lifecycle-123456", originalEventId: "signal-123456", eventType: "basket_closed", accountNumber: "230069105", symbol: "XAUUSD", direction: "SELL", hitPrice: "4596.58", positionSetClosed: true, occurredDate: "27-Aug-2026", occurredAt: "20:05:00" })).toThrow("basketId is required for basket_closed");
     expect(() => parseTelegramLifecycleInput({ eventId: "lifecycle-123456", originalEventId: "signal-123456", eventType: "tp1_hit", accountNumber: "230069105", symbol: "XAUUSD", direction: "SELL", hitPrice: "4596.58", positionSetClosed: "yes", occurredDate: "27-Aug-2026", occurredAt: "20:05:00" })).toThrow("positionSetClosed must be a boolean when supplied");
   });
 
@@ -89,6 +96,17 @@ describe("Telegram signal contract", () => {
     expect(isLifecycleStageAllowed(["TP1", "TP3"], "TP2")).toEqual({ allowed: false, reason: "out_of_order" });
     expect(isLifecycleStageAllowed(["TP1", "TP2", "TP3"], "SL")).toEqual({ allowed: true });
     expect(isLifecycleStageAllowed(["SL"], "SL")).toEqual({ allowed: false, reason: "stage_already_recorded" });
+    expect(isLifecycleStageAllowed(["TP1", "TP2"], "BASKET_CLOSED")).toEqual({ allowed: true });
+  });
+
+  it("matches a basket closure only to delivered setup signals with the exact account, normalized symbol, direction, and basket identity", () => {
+    const closure = parseTelegramLifecycleInput({ eventId: "gemini-230069105-XAUUSD-basket-1787819004", originalEventId: "gemini-230069105-XAUUSD-signal-1787839260", eventType: "basket_closed", accountNumber: "230069105", symbol: "XAUUSD", direction: "SELL", basketId: "basket-230069105-XAUUSD-PERIOD_M1-1787839260", hitPrice: "4601.89", positionSetClosed: true, occurredDate: "27-Aug-2026", occurredAt: "20:12:00" });
+    const matching = { status: "delivered" as const, telegramMessageId: "123", accountNumber: "230069105", symbol: "XAUUSD.vx", direction: "SELL" as const, basketId: closure.basketId! };
+    expect(isMatchingBasketClosureSignal(matching, closure)).toBe(true);
+    expect(isMatchingBasketClosureSignal({ ...matching, basketId: "basket-other-1787839260" }, closure)).toBe(false);
+    expect(isMatchingBasketClosureSignal({ ...matching, direction: "BUY" }, closure)).toBe(false);
+    expect(isMatchingBasketClosureSignal({ ...matching, status: "failed" }, closure)).toBe(false);
+    expect(isMatchingBasketClosureSignal({ ...matching, telegramMessageId: null }, closure)).toBe(false);
   });
 
   it("validates an owner-approved source without granting customer entitlement data", () => {

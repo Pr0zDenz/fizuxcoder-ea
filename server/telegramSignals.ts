@@ -13,6 +13,7 @@ type SignalInput = {
   accountNumber: string;
   symbol: string;
   direction: "BUY" | "SELL";
+  basketId?: string;
   entryPrice: string;
   takeProfit?: string;
   fiboTp1?: string;
@@ -24,17 +25,18 @@ type SignalInput = {
   occurredAt: string;
 };
 
-type LifecycleStage = "TP1" | "TP2" | "TP3" | "SL";
+type LifecycleStage = "TP1" | "TP2" | "TP3" | "SL" | "BASKET_CLOSED";
 type LifecycleInput = {
   eventId: string;
   originalEventId: string;
-  eventType: "tp1_hit" | "tp2_hit" | "tp3_hit" | "sl_hit";
+  eventType: "tp1_hit" | "tp2_hit" | "tp3_hit" | "sl_hit" | "basket_closed";
   accountNumber: string;
   symbol: string;
   direction: "BUY" | "SELL";
   stage: LifecycleStage;
   hitPrice: string;
   positionSetClosed: boolean;
+  basketId?: string;
   occurredDate: string;
   occurredAt: string;
 };
@@ -56,6 +58,7 @@ export function parseTelegramSignalInput(body: Record<string, unknown>): SignalI
   const accountNumber = cleanText(body.accountNumber, 20);
   const symbol = cleanText(body.symbol, 64);
   const direction = body.direction === "BUY" || body.direction === "SELL" ? body.direction : null;
+  const basketId = cleanText(body.basketId, 128) || undefined;
   const entryPrice = safeNumericText(body.entryPrice, "entryPrice", true);
   const takeProfit = safeNumericText(body.takeProfit, "takeProfit");
   const fiboTp1 = safeNumericText(body.fiboTp1, "fiboTp1");
@@ -71,38 +74,57 @@ export function parseTelegramSignalInput(body: Record<string, unknown>): SignalI
   if (!/^\d{4,20}$/.test(accountNumber)) throw new Error("accountNumber is invalid");
   if (!/^[A-Za-z0-9_.-]{1,64}$/.test(symbol)) throw new Error("symbol is invalid");
   if (!direction) throw new Error("direction must be BUY or SELL");
+  if (basketId && !/^[A-Za-z0-9_-]{6,128}$/.test(basketId)) throw new Error("basketId is invalid");
   if (!entryPrice) throw new Error("entryPrice must be a numeric value");
   if (!/^\d{2}-[A-Za-z]{3}-\d{4}$/.test(occurredDate)) throw new Error("occurredDate must use DD-MMM-YYYY format");
   if (!/^(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$/.test(occurredAt)) throw new Error("occurredAt must use 24-hour HH:mm:ss format");
 
-  return { eventId, eventType, accountNumber, symbol, direction, entryPrice, takeProfit, fiboTp1, fiboTp2, fiboTp3, fiboSlNeg100, stopLoss, occurredDate, occurredAt };
+  return { eventId, eventType, accountNumber, symbol, direction, basketId, entryPrice, takeProfit, fiboTp1, fiboTp2, fiboTp3, fiboSlNeg100, stopLoss, occurredDate, occurredAt };
 }
 
 export function parseTelegramLifecycleInput(body: Record<string, unknown>): LifecycleInput {
   const eventId = cleanText(body.eventId, 96);
   const originalEventId = cleanText(body.originalEventId, 96);
-  const eventType = body.eventType === "tp1_hit" || body.eventType === "tp2_hit" || body.eventType === "tp3_hit" || body.eventType === "sl_hit" ? body.eventType : null;
+  const eventType = body.eventType === "tp1_hit" || body.eventType === "tp2_hit" || body.eventType === "tp3_hit" || body.eventType === "sl_hit" || body.eventType === "basket_closed" ? body.eventType : null;
   const accountNumber = cleanText(body.accountNumber, 20);
   const symbol = cleanText(body.symbol, 64);
   const direction = body.direction === "BUY" || body.direction === "SELL" ? body.direction : null;
   const hitPrice = safeNumericText(body.hitPrice, "hitPrice", true);
   if (body.positionSetClosed !== undefined && typeof body.positionSetClosed !== "boolean") throw new Error("positionSetClosed must be a boolean when supplied");
   const positionSetClosed = body.positionSetClosed === true;
+  const basketId = cleanText(body.basketId, 128) || undefined;
   const occurredDate = cleanText(body.occurredDate, 11);
   const occurredAt = cleanText(body.occurredAt, 8);
   if (!/^[A-Za-z0-9_-]{6,96}$/.test(eventId)) throw new Error("eventId is invalid");
   if (!/^[A-Za-z0-9_-]{6,96}$/.test(originalEventId)) throw new Error("originalEventId is invalid");
-  if (!eventType) throw new Error("eventType must be tp1_hit, tp2_hit, tp3_hit, or sl_hit");
+  if (!eventType) throw new Error("eventType must be tp1_hit, tp2_hit, tp3_hit, sl_hit, or basket_closed");
   if (!/^\d{4,20}$/.test(accountNumber)) throw new Error("accountNumber is invalid");
   if (!/^[A-Za-z0-9_.-]{1,64}$/.test(symbol)) throw new Error("symbol is invalid");
   if (!direction) throw new Error("direction must be BUY or SELL");
+  if (basketId && !/^[A-Za-z0-9_-]{6,128}$/.test(basketId)) throw new Error("basketId is invalid");
+  if (eventType === "basket_closed" && !basketId) throw new Error("basketId is required for basket_closed");
+  if (eventType === "basket_closed" && !positionSetClosed) throw new Error("basket_closed requires positionSetClosed=true");
   if (!/^\d{2}-[A-Za-z]{3}-\d{4}$/.test(occurredDate)) throw new Error("occurredDate must use DD-MMM-YYYY format");
   if (!/^(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$/.test(occurredAt)) throw new Error("occurredAt must use 24-hour HH:mm:ss format");
-  const stage = eventType === "sl_hit" ? "SL" : eventType.slice(0, 3).toUpperCase() as LifecycleStage;
-  return { eventId, originalEventId, eventType, accountNumber, symbol, direction, stage, hitPrice: hitPrice!, positionSetClosed, occurredDate, occurredAt };
+  const stage = eventType === "sl_hit" ? "SL" : eventType === "basket_closed" ? "BASKET_CLOSED" : eventType.slice(0, 3).toUpperCase() as LifecycleStage;
+  return { eventId, originalEventId, eventType, accountNumber, symbol, direction, stage, hitPrice: hitPrice!, positionSetClosed, basketId, occurredDate, occurredAt };
 }
 
 export function formatTelegramLifecycleUpdate(update: LifecycleInput) {
+  if (update.stage === "BASKET_CLOSED") {
+    return [
+      "✅ BASKET CLOSED (All basket positions closed) 💸",
+      "📡 Gemini Bot EA Signal update",
+      `📊 Symbol: ${brokerNeutralSymbol(update.symbol)}`,
+      `📈 Direction: ${update.direction}`,
+      "💼 Basket status: All managed basket positions are closed.",
+      `📅 Event Date: ${update.occurredDate}`,
+      `🕒 Event Time: ${update.occurredAt} GMT+8`,
+      "",
+      `⚠️ ${DEFAULT_RISK_NOTE}`,
+      "Display update only: no MT5 order was placed, modified, or closed by this notification.",
+    ].join("\n");
+  }
   const icon = update.stage === "SL" ? "🛑" : "✅";
   const label = update.stage === "SL" ? "SL HIT" : `${update.stage} HIT`;
   const closureLabel = update.stage !== "SL" && update.positionSetClosed ? " (Closed all) 💸" : "";
@@ -138,7 +160,7 @@ export function resolveTelegramSignalEligibility(input: { hasActiveCustomerEntit
   return { eligible: false, origin: "none" as const };
 }
 
-const LIFECYCLE_STAGE_ORDER: Record<LifecycleStage, number> = { TP1: 1, TP2: 2, TP3: 3, SL: 4 };
+const LIFECYCLE_STAGE_ORDER: Record<LifecycleStage, number> = { TP1: 1, TP2: 2, TP3: 3, SL: 4, BASKET_CLOSED: 5 };
 
 export function isLifecycleStageAllowed(priorStages: LifecycleStage[], nextStage: LifecycleStage) {
   if (priorStages.includes(nextStage)) return { allowed: false, reason: "stage_already_recorded" as const };
@@ -298,23 +320,127 @@ async function recordAudit(signalEventId: number, action: "received" | "validate
   await db.insert(telegramSignalAudits).values({ signalEventId, action, actorUserId, note: note.slice(0, 255) });
 }
 
+function basketClosureLifecycleEventId(basketEventId: string, originalSignalEventId: string) {
+  return `basket-${createHash("sha256").update(`${basketEventId}:${originalSignalEventId}`).digest("hex").slice(0, 48)}`;
+}
+
+export function isMatchingBasketClosureSignal(signal: Pick<typeof telegramSignalEvents.$inferSelect, "status" | "telegramMessageId" | "accountNumber" | "symbol" | "direction" | "basketId">, update: LifecycleInput) {
+  return signal.status === "delivered"
+    && Boolean(signal.telegramMessageId)
+    && signal.accountNumber === update.accountNumber
+    && brokerNeutralSymbol(signal.symbol) === brokerNeutralSymbol(update.symbol)
+    && signal.direction === update.direction
+    && Boolean(update.basketId)
+    && signal.basketId === update.basketId;
+}
+
+async function assertLifecycleAccountAuthorization(db: Awaited<ReturnType<typeof getDb>> extends infer Db ? Exclude<Db, null> : never, accountNumber: string) {
+  const [activeEntitlement, ownerApprovedSource] = await Promise.all([
+    db.select({ id: entitlements.id }).from(entitlements).where(and(eq(entitlements.mt5AccountNumber, accountNumber), eq(entitlements.status, "active"))).limit(1),
+    db.select({ accountNumber: telegramSignalSources.accountNumber }).from(telegramSignalSources).where(and(eq(telegramSignalSources.accountNumber, accountNumber), eq(telegramSignalSources.active, "yes"))).limit(1),
+  ]);
+  if (!resolveTelegramSignalEligibility({ hasActiveCustomerEntitlement: Boolean(activeEntitlement[0]), hasEnabledInternalSource: Boolean(ownerApprovedSource[0]) }).eligible) {
+    throw new Error("Lifecycle account is no longer authorized");
+  }
+}
+
+/**
+ * Fan-out is deliberately scoped to delivered setup messages with the exact EA-supplied basket ID.
+ * It is a Telegram reporting operation only; it does not inspect, change, or close MT5 positions.
+ */
+export async function receiveTelegramBasketClosure(update: LifecycleInput) {
+  if (update.stage !== "BASKET_CLOSED" || !update.basketId || !update.positionSetClosed) throw new Error("A confirmed basket closure with basketId is required");
+  const { db, settings } = await getSettings();
+  const [reference] = await db.select().from(telegramSignalEvents).where(eq(telegramSignalEvents.eventId, update.originalEventId)).limit(1);
+  if (!reference || reference.status !== "delivered" || !reference.telegramMessageId) throw new Error("Original delivered Telegram signal was not found");
+  if (reference.accountNumber !== update.accountNumber || brokerNeutralSymbol(reference.symbol) !== brokerNeutralSymbol(update.symbol) || reference.direction !== update.direction || reference.basketId !== update.basketId) {
+    throw new Error("Basket closure does not match the referenced delivered setup signal");
+  }
+  await assertLifecycleAccountAuthorization(db, update.accountNumber);
+
+  const candidates = await db.select().from(telegramSignalEvents).where(and(
+    eq(telegramSignalEvents.eventType, "setup"),
+    eq(telegramSignalEvents.status, "delivered"),
+    eq(telegramSignalEvents.accountNumber, update.accountNumber),
+    eq(telegramSignalEvents.direction, update.direction),
+    eq(telegramSignalEvents.basketId, update.basketId),
+  ));
+  const originals = candidates.filter(signal => isMatchingBasketClosureSignal(signal, update));
+  if (!originals.length) throw new Error("No delivered Telegram setup signals match this basket closure");
+
+  const state = deliveryState(settings);
+  let created = 0;
+  let delivered = 0;
+  let failed = 0;
+  let firstId = 0;
+  for (const original of originals) {
+    const [existing] = await db.select({ id: telegramSignalLifecycleUpdates.id, status: telegramSignalLifecycleUpdates.status })
+      .from(telegramSignalLifecycleUpdates)
+      .where(and(eq(telegramSignalLifecycleUpdates.originalSignalEventId, original.id), eq(telegramSignalLifecycleUpdates.stage, "BASKET_CLOSED")))
+      .limit(1);
+    if (existing) {
+      if (!firstId) firstId = existing.id;
+      if (existing.status === "delivered") delivered++;
+      continue;
+    }
+
+    const lifecycleEventId = basketClosureLifecycleEventId(update.eventId, original.eventId);
+    const insert = await db.insert(telegramSignalLifecycleUpdates).values({
+      originalSignalEventId: original.id,
+      lifecycleEventId,
+      accountNumber: update.accountNumber,
+      symbol: update.symbol,
+      direction: update.direction,
+      basketId: update.basketId,
+      stage: "BASKET_CLOSED",
+      hitPrice: update.hitPrice,
+      positionSetClosed: "yes",
+      eaDate: update.occurredDate,
+      eaTime: update.occurredAt,
+      status: "received",
+    });
+    const lifecycleId = Number(insert[0].insertId);
+    if (!firstId) firstId = lifecycleId;
+    created++;
+    await recordAudit(original.id, "received", `EA basket closure received for basket ${update.basketId}.`);
+
+    if (!state.armed) {
+      await db.update(telegramSignalLifecycleUpdates).set({ status: "rejected", failureReason: state.message }).where(eq(telegramSignalLifecycleUpdates.id, lifecycleId));
+      await recordAudit(original.id, "suppressed", `Basket closure recorded but not posted: ${state.message}`);
+      continue;
+    }
+
+    await db.update(telegramSignalLifecycleUpdates).set({ status: "delivering" }).where(eq(telegramSignalLifecycleUpdates.id, lifecycleId));
+    await recordAudit(original.id, "delivery_started", "Telegram basket-closure reply delivery started.");
+    try {
+      const replyMessageId = await sendTelegramMessage(settings!.channelId!, formatTelegramLifecycleUpdate(update), original.telegramMessageId!);
+      await db.update(telegramSignalLifecycleUpdates).set({ status: "delivered", replyMessageId }).where(eq(telegramSignalLifecycleUpdates.id, lifecycleId));
+      await recordAudit(original.id, "delivered", `Telegram basket-closure reply ${replyMessageId} confirmed.`);
+      delivered++;
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : "Telegram basket-closure reply failed";
+      await db.update(telegramSignalLifecycleUpdates).set({ status: "failed", failureReason: reason.slice(0, 255) }).where(eq(telegramSignalLifecycleUpdates.id, lifecycleId));
+      await recordAudit(original.id, "failed", `Basket closure: ${reason}`);
+      failed++;
+    }
+  }
+  return { created: created > 0, id: firstId, status: failed ? "failed" as const : delivered ? "delivered" as const : "rejected" as const, delivered: failed === 0 && delivered > 0, affectedSignals: originals.length, deliveredSignals: delivered, failedSignals: failed };
+}
+
 export async function receiveTelegramLifecycleUpdate(update: LifecycleInput) {
+  if (update.stage === "BASKET_CLOSED") return receiveTelegramBasketClosure(update);
   const { db, settings } = await getSettings();
   const [original] = await db.select().from(telegramSignalEvents).where(eq(telegramSignalEvents.eventId, update.originalEventId)).limit(1);
   if (!original || original.status !== "delivered" || !original.telegramMessageId) throw new Error("Original delivered Telegram signal was not found");
   if (original.accountNumber !== update.accountNumber || brokerNeutralSymbol(original.symbol) !== brokerNeutralSymbol(update.symbol) || original.direction !== update.direction) throw new Error("Lifecycle event does not match the original signal");
-  const [activeEntitlement, ownerApprovedSource] = await Promise.all([
-    db.select({ id: entitlements.id }).from(entitlements).where(and(eq(entitlements.mt5AccountNumber, update.accountNumber), eq(entitlements.status, "active"))).limit(1),
-    db.select({ accountNumber: telegramSignalSources.accountNumber }).from(telegramSignalSources).where(and(eq(telegramSignalSources.accountNumber, update.accountNumber), eq(telegramSignalSources.active, "yes"))).limit(1),
-  ]);
-  if (!resolveTelegramSignalEligibility({ hasActiveCustomerEntitlement: Boolean(activeEntitlement[0]), hasEnabledInternalSource: Boolean(ownerApprovedSource[0]) }).eligible) throw new Error("Lifecycle account is no longer authorized");
+  await assertLifecycleAccountAuthorization(db, update.accountNumber);
   const [existing] = await db.select().from(telegramSignalLifecycleUpdates).where(eq(telegramSignalLifecycleUpdates.lifecycleEventId, update.eventId)).limit(1);
   if (existing) return { created: false, id: existing.id, status: existing.status, delivered: existing.status === "delivered" };
   const prior = await db.select({ stage: telegramSignalLifecycleUpdates.stage }).from(telegramSignalLifecycleUpdates).where(eq(telegramSignalLifecycleUpdates.originalSignalEventId, original.id));
   const stageDecision = isLifecycleStageAllowed(prior.map(item => item.stage as LifecycleStage), update.stage);
   if (!stageDecision.allowed && stageDecision.reason === "stage_already_recorded") return { created: false, id: original.id, status: "rejected" as const, delivered: false, reason: stageDecision.reason };
   if (!stageDecision.allowed && stageDecision.reason === "out_of_order") throw new Error("Lifecycle event arrived out of order");
-  const result = await db.insert(telegramSignalLifecycleUpdates).values({ originalSignalEventId: original.id, lifecycleEventId: update.eventId, accountNumber: update.accountNumber, symbol: update.symbol, direction: update.direction, stage: update.stage, hitPrice: update.hitPrice, positionSetClosed: update.positionSetClosed ? "yes" : "no", eaDate: update.occurredDate, eaTime: update.occurredAt, status: "received" });
+  const result = await db.insert(telegramSignalLifecycleUpdates).values({ originalSignalEventId: original.id, lifecycleEventId: update.eventId, accountNumber: update.accountNumber, symbol: update.symbol, direction: update.direction, basketId: update.basketId ?? null, stage: update.stage, hitPrice: update.hitPrice, positionSetClosed: update.positionSetClosed ? "yes" : "no", eaDate: update.occurredDate, eaTime: update.occurredAt, status: "received" });
   const lifecycleId = Number(result[0].insertId);
   await recordAudit(original.id, "received", `EA lifecycle event received: ${update.stage}`);
   const state = deliveryState(settings);

@@ -371,6 +371,7 @@ export const telegramSignalEvents = mysqlTable("telegramSignalEvents", {
   accountNumber: varchar("accountNumber", { length: 20 }).notNull(),
   symbol: varchar("symbol", { length: 64 }).notNull(),
   direction: mysqlEnum("direction", ["BUY", "SELL"]).notNull(),
+  basketId: varchar("basketId", { length: 128 }),
   entryPrice: varchar("entryPrice", { length: 32 }).notNull(),
   takeProfit: varchar("takeProfit", { length: 32 }),
   fiboTp1: varchar("fiboTp1", { length: 32 }),
@@ -396,6 +397,7 @@ export const telegramSignalEvents = mysqlTable("telegramSignalEvents", {
   uniqueIndex("telegramSignalEvents_event_unique").on(table.eventId),
   index("telegramSignalEvents_status_created_idx").on(table.status, table.createdAt),
   index("telegramSignalEvents_account_created_idx").on(table.accountNumber, table.createdAt),
+  index("telegramSignalEvents_basket_idx").on(table.basketId),
 ]);
 
 /** One display-only TP/SL milestone update linked to an already-delivered setup message. */
@@ -406,7 +408,8 @@ export const telegramSignalLifecycleUpdates = mysqlTable("telegramSignalLifecycl
   accountNumber: varchar("accountNumber", { length: 20 }).notNull(),
   symbol: varchar("symbol", { length: 64 }).notNull(),
   direction: mysqlEnum("direction", ["BUY", "SELL"]).notNull(),
-  stage: mysqlEnum("stage", ["TP1", "TP2", "TP3", "SL"]).notNull(),
+  basketId: varchar("basketId", { length: 128 }),
+  stage: mysqlEnum("stage", ["TP1", "TP2", "TP3", "SL", "BASKET_CLOSED"]).notNull(),
   hitPrice: varchar("hitPrice", { length: 32 }).notNull(),
   positionSetClosed: mysqlEnum("positionSetClosed", ["yes", "no"]).notNull().default("no"),
   eaDate: varchar("eaDate", { length: 11 }).notNull(),
@@ -420,6 +423,7 @@ export const telegramSignalLifecycleUpdates = mysqlTable("telegramSignalLifecycl
   uniqueIndex("telegramSignalLifecycleUpdates_event_unique").on(table.lifecycleEventId),
   uniqueIndex("telegramSignalLifecycleUpdates_stage_unique").on(table.originalSignalEventId, table.stage),
   index("telegramSignalLifecycleUpdates_original_created_idx").on(table.originalSignalEventId, table.createdAt),
+  index("telegramSignalLifecycleUpdates_basket_idx").on(table.basketId),
 ]);
 
 /**

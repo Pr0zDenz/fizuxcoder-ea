@@ -21,4 +21,21 @@ describe("Gemini Telegram closure-aware MQL5 release", () => {
     expect(observer).not.toContain("trade.PositionModify");
     expect(observer).not.toContain("trade.OrderDelete");
   });
+
+  it("uses one explicit basket identity and reports closure before the existing lifecycle state reset", async () => {
+    const source = await readFile(sourceUrl, "utf8");
+    expect(source).toContain('\\"basketId\\":\\"" + JsonEscape(basket_id)');
+    expect(source).toContain('bool ReportTelegramBasketClosure(datetime event_time)');
+    expect(source).toContain('SendTelegramLifecycleUpdate("basket_closed", 5, observed_price, true, event_time)');
+    expect(source).toContain("if(stage == 5) telegram_basket_closed_reported = true;");
+    const noActiveTradesBranch = source.indexOf("if(!has_active_trades)");
+    const basketClosureCall = source.indexOf("ReportTelegramBasketClosure(TimeCurrent());", noActiveTradesBranch);
+    const resetAfterClosure = source.indexOf("ClearTelegramLifecycleState();", basketClosureCall);
+    expect(basketClosureCall).toBeGreaterThan(noActiveTradesBranch);
+    expect(basketClosureCall).toBeLessThan(resetAfterClosure);
+    const reporter = source.slice(source.indexOf("bool ReportTelegramBasketClosure"), source.indexOf("void MonitorTelegramLifecycle"));
+    expect(reporter).not.toContain("trade.PositionClose");
+    expect(reporter).not.toContain("trade.PositionModify");
+    expect(reporter).not.toContain("trade.OrderDelete");
+  });
 });

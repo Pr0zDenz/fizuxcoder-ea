@@ -187,6 +187,8 @@ string   last_telegram_signal_event_id = "";
 int      last_telegram_signal_direction = 0;
 int      telegram_last_tp_stage_reported = 0;
 bool     telegram_sl_reported = false;
+datetime telegram_basket_started_at = 0;
+bool     telegram_basket_closed_reported = false;
 double   locked_fibo_sl_neg100 = 0.0;
 
 //+------------------------------------------------------------------+
@@ -472,6 +474,8 @@ bool SendTelegramSetupSignal(int direction, double reference_price, double setup
 if(!Enable_Telegram_Signal || Gemini_Event_Ingest_Key == "") return false;
 long account_number = AccountInfoInteger(ACCOUNT_LOGIN);
 string direction_text = (direction == 1) ? "BUY" : "SELL";
+if(telegram_basket_started_at <= 0) telegram_basket_started_at = event_time;
+string basket_id = StringFormat("basket-%I64d-%s-%s-%I64d", account_number, _Symbol, EnumToString(_Period), (long)telegram_basket_started_at);
 string event_id = StringFormat("gemini-%I64d-%s-%s-signal-%I64d", account_number, _Symbol, EnumToString(_Period), (long)event_time);
 datetime gmt8_time = TimeGMT() + 8 * 60 * 60;
 string fibo_targets = "";
@@ -479,7 +483,7 @@ if(setup_tp1 > 0.0) fibo_targets += ",\"fiboTp1\":\"" + DoubleToString(setup_tp1
 if(setup_tp2 > 0.0) fibo_targets += ",\"fiboTp2\":\"" + DoubleToString(setup_tp2, _Digits) + "\"";
 if(setup_tp3 > 0.0) fibo_targets += ",\"fiboTp3\":\"" + DoubleToString(setup_tp3, _Digits) + "\"";
 if(setup_sl_neg100 > 0.0) fibo_targets += ",\"fiboSlNeg100\":\"" + DoubleToString(setup_sl_neg100, _Digits) + "\"";
-string payload = "{\"eventId\":\"" + JsonEscape(event_id) + "\",\"eventType\":\"setup\",\"accountNumber\":\"" + IntegerToString(account_number) + "\",\"symbol\":\"" + JsonEscape(_Symbol) + "\",\"direction\":\"" + direction_text + "\",\"entryPrice\":\"" + DoubleToString(reference_price, _Digits) + "\"" + fibo_targets + ",\"occurredDate\":\"" + EaClockDateDdmmyyyy(gmt8_time) + "\",\"occurredAt\":\"" + EaClockTime24(gmt8_time) + "\"}";
+string payload = "{\"eventId\":\"" + JsonEscape(event_id) + "\",\"eventType\":\"setup\",\"accountNumber\":\"" + IntegerToString(account_number) + "\",\"symbol\":\"" + JsonEscape(_Symbol) + "\",\"direction\":\"" + direction_text + "\",\"basketId\":\"" + JsonEscape(basket_id) + "\",\"entryPrice\":\"" + DoubleToString(reference_price, _Digits) + "\"" + fibo_targets + ",\"occurredDate\":\"" + EaClockDateDdmmyyyy(gmt8_time) + "\",\"occurredAt\":\"" + EaClockTime24(gmt8_time) + "\"}";
 char request_body[];
 char response_body[];
 string response_headers;
@@ -510,9 +514,10 @@ bool SendTelegramLifecycleUpdate(string event_type, int stage, double hit_price,
     if(stage == 4 && telegram_sl_reported) return false;
     long account_number = AccountInfoInteger(ACCOUNT_LOGIN);
     string direction_text = (last_telegram_signal_direction == 1) ? "BUY" : "SELL";
-    string lifecycle_id = StringFormat("gemini-%I64d-%s-%s-%s-%I64d", account_number, _Symbol, EnumToString(_Period), event_type, (long)event_time);
-    datetime gmt8_time = TimeGMT() + 8 * 60 * 60;
-    string payload = "{\"eventId\":\"" + JsonEscape(lifecycle_id) + "\",\"originalEventId\":\"" + JsonEscape(last_telegram_signal_event_id) + "\",\"eventType\":\"" + JsonEscape(event_type) + "\",\"accountNumber\":\"" + IntegerToString(account_number) + "\",\"symbol\":\"" + JsonEscape(_Symbol) + "\",\"direction\":\"" + direction_text + "\",\"hitPrice\":\"" + DoubleToString(hit_price, _Digits) + "\",\"positionSetClosed\":" + (position_set_closed ? "true" : "false") + ",\"occurredDate\":\"" + EaClockDateDdmmyyyy(gmt8_time) + "\",\"occurredAt\":\"" + EaClockTime24(gmt8_time) + "\"}";
+string lifecycle_id = StringFormat("gemini-%I64d-%s-%s-%s-%I64d", account_number, _Symbol, EnumToString(_Period), event_type, (long)event_time);
+datetime gmt8_time = TimeGMT() + 8 * 60 * 60;
+string basket_id = StringFormat("basket-%I64d-%s-%s-%I64d", account_number, _Symbol, EnumToString(_Period), (long)telegram_basket_started_at);
+string payload = "{\"eventId\":\"" + JsonEscape(lifecycle_id) + "\",\"originalEventId\":\"" + JsonEscape(last_telegram_signal_event_id) + "\",\"eventType\":\"" + JsonEscape(event_type) + "\",\"accountNumber\":\"" + IntegerToString(account_number) + "\",\"symbol\":\"" + JsonEscape(_Symbol) + "\",\"direction\":\"" + direction_text + "\",\"basketId\":\"" + JsonEscape(basket_id) + "\",\"hitPrice\":\"" + DoubleToString(hit_price, _Digits) + "\",\"positionSetClosed\":" + (position_set_closed ? "true" : "false") + ",\"occurredDate\":\"" + EaClockDateDdmmyyyy(gmt8_time) + "\",\"occurredAt\":\"" + EaClockTime24(gmt8_time) + "\"}";
     char request_body[];
     char response_body[];
     string response_headers;
@@ -523,14 +528,24 @@ bool SendTelegramLifecycleUpdate(string event_type, int stage, double hit_price,
     int status = WebRequest("POST", GEMINI_TELEGRAM_SIGNAL_URL, headers, 5000, request_body, response_body, response_headers);
     string response_text = CharArrayToString(response_body, 0, WHOLE_ARRAY, CP_UTF8);
     Print("Telegram lifecycle event=", lifecycle_id, " stage=", event_type, " hit=", DoubleToString(hit_price, _Digits), " closed_all=", position_set_closed, " HTTP=", status, " MT5Error=", GetLastError(), " response=", StringSubstr(response_text, 0, 160));
-    if(status == 201 || status == 200)
-    {
-        if(stage >= 1 && stage <= 3) telegram_last_tp_stage_reported = stage;
-        if(stage == 4) telegram_sl_reported = true;
-        PersistTelegramLifecycleState(0);
+if(status == 201 || status == 200)
+{
+    if(stage >= 1 && stage <= 3) telegram_last_tp_stage_reported = stage;
+    if(stage == 4) telegram_sl_reported = true;
+    if(stage == 5) telegram_basket_closed_reported = true;
+    PersistTelegramLifecycleState(0);
         return true;
     }
     return false;
+}
+
+bool ReportTelegramBasketClosure(datetime event_time)
+{
+    if(!Enable_Telegram_Signal || Gemini_Event_Ingest_Key == "" || last_telegram_signal_event_id == "" || telegram_basket_started_at <= 0 || telegram_basket_closed_reported) return false;
+    // Observer only: this check runs after the existing management has closed positions and pending orders.
+    if(HasManagedExposure()) return false;
+    double observed_price = (last_telegram_signal_direction == 1) ? SymbolInfoDouble(_Symbol, SYMBOL_BID) : SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+    return SendTelegramLifecycleUpdate("basket_closed", 5, observed_price, true, event_time);
 }
 
 void MonitorTelegramLifecycle()
@@ -577,10 +592,13 @@ void ClearTelegramLifecycleState()
     GlobalVariableDel(TelegramStateKey("sl"));
     GlobalVariableDel(TelegramStateKey("stage"));
     GlobalVariableDel(TelegramStateKey("sl_sent"));
+    GlobalVariableDel(TelegramStateKey("basket_closed"));
     last_telegram_signal_event_id = "";
     last_telegram_signal_direction = 0;
     telegram_last_tp_stage_reported = 0;
     telegram_sl_reported = false;
+    telegram_basket_started_at = 0;
+    telegram_basket_closed_reported = false;
     locked_fibo_sl_neg100 = 0.0;
 }
 
@@ -606,7 +624,8 @@ bool HasManagedOpenPosition()
 
 void PersistTelegramLifecycleState(datetime setup_time)
 {
-    if(setup_time > 0) GlobalVariableSet(TelegramStateKey("time"), (double)setup_time);
+    if(setup_time > 0 && telegram_basket_started_at <= 0) telegram_basket_started_at = setup_time;
+    if(telegram_basket_started_at > 0) GlobalVariableSet(TelegramStateKey("time"), (double)telegram_basket_started_at);
     if(!GlobalVariableCheck(TelegramStateKey("time")) || last_telegram_signal_event_id == "") return;
     GlobalVariableSet(TelegramStateKey("direction"), (double)last_telegram_signal_direction);
     GlobalVariableSet(TelegramStateKey("tp1"), locked_fibo_tp1);
@@ -615,6 +634,7 @@ void PersistTelegramLifecycleState(datetime setup_time)
     GlobalVariableSet(TelegramStateKey("sl"), locked_fibo_sl_neg100);
     GlobalVariableSet(TelegramStateKey("stage"), (double)telegram_last_tp_stage_reported);
     GlobalVariableSet(TelegramStateKey("sl_sent"), telegram_sl_reported ? 1.0 : 0.0);
+    GlobalVariableSet(TelegramStateKey("basket_closed"), telegram_basket_closed_reported ? 1.0 : 0.0);
 }
 
 void RestoreTelegramLifecycleState()
@@ -631,6 +651,8 @@ void RestoreTelegramLifecycleState()
     locked_fibo_sl_neg100 = GlobalVariableGet(TelegramStateKey("sl"));
     telegram_last_tp_stage_reported = (int)GlobalVariableGet(TelegramStateKey("stage"));
     telegram_sl_reported = GlobalVariableGet(TelegramStateKey("sl_sent")) > 0.5;
+    telegram_basket_started_at = setup_time;
+    telegram_basket_closed_reported = GlobalVariableCheck(TelegramStateKey("basket_closed")) && GlobalVariableGet(TelegramStateKey("basket_closed")) > 0.5;
     if(locked_fibo_tp1 <= 0.0 || locked_fibo_tp2 <= 0.0 || locked_fibo_tp3 <= 0.0 || locked_fibo_sl_neg100 <= 0.0) { ClearTelegramLifecycleState(); return; }
     long account_number = AccountInfoInteger(ACCOUNT_LOGIN);
     last_telegram_signal_event_id = StringFormat("gemini-%I64d-%s-%s-signal-%I64d", account_number, _Symbol, EnumToString(_Period), (long)setup_time);
@@ -961,6 +983,7 @@ if(!has_active_trades)
     empty_ticks++;
     if(empty_ticks >= 3) 
     {
+        ReportTelegramBasketClosure(TimeCurrent());
         locked_fibo_1272 = 0.0;
         locked_fibo_tp1 = 0.0;
         locked_fibo_tp2 = 0.0;

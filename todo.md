@@ -440,3 +440,9 @@
 - [x] Support an owner-approved initial Threads template set that may be scheduled without per-item re-approval, while preserving screenshot review as an explicit separate safeguard.
 - [x] Configure three daily Threads campaign slots at 09:00, 13:00, and 21:00 GMT+8, with the owner-authorized initial template campaign and no manually triggered post.
 - [x] Record the owner-confirmed MetaEditor compilation and MT5 deployment of the closure-aware Gemini Telegram MQ5 release.
+- [x] Add a distinct authenticated, display-only Gemini Telegram lifecycle event for an EA-observed full managed-basket closure, replying to the original signal with “All basket positions closed”.
+- [x] Preserve all existing TP-hit milestones and ensure the new basket-closure reply is emitted only once after the managed position set becomes empty.
+- [x] Validate duplicate prevention, original-signal authorization, reporting-only boundaries, and no live replay during implementation; provide a revised MQ5 release for operator-side MetaEditor compilation.
+- [x] Add a basket identifier to Gemini setup and lifecycle reporting so each confirmed managed basket can be distinguished from unrelated or later setups.
+- [x] On a confirmed full managed-basket closure, fan out one display-only “All basket positions closed” reply to every delivered Telegram setup signal recorded for that exact basket.
+- [x] Preserve strict account, symbol, direction, and basket matching; do not retrospectively close signals that lack the new basket identity and do not send any live replay during implementation.

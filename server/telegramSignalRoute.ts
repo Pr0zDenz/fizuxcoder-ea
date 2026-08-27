@@ -12,7 +12,7 @@ export function registerTelegramSignalRoute(app: Express) {
     if (!validSecret(req.header("X-Gemini-Event-Key"))) return res.status(401).json({ ok: false, error: "Unauthorized" });
     try {
       const body = (req.body ?? {}) as Record<string, unknown>;
-      if (body.eventType === "tp1_hit" || body.eventType === "tp2_hit" || body.eventType === "tp3_hit" || body.eventType === "sl_hit") {
+      if (body.eventType === "tp1_hit" || body.eventType === "tp2_hit" || body.eventType === "tp3_hit" || body.eventType === "sl_hit" || body.eventType === "basket_closed") {
         const lifecycle = parseTelegramLifecycleInput(body);
         const result = await receiveTelegramLifecycleUpdate(lifecycle);
         return res.status(result.created ? 201 : 200).json({ ok: true, ...result });
