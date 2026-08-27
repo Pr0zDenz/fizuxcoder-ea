@@ -1,7 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
 import { trpc } from "@/lib/trpc";
-import { Activity, ArrowLeft, ArrowRight, CheckCircle2, CircleAlert, Cloud, FileKey2, Loader2, Power, Radio, RefreshCw, Send, ShieldCheck, ShoppingBag, UserRoundCheck, UsersRound } from "lucide-react";
+import { Activity, ArrowLeft, ArrowRight, CheckCircle2, CircleAlert, Cloud, FileKey2, Loader2, Moon, PauseCircle, Power, Radio, RefreshCw, Send, ShieldCheck, ShoppingBag, UserRoundCheck, UsersRound } from "lucide-react";
 import { useEffect, useState } from "react";
 
 function formatTime(value: string | null) {
@@ -29,6 +29,7 @@ export default function AdminCommandCenter() {
   const isAdmin = user?.role === "admin";
   const snapshot = trpc.admin.commandCenter.useQuery(undefined, { enabled: isAdmin, refetchOnWindowFocus: false });
   const telegram = trpc.telegram.status.useQuery(undefined, { enabled: isAdmin, refetchOnWindowFocus: false });
+  const dailySummary = trpc.telegram.dailySummaryStatus.useQuery(undefined, { enabled: isAdmin, refetchOnWindowFocus: false });
   const utils = trpc.useUtils();
   const [channelId, setChannelId] = useState("");
   const [channelLabel, setChannelLabel] = useState("");
@@ -39,6 +40,9 @@ export default function AdminCommandCenter() {
   const [sourceAccountNumber, setSourceAccountNumber] = useState("");
   const [sourceLabel, setSourceLabel] = useState("");
   const [sourceMessage, setSourceMessage] = useState("");
+  const [sendNoSignalSummary, setSendNoSignalSummary] = useState(false);
+  const [dailySummaryConfirmation, setDailySummaryConfirmation] = useState("");
+  const [dailySummaryMessage, setDailySummaryMessage] = useState("");
   const updateTelegramSettings = trpc.telegram.updateSettings.useMutation({
     onSuccess: async () => { setTelegramMessage("Telegram settings saved. Automatic delivery remains subject to the kill switch and server-side validation."); await Promise.all([telegram.refetch(), snapshot.refetch()]); },
     onError: error => setTelegramMessage(error.message),
@@ -51,6 +55,18 @@ export default function AdminCommandCenter() {
     onSuccess: async () => { setSourceMessage("Approved signal source saved. It remains separate from customer licensing and downloads."); setSourceAccountNumber(""); setSourceLabel(""); await Promise.all([telegram.refetch(), snapshot.refetch()]); },
     onError: error => setSourceMessage(error.message),
   });
+  const saveNoSignalPolicy = trpc.telegram.setDailySummaryNoSignalPolicy.useMutation({
+    onSuccess: async () => { setDailySummaryMessage("No-signal policy saved. This does not create a schedule or send a Telegram message."); await dailySummary.refetch(); },
+    onError: error => setDailySummaryMessage(error.message),
+  });
+  const engageDailySummaryKillSwitch = trpc.telegram.engageDailySummaryKillSwitch.useMutation({
+    onSuccess: async () => { setDailySummaryMessage("Daily-summary kill switch engaged. No midnight report can be posted until you explicitly re-enable it."); await dailySummary.refetch(); },
+    onError: error => setDailySummaryMessage(error.message),
+  });
+  const enableDailySummary = trpc.telegram.enableDailySummary.useMutation({
+    onSuccess: async () => { setDailySummaryMessage("Daily Telegram summary schedule enabled. One factual report can be sent at 00:00 GMT+8 for the completed Malaysia trading day."); setDailySummaryConfirmation(""); await dailySummary.refetch(); },
+    onError: error => setDailySummaryMessage(error.message),
+  });
 
   useEffect(() => {
     if (!telegram.data) return;
@@ -59,6 +75,11 @@ export default function AdminCommandCenter() {
     setAutomaticDeliveryEnabled(telegram.data.automaticDeliveryEnabled);
     setKillSwitchEngaged(telegram.data.killSwitchEngaged);
   }, [telegram.data]);
+
+  useEffect(() => {
+    if (!dailySummary.data) return;
+    setSendNoSignalSummary(dailySummary.data.sendWhenNoSignals === "yes");
+  }, [dailySummary.data]);
 
   if (loading) return <div className="grid min-h-screen place-items-center bg-[#17201f] text-[#f4f0e8]"><Loader2 className="animate-spin" size={30} /></div>;
   if (!isAuthenticated) return <AccessState title="Sign in required" detail="The Admin Command Center is available only to the owner account." action="Sign in" onClick={startLogin} />;
@@ -80,6 +101,8 @@ export default function AdminCommandCenter() {
         <section className="mt-6 grid gap-6 xl:grid-cols-[1.18fr_.82fr]"><article className="rounded-[1.5rem] border border-[#0eafa7]/35 bg-[#0eafa7]/10 p-6 lg:p-7"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="font-mono text-[10px] font-bold uppercase tracking-[.14em] text-[#6de0d8]">Cloudflare · MasterServer evidence</p><h2 className="mt-3 font-display text-4xl tracking-[-.05em]">Service posture.</h2></div><StatusPill label={data.masterServer.reachable ? "reachable" : data.masterServer.status} tone={masterTone} /></div><div className="mt-8 grid gap-4 sm:grid-cols-3"><InfoCell label="Audit status" value={data.masterServer.status} /><InfoCell label="HTTP result" value={data.masterServer.httpStatus ? `HTTP ${data.masterServer.httpStatus}` : "Not recorded"} /><InfoCell label="Last evidence" value={formatTime(data.masterServer.checkedAt)} /></div>{data.masterServer.failureReason && <p className="mt-5 rounded-xl border border-[#d67a63]/35 bg-[#d67a63]/10 p-3 text-xs leading-5 text-[#f0b1a0]">Latest audit note: {data.masterServer.failureReason}</p>}<p className="mt-5 text-xs leading-5 text-[#b8d8d4]">This card reports recorded delivery-audit evidence. It does not expose the Master API key, sync key, payment secret, or any customer credential.</p></article>
 
           <article className="rounded-[1.5rem] border border-[#e5a631]/45 bg-[#e5a631]/10 p-6 lg:p-7"><div className="flex items-start justify-between gap-4"><div><p className="font-mono text-[10px] font-bold uppercase tracking-[.14em] text-[#f4d27e]">Telegram signal desk</p><h2 className="mt-3 font-display text-4xl tracking-[-.05em]">{telegram.data?.state === "armed" ? "Armed." : "Not armed."}</h2></div><Radio className="text-[#f4d27e]" size={22} /></div><p className="mt-5 text-sm leading-7 text-[#f4e2af]">{telegram.data?.message ?? data.telegram.message}</p><div className="mt-6 flex flex-wrap items-center gap-2"><StatusPill label={telegram.data?.killSwitchEngaged ? "kill switch engaged" : "kill switch released"} tone={telegram.data?.killSwitchEngaged ? "warn" : "good"} /><StatusPill label={telegram.data?.automaticDeliveryEnabled ? "automatic delivery on" : "automatic delivery off"} tone={telegram.data?.automaticDeliveryEnabled ? "good" : "neutral"} /></div><p className="mt-5 text-xs leading-5 text-[#e6c76f]">Only validated `setup` events with a unique event ID can be delivered. `take_profit` events and duplicate IDs are recorded without public signal publication.</p></article></section>
+
+        <section className="mt-6 rounded-[1.5rem] border border-[#8b7bd3]/40 bg-[linear-gradient(130deg,rgba(114,91,181,.18),rgba(23,32,31,.75))] p-6 shadow-[4px_4px_0_rgba(139,123,211,.14)] lg:p-7" data-testid="telegram-daily-summary-control"><div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between"><div><p className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[.14em] text-[#cbbff5]"><Moon size={14} />Independent daily report · private channel only</p><h2 className="mt-3 font-display text-4xl tracking-[-.05em]">Midnight signal summary.</h2><p className="mt-3 max-w-3xl text-sm leading-7 text-[#ddd8ef]">At 00:00 GMT+8, the report reads only the completed Malaysia trading day’s recorded delivered setup signals and TP/SL lifecycle notifications. It does not place, modify, close, delay, or influence any EA trade; it is also independent from the real-time EA signal delivery switch.</p></div><div className={`rounded-2xl border px-4 py-3 ${dailySummary.data?.automaticDeliveryEnabled === "yes" && dailySummary.data?.killSwitchEngaged === "no" ? "border-[#7db88e]/45 bg-[#7db88e]/10 text-[#d3f1d8]" : "border-[#e5a631]/45 bg-[#e5a631]/10 text-[#f4d27e]"}`}><p className="font-mono text-[9px] font-bold uppercase tracking-[.12em]">Nightly automation</p><p className="mt-1 text-sm font-semibold">{dailySummary.data?.automaticDeliveryEnabled === "yes" && dailySummary.data?.killSwitchEngaged === "no" ? "ACTIVE" : "PAUSED / SAFE"}</p><p className="mt-1 text-xs opacity-80">{dailySummary.data?.scheduleConfigured ? "Scheduled task linked" : "No task created yet"}</p></div></div><div className="mt-6 grid gap-3 md:grid-cols-3"><InfoCell label="Timezone" value="GMT+8 / Malaysia" /><InfoCell label="Run time" value="00:00 daily" /><InfoCell label="Data source" value="Delivered channel records" /></div><div className="mt-5 grid gap-4 border-t border-white/10 pt-5 xl:grid-cols-[1fr_auto]"><label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-black/10 p-4"><input type="checkbox" checked={sendNoSignalSummary} onChange={event => setSendNoSignalSummary(event.target.checked)} className="mt-1 size-4 accent-[#8b7bd3]" /><span><span className="block text-sm font-semibold text-[#f4f0e8]">Send a short report even when there are no delivered signals</span><span className="mt-1 block text-xs leading-5 text-[#c7c0e1]">Off by default. When off, the schedule records a private “no signals” audit and does not message the channel.</span></span></label><button type="button" onClick={() => saveNoSignalPolicy.mutate({ sendWhenNoSignals: sendNoSignalSummary })} disabled={saveNoSignalPolicy.isPending} className="button-outline self-end !border-[#cbbff5]/55 !text-[#f4f0e8] disabled:opacity-50">{saveNoSignalPolicy.isPending ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle2 size={16} />}{saveNoSignalPolicy.isPending ? "Saving" : "Save no-signal policy"}</button></div><div className="mt-4 grid gap-3 xl:grid-cols-[1fr_auto_auto]"><label className="block"><span className="font-mono text-[9px] font-bold uppercase tracking-[.12em] text-[#cbbff5]">Final owner confirmation</span><input value={dailySummaryConfirmation} onChange={event => setDailySummaryConfirmation(event.target.value)} placeholder="Type ENABLE DAILY TELEGRAM SUMMARY" className="mt-2 h-11 w-full rounded-xl border border-white/15 bg-black/20 px-3 font-mono text-xs text-[#f4f0e8] outline-none placeholder:text-[#75847e] focus:border-[#cbbff5]" /></label><button type="button" onClick={() => enableDailySummary.mutate({ confirmationPhrase: dailySummaryConfirmation as "ENABLE DAILY TELEGRAM SUMMARY" })} disabled={dailySummaryConfirmation !== "ENABLE DAILY TELEGRAM SUMMARY" || enableDailySummary.isPending} className="button-primary self-end !bg-[#725bb5] disabled:opacity-50">{enableDailySummary.isPending ? <Loader2 className="animate-spin" size={16} /> : <Send size={16} />}{enableDailySummary.isPending ? "Enabling" : "Enable midnight summary"}</button><button type="button" onClick={() => engageDailySummaryKillSwitch.mutate()} disabled={engageDailySummaryKillSwitch.isPending} className="button-outline self-end !border-[#d67a63]/70 !text-[#f0b1a0] disabled:opacity-50">{engageDailySummaryKillSwitch.isPending ? <Loader2 className="animate-spin" size={16} /> : <PauseCircle size={16} />}Engage kill switch</button></div>{dailySummaryMessage && <p role="status" className="mt-4 rounded-xl border border-white/10 bg-black/10 p-3 text-xs leading-5 text-[#ddd8ef]">{dailySummaryMessage}</p>}</section>
 
         <section className="mt-6 grid gap-6 xl:grid-cols-[.82fr_1.18fr]"><article className="rounded-[1.5rem] border border-white/15 bg-white/[.045] p-6 lg:p-7"><p className="font-mono text-[10px] font-bold uppercase tracking-[.14em] text-[#c7d1cb]">Commercial access</p><div className="mt-5 space-y-4"><Row label="Live production products" value={data.products.live} /><Row label="Paused production products" value={data.products.paused} /><Row label="Expired or revoked access" value={data.entitlements.expired + data.entitlements.revoked} /><Row label="Activation-email failures" value={data.fulfilment.emailsFailed} alert={data.fulfilment.emailsFailed > 0} /></div><a href="/admin/operations" className="button-outline mt-6 !border-white/20 !text-[#f4f0e8]">Manage releases <ArrowRight size={16} /></a></article>
 

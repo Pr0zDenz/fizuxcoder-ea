@@ -20,17 +20,17 @@ const TELEGRAM_GROWTH_SEEDS = [
   {
     contentKey: "threads-telegram-growth-process",
     title: "Observe the Gemini Bot EA signal process",
-    caption: "Nak tengok how a structured MT5 setup is shared? Join the Gemini Bot EA Signal channel untuk follow setup context, TP/SL progress and risk reminders. Bukan call untuk copy blindly—study the process, then decide ikut risk plan sendiri. Join here:",
+    caption: "Kalau interested dengan EA signal workflow, observe dulu. Review a few setups, understand how TP/SL updates work, then test your own plan on demo. Jangan rush sebab one screenshot. Join the channel:",
   },
   {
     contentKey: "threads-telegram-growth-context",
     title: "Signal context matters more than one screenshot",
-    caption: "Signal screenshot boleh bagi quick overview, but context tetap penting—symbol, direction, entry, TP, SL, market condition and your own risk limits. Nak follow the full signal flow with clear updates? Join here:",
+    caption: "Nak follow Gemini Bot EA signal dengan lebih clear? Jangan tengok one screenshot saja—review symbol, direction, TP/SL updates, then decide ikut your own risk plan. Join the channel:",
   },
   {
     contentKey: "threads-telegram-growth-observe",
     title: "Observe first, then decide your own plan",
-    caption: "Kalau interested dengan EA signal workflow, observe dulu. Review a few setups, understand how TP/SL updates work, then test your own plan on demo. Jangan rush sebab one screenshot. Join the channel:",
+    caption: "Signal boleh help you observe market workflow, but it is not for copy blindly. Tengok full setup context dulu, understand the TP/SL updates, then test your own plan on demo. Join the channel:",
   },
 ] as const;
 
@@ -159,7 +159,7 @@ export async function prepareTelegramGrowthDrafts(ownerUserId: number) {
   let created = 0;
   let existing = 0;
   for (const seed of TELEGRAM_GROWTH_SEEDS) {
-    const caption = `${seed.caption}\n${inviteLink}\n\nTrading involves risk. This channel is for market observation and setup context, not a forecast or a promise of returns. #GeminiBotEA #MT5 #TradingMalaysia #RiskFirst`;
+    const caption = `${seed.caption}\n\n${inviteLink}\n${inviteLink}\n${inviteLink}\n\n•\nTrading involves risk.\n\n#ExpertAdvisor #DemoFirst #TradingMalaysia`;
     const contentKey = `${seed.contentKey}-${createHash("sha256").update(inviteLink).digest("hex").slice(0, 12)}`;
     const [prior] = await db.select({ id: marketingContentItems.id }).from(marketingContentItems)
       .where(eq(marketingContentItems.contentKey, contentKey)).limit(1);

@@ -421,6 +421,60 @@ export const telegramSignalLifecycleUpdates = mysqlTable("telegramSignalLifecycl
   index("telegramSignalLifecycleUpdates_original_created_idx").on(table.originalSignalEventId, table.createdAt),
 ]);
 
+/**
+ * Independent owner control plane for the nightly signal summary. It may use
+ * the configured Telegram channel, but is not armed by the EA signal switch.
+ */
+export const telegramDailySummarySettings = mysqlTable("telegramDailySummarySettings", {
+  settingKey: varchar("settingKey", { length: 48 }).primaryKey(),
+  ownerUserId: int("ownerUserId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  timezone: varchar("timezone", { length: 64 }).notNull().default("Asia/Kuala_Lumpur"),
+  cronExpression: varchar("cronExpression", { length: 64 }).notNull().default("0 0 16 * * *"),
+  automaticDeliveryEnabled: mysqlEnum("automaticDeliveryEnabled", ["yes", "no"]).notNull().default("no"),
+  killSwitchEngaged: mysqlEnum("killSwitchEngaged", ["yes", "no"]).notNull().default("yes"),
+  sendWhenNoSignals: mysqlEnum("sendWhenNoSignals", ["yes", "no"]).notNull().default("no"),
+  scheduleCronTaskUid: varchar("scheduleCronTaskUid", { length: 65 }),
+  lastRunAt: timestamp("lastRunAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [
+  index("tg_daily_summary_owner_idx").on(table.ownerUserId),
+  index("tg_daily_summary_task_uid_idx").on(table.scheduleCronTaskUid),
+]);
+
+/** One immutable execution record per Malaysia trading day, preventing repeat summary posts on retries. */
+export const telegramDailySummaryRuns = mysqlTable("telegramDailySummaryRuns", {
+  id: int("id").autoincrement().primaryKey(),
+  settingKey: varchar("settingKey", { length: 48 }).notNull().references(() => telegramDailySummarySettings.settingKey, { onDelete: "cascade" }),
+  summaryDate: varchar("summaryDate", { length: 10 }).notNull(),
+  status: mysqlEnum("status", ["running", "delivered", "failed", "skipped"]).notNull().default("running"),
+  setupCount: int("setupCount").notNull().default(0),
+  takeProfitCount: int("takeProfitCount").notNull().default(0),
+  stopLossCount: int("stopLossCount").notNull().default(0),
+  messageHash: varchar("messageHash", { length: 64 }),
+  telegramMessageId: varchar("telegramMessageId", { length: 64 }),
+  failureReason: varchar("failureReason", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
+}, table => [
+  uniqueIndex("tg_daily_summary_runs_date_unique").on(table.summaryDate),
+  index("tg_daily_summary_runs_setting_created_idx").on(table.settingKey, table.createdAt),
+]);
+
+/** Append-only owner configuration and scheduled-run evidence for daily summaries. */
+export const telegramDailySummaryAudits = mysqlTable("telegramDailySummaryAudits", {
+  id: int("id").autoincrement().primaryKey(),
+  settingKey: varchar("settingKey", { length: 48 }).notNull().references(() => telegramDailySummarySettings.settingKey, { onDelete: "cascade" }),
+  runId: int("runId").references(() => telegramDailySummaryRuns.id, { onDelete: "set null" }),
+  actorUserId: int("actorUserId").references(() => users.id, { onDelete: "set null" }),
+  action: mysqlEnum("action", ["settings_updated", "schedule_created", "schedule_paused", "schedule_resumed", "run_started", "run_delivered", "run_skipped", "run_failed"]).notNull(),
+  note: varchar("note", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, table => [
+  index("tg_daily_summary_audit_setting_created_idx").on(table.settingKey, table.createdAt),
+  index("tg_daily_summary_audit_run_created_idx").on(table.runId, table.createdAt),
+]);
+
 /** Append-only Telegram signal lifecycle log. Bot credentials are never stored here. */
 export const telegramSignalAudits = mysqlTable("telegramSignalAudits", {
   id: int("id").autoincrement().primaryKey(),

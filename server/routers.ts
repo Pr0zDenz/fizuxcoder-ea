@@ -17,6 +17,7 @@ import { getAdminCommandCenterSnapshot } from "./adminCommandCenter";
 import { getTelegramSignalDashboard, sendTelegramConnectionTest, updateTelegramSignalSettings, updateTelegramSignalSource } from "./telegramSignals";
 import { createHeartbeatJob, updateHeartbeatJob } from "./_core/heartbeat";
 import { activateThreadsMarketingSchedule, engageThreadsMarketingKillSwitch, getThreadsMarketingAutomationStatus, getThreadsMarketingTaskUid, prepareTelegramGrowthDrafts, setMarketingScheduleEligibility, verifyTelegramGrowthInviteLink, DEFAULT_THREADS_MARKETING_CRON } from "./threadsMarketingAutomation";
+import { activateTelegramDailySummary, DAILY_SUMMARY_CRON, engageTelegramDailySummaryKillSwitch, getTelegramDailySummaryStatus, getTelegramDailySummaryTaskUid, setTelegramDailySummaryEmptyPolicy } from "./telegramDailySummary";
 import { productFiles, products } from "../drizzle/schema";
 
 export const appRouter = router({
@@ -181,6 +182,20 @@ export const appRouter = router({
   }),
   telegram: router({
     status: adminProcedure.query(() => getTelegramSignalDashboard()),
+    dailySummaryStatus: adminProcedure.query(({ ctx }) => getTelegramDailySummaryStatus(ctx.user.id)),
+    setDailySummaryNoSignalPolicy: adminProcedure.input(z.object({ sendWhenNoSignals: z.boolean() })).mutation(({ ctx, input }) => setTelegramDailySummaryEmptyPolicy({ ownerUserId: ctx.user.id, sendWhenNoSignals: input.sendWhenNoSignals })),
+    engageDailySummaryKillSwitch: adminProcedure.mutation(({ ctx }) => engageTelegramDailySummaryKillSwitch(ctx.user.id)),
+    enableDailySummary: adminProcedure.input(z.object({ confirmationPhrase: z.literal("ENABLE DAILY TELEGRAM SUMMARY") })).mutation(async ({ ctx }) => {
+      const session = parseCookieHeader(ctx.req.headers.cookie ?? "")[COOKIE_NAME] ?? "";
+      let taskUid = await getTelegramDailySummaryTaskUid(ctx.user.id);
+      if (taskUid) {
+        await updateHeartbeatJob(taskUid, { cron: DAILY_SUMMARY_CRON, path: "/api/scheduled/telegram-daily-summary", method: "POST", payload: {}, description: "Owner-governed midnight GMT+8 Telegram signal summary; one factual report per Malaysia trading day.", enable: true }, session);
+      } else {
+        const task = await createHeartbeatJob({ name: "owner-telegram-daily-signal-summary", cron: DAILY_SUMMARY_CRON, path: "/api/scheduled/telegram-daily-summary", method: "POST", payload: {}, description: "Owner-governed midnight GMT+8 Telegram signal summary; one factual report per Malaysia trading day." }, session);
+        taskUid = task.taskUid;
+      }
+      return activateTelegramDailySummary({ ownerUserId: ctx.user.id, taskUid });
+    }),
     updateSettings: adminProcedure.input(z.object({ channelId: z.string().min(1).max(64), channelLabel: z.string().max(160).optional(), automaticDeliveryEnabled: z.boolean(), killSwitchEngaged: z.boolean() })).mutation(({ ctx, input }) => updateTelegramSignalSettings({ actorUserId: ctx.user.id, ...input })),
     updateSource: adminProcedure.input(z.object({ accountNumber: z.string().regex(/^\d{4,20}$/, "Enter a valid numeric MT5 account number"), label: z.string().min(1).max(120), active: z.boolean() })).mutation(({ ctx, input }) => updateTelegramSignalSource({ actorUserId: ctx.user.id, ...input })),
     sendConnectionTest: adminProcedure.input(z.object({ confirmation: z.string().max(32) })).mutation(({ ctx, input }) => sendTelegramConnectionTest({ actorUserId: ctx.user.id, confirmation: input.confirmation })),

@@ -412,20 +412,25 @@
 
 - [ ] Configure a valid FRED API key in the Windows VPS MasterServer environment and verify the 3S EA receives a non-fallback Python Y10 status.
 
-- [ ] Define the public-versus-private Telegram channel recommendation and compliance boundaries for promoting the EA signal community.
-- [ ] Add an owner-approved Telegram-growth marketing workflow that is isolated from EA signal delivery and Threads publishing automation.
-- [ ] Support marketing draft assets selected from authorised signal screenshots without exposing EA credentials, customer data, or automated trading controls.
-- [ ] Prepare compliant Telegram group-join copywriting and validate that customers cannot access owner marketing/signal controls.
+- [x] Define the public-versus-private Telegram channel recommendation and compliance boundaries for promoting the EA signal community.
+- [x] Add an owner-approved Telegram-growth marketing workflow that is isolated from EA signal delivery and Threads publishing automation.
+- [x] Support marketing draft assets selected from authorised signal screenshots without exposing EA credentials, customer data, or automated trading controls.
+- [x] Prepare compliant Telegram group-join copywriting and validate that customers cannot access owner marketing/signal controls.
 
 - [x] Review the Telegram-growth marketing templates and signal-screenshot workflow for separation from live EA signal delivery, presentation quality, and owner approval.
 - [x] Refine the Telegram join-marketing copy and documented screenshot-formatting rules without publishing any campaign content.
 
-- [ ] Configure the Telegram growth workflow for a private channel with an owner-managed invite link and no public signal-channel discovery.
-- [ ] Create a separate Threads eligibility policy so only approved marketing drafts, never raw EA signal events or unreviewed screenshots, can enter automated publishing.
-- [ ] Implement a three-times-daily Malaysia-time Threads publishing schedule with audit records, duplicate protection, and a visible administrator kill switch.
+- [x] Configure the Telegram growth workflow for a private channel with an owner-managed invite link and no public signal-channel discovery.
+- [x] Create a separate Threads eligibility policy so only approved marketing drafts, never raw EA signal events or unreviewed screenshots, can enter automated publishing.
+- [x] Implement a three-times-daily Malaysia-time Threads publishing schedule with audit records, duplicate protection, and a visible administrator kill switch.
 - [ ] Validate the schedule and access controls without posting externally, then obtain final owner confirmation before enabling automated Threads publishing.
 - [x] Add a server-only private Telegram invite-link configuration contract; persist only link-validation status and never return the invite URL to the browser or database.
 - [x] Add a distinct owner-approved scheduled Threads queue with explicit per-draft eligibility, atomic one-item claiming, failure auditing, and raw VPS screenshot exclusion by default.
 - [x] Register a cron-authenticated task-UID-only Threads callback with default-paused automation and a durable administrator kill switch.
 - [x] Build the administrator-only Telegram growth funnel and Threads scheduling controls with protected status indicators, queue actions, manual-publish separation, and typed final confirmation.
 - [x] Validate the implementation with focused tests, full deterministic tests, TypeScript, a production build, and a visual Studio review without publishing any external marketing post.
+- [ ] Preserve the owner-supplied Threads post format for private Telegram-growth drafts, including repeated join-link placement, concise risk line, and a selected owner-reviewed image.
+- [x] Define a separate daily Telegram signal-summary report at 00:00 GMT+8 that derives only from recorded signal and lifecycle events and does not alter EA trade execution or live signal delivery.
+- [x] Add an owner-only, default-paused daily-summary schedule with duplicate prevention, task-UID lookup, audit evidence, and a visible kill switch.
+- [ ] Validate midnight GMT+8 reporting boundaries and no-signal behaviour without sending a Telegram message, then obtain final owner authorization before scheduling or sending summaries.
+- [ ] Apply the owner-selected automated daily-summary mode at 00:00 GMT+8 and retain the supplied Threads audience-activity context as administrator-only posting guidance.

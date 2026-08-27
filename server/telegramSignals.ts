@@ -250,7 +250,7 @@ export async function updateTelegramSignalSettings(input: { actorUserId: number;
   return getTelegramSignalDashboard();
 }
 
-async function sendTelegramMessage(channelId: string, text: string, replyToMessageId?: string) {
+export async function sendTelegramMessage(channelId: string, text: string, replyToMessageId?: string) {
   if (!ENV.telegramBotToken) throw new Error("Telegram bot token is not configured");
   const response = await fetch(`https://api.telegram.org/bot${ENV.telegramBotToken}/sendMessage`, {
     method: "POST",
@@ -261,6 +261,19 @@ async function sendTelegramMessage(channelId: string, text: string, replyToMessa
   const payload = await response.json().catch(() => null) as { ok?: boolean; description?: string; result?: { message_id?: number } } | null;
   if (!response.ok || !payload?.ok || !payload.result?.message_id) throw new Error(payload?.description?.slice(0, 220) || `Telegram returned HTTP ${response.status}`);
   return String(payload.result.message_id);
+}
+
+/**
+ * Returns only the server-side destination required by independently governed
+ * administrative reports. It does not reuse live EA signal authorisation,
+ * delivery state, or the EA signal kill switch.
+ */
+export async function getTelegramDailySummaryDestination() {
+  const { settings } = await getSettings();
+  if (!settings?.channelId || !ENV.telegramBotToken) {
+    throw new Error("Configure the Telegram bot token and private channel identity before enabling daily summaries");
+  }
+  return { channelId: settings.channelId, ownerUserId: settings.ownerUserId };
 }
 
 export async function validateTelegramBotCredential() {

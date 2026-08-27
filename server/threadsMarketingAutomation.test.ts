@@ -41,6 +41,17 @@ describe("private Telegram invite Threads automation safeguards", () => {
     expect(validateTelegramMarketingInviteLink("https://example.com/+unsafe")).toBe(false);
   });
 
+  it("accepts the configured server-only private invite before it can be used by the marketing workflow", () => {
+    const configuredInvite = process.env.TELEGRAM_MARKETING_INVITE_LINK ?? "";
+    expect(validateTelegramMarketingInviteLink(configuredInvite)).toBe(true);
+  });
+
+  it("retains the owner-required Threads layout for private invite drafts", () => {
+    expect(source).toContain("${inviteLink}\\n${inviteLink}\\n${inviteLink}");
+    expect(source).toContain("\\n\\n•\\nTrading involves risk.\\n\\n#ExpertAdvisor #DemoFirst #TradingMalaysia");
+    expect(source).toContain("Jangan rush sebab one screenshot. Join the channel:");
+  });
+
   it("uses the proposed three-per-day Malaysia schedule as a UTC six-field cron expression", () => {
     expect(DEFAULT_THREADS_MARKETING_CRON).toBe("0 0 1,5,13 * * *");
   });

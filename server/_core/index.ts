@@ -16,6 +16,7 @@ import { registerProtectedDeliveryAuditRoute } from "../protectedDeliveryAuditRo
 import { registerGeminiEventIntakeRoute } from "../geminiEventIntakeRoute";
 import { registerTelegramSignalRoute } from "../telegramSignalRoute";
 import { registerThreadsMarketingScheduleRoute } from "../threadsMarketingScheduleRoute";
+import { registerTelegramDailySummaryRoute } from "../telegramDailySummaryRoute";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -52,6 +53,7 @@ async function startServer() {
   registerGeminiEventIntakeRoute(app);
   registerTelegramSignalRoute(app);
   registerThreadsMarketingScheduleRoute(app);
+  registerTelegramDailySummaryRoute(app);
   // tRPC API
   app.use(
     "/api/trpc",
