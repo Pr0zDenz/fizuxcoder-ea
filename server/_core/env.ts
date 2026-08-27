@@ -16,4 +16,5 @@ export const ENV = {
   masterServerSyncKey: process.env.MASTER_SERVER_SYNC_KEY ?? "",
   geminiEventIngestKey: process.env.GEMINI_EVENT_INGEST_KEY ?? "",
   telegramBotToken: process.env.TELEGRAM_BOT_TOKEN ?? "",
+  telegramMarketingInviteLink: process.env.TELEGRAM_MARKETING_INVITE_LINK ?? "",
 };

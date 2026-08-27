@@ -1,0 +1,363 @@
+import { createHash } from "node:crypto";
+import { and, asc, eq } from "drizzle-orm";
+import {
+  marketingContentAudits,
+  marketingContentItems,
+  threadsMarketingAutomationAudits,
+  threadsMarketingAutomationSettings,
+} from "../drizzle/schema";
+import { ENV } from "./_core/env";
+import { getDb } from "./db";
+import { createEvergreenGeminiDraftAfterPublish, MARKETING_RISK_NOTICE } from "./marketingStudio";
+import { publishThreadsPost, ThreadsPublishError } from "./threadsPublisher";
+
+export const THREADS_MARKETING_AUTOMATION_KEY = "owner_threads_marketing";
+export const THREADS_MARKETING_TIMEZONE = "Asia/Kuala_Lumpur";
+/** 09:00, 13:00, and 21:00 MYT in UTC. It remains paused until the owner explicitly enables it. */
+export const DEFAULT_THREADS_MARKETING_CRON = "0 0 1,5,13 * * *";
+
+const TELEGRAM_GROWTH_SEEDS = [
+  {
+    contentKey: "threads-telegram-growth-process",
+    title: "Observe the Gemini Bot EA signal process",
+    caption: "Nak tengok how a structured MT5 setup is shared? Join the Gemini Bot EA Signal channel untuk follow setup context, TP/SL progress and risk reminders. Bukan call untuk copy blindly—study the process, then decide ikut risk plan sendiri. Join here:",
+  },
+  {
+    contentKey: "threads-telegram-growth-context",
+    title: "Signal context matters more than one screenshot",
+    caption: "Signal screenshot boleh bagi quick overview, but context tetap penting—symbol, direction, entry, TP, SL, market condition and your own risk limits. Nak follow the full signal flow with clear updates? Join here:",
+  },
+  {
+    contentKey: "threads-telegram-growth-observe",
+    title: "Observe first, then decide your own plan",
+    caption: "Kalau interested dengan EA signal workflow, observe dulu. Review a few setups, understand how TP/SL updates work, then test your own plan on demo. Jangan rush sebab one screenshot. Join the channel:",
+  },
+] as const;
+
+type AutomationSettings = typeof threadsMarketingAutomationSettings.$inferSelect;
+
+export function validateTelegramMarketingInviteLink(value: string): boolean {
+  try {
+    const url = new URL(value.trim());
+    const host = url.hostname.toLowerCase();
+    const path = url.pathname.replace(/^\/+/, "");
+    return url.protocol === "https:"
+      && (host === "t.me" || host === "www.t.me")
+      && (path.startsWith("+") || path.startsWith("joinchat/"));
+  } catch {
+    return false;
+  }
+}
+
+function configuredInviteLink(): string {
+  const inviteLink = ENV.telegramMarketingInviteLink.trim();
+  if (!validateTelegramMarketingInviteLink(inviteLink)) {
+    throw new Error("The server-only Telegram invite link is not configured or is not a valid private t.me invite link");
+  }
+  return inviteLink;
+}
+
+function inviteAvailable(): boolean {
+  return validateTelegramMarketingInviteLink(ENV.telegramMarketingInviteLink);
+}
+
+function copyHash(seed: { title: string; caption: string; contentKey: string }) {
+  return createHash("sha256").update(JSON.stringify({
+    title: seed.title,
+    caption: seed.caption,
+    language: "en_ms",
+    assetUrl: null,
+    assetAlt: null,
+    destinationUrl: "https://fizuxea-jxctlods.manus.space/portal",
+    riskNotice: MARKETING_RISK_NOTICE,
+  })).digest("hex");
+}
+
+async function readSettings(ownerUserId: number): Promise<AutomationSettings | null> {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  const [settings] = await db.select().from(threadsMarketingAutomationSettings)
+    .where(eq(threadsMarketingAutomationSettings.settingKey, THREADS_MARKETING_AUTOMATION_KEY)).limit(1);
+  if (settings && settings.ownerUserId !== ownerUserId) {
+    throw new Error("The Threads marketing schedule belongs to a different owner account");
+  }
+  return settings ?? null;
+}
+
+async function ensureSettings(ownerUserId: number): Promise<AutomationSettings> {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  const existing = await readSettings(ownerUserId);
+  if (existing) return existing;
+  await db.insert(threadsMarketingAutomationSettings).values({
+    settingKey: THREADS_MARKETING_AUTOMATION_KEY,
+    ownerUserId,
+    timezone: THREADS_MARKETING_TIMEZONE,
+    cronExpression: DEFAULT_THREADS_MARKETING_CRON,
+    automaticPublishingEnabled: "no",
+    killSwitchEngaged: "yes",
+    inviteLinkConfigured: inviteAvailable() ? "yes" : "no",
+  });
+  const created = await readSettings(ownerUserId);
+  if (!created) throw new Error("Unable to create the Threads marketing settings");
+  await db.insert(threadsMarketingAutomationAudits).values({
+    settingKey: THREADS_MARKETING_AUTOMATION_KEY,
+    actorUserId: ownerUserId,
+    action: "settings_updated",
+    note: "Owner Threads marketing automation initialized in paused safe state",
+  });
+  return created;
+}
+
+function publicSettings(settings: AutomationSettings | null, queueCount: number) {
+  return {
+    configured: Boolean(settings),
+    timezone: settings?.timezone ?? THREADS_MARKETING_TIMEZONE,
+    cronExpression: settings?.cronExpression ?? DEFAULT_THREADS_MARKETING_CRON,
+    automaticPublishingEnabled: settings?.automaticPublishingEnabled ?? "no",
+    killSwitchEngaged: settings?.killSwitchEngaged ?? "yes",
+    scheduleConfigured: Boolean(settings?.scheduleCronTaskUid),
+    inviteLinkConfigured: inviteAvailable(),
+    queuedCount: queueCount,
+    lastRunAt: settings?.lastRunAt ?? null,
+  } as const;
+}
+
+export async function getThreadsMarketingAutomationStatus(ownerUserId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  const settings = await readSettings(ownerUserId);
+  const queue = await db.select({ id: marketingContentItems.id }).from(marketingContentItems).where(and(
+    eq(marketingContentItems.status, "approved"),
+    eq(marketingContentItems.automationEligible, "yes"),
+  ));
+  return publicSettings(settings, queue.length);
+}
+
+export async function verifyTelegramGrowthInviteLink(ownerUserId: number) {
+  configuredInviteLink();
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  await ensureSettings(ownerUserId);
+  await db.update(threadsMarketingAutomationSettings).set({ inviteLinkConfigured: "yes" })
+    .where(eq(threadsMarketingAutomationSettings.settingKey, THREADS_MARKETING_AUTOMATION_KEY));
+  await db.insert(threadsMarketingAutomationAudits).values({
+    settingKey: THREADS_MARKETING_AUTOMATION_KEY,
+    actorUserId: ownerUserId,
+    action: "settings_updated",
+    note: "Server-only private Telegram invite link validated",
+  });
+  return getThreadsMarketingAutomationStatus(ownerUserId);
+}
+
+/** Creates invitation drafts only. It never enrols a draft for auto-publication. */
+export async function prepareTelegramGrowthDrafts(ownerUserId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  const inviteLink = configuredInviteLink();
+  await verifyTelegramGrowthInviteLink(ownerUserId);
+  let created = 0;
+  let existing = 0;
+  for (const seed of TELEGRAM_GROWTH_SEEDS) {
+    const caption = `${seed.caption}\n${inviteLink}\n\nTrading involves risk. This channel is for market observation and setup context, not a forecast or a promise of returns. #GeminiBotEA #MT5 #TradingMalaysia #RiskFirst`;
+    const contentKey = `${seed.contentKey}-${createHash("sha256").update(inviteLink).digest("hex").slice(0, 12)}`;
+    const [prior] = await db.select({ id: marketingContentItems.id }).from(marketingContentItems)
+      .where(eq(marketingContentItems.contentKey, contentKey)).limit(1);
+    if (prior) {
+      existing += 1;
+      continue;
+    }
+    const title = seed.title;
+    const result = await db.insert(marketingContentItems).values({
+      contentKey,
+      title,
+      caption,
+      language: "en_ms",
+      assetUrl: null,
+      assetAlt: null,
+      destinationUrl: "https://fizuxea-jxctlods.manus.space/portal",
+      riskNotice: MARKETING_RISK_NOTICE,
+      scheduledFor: null,
+      status: "draft",
+      complianceStatus: "passed",
+      complianceFlags: JSON.stringify(["telegram_private_invite", "owner_review_required", "not_signal_evidence"]),
+      contentHash: copyHash({ ...seed, caption }),
+      automationEligible: "no",
+    });
+    const contentItemId = Number(result[0].insertId);
+    await db.insert(marketingContentAudits).values({
+      contentItemId,
+      actorUserId: ownerUserId,
+      action: "revised",
+      contentHash: copyHash({ ...seed, caption }),
+      note: "Private Telegram invite marketing draft created; owner review required",
+    });
+    created += 1;
+  }
+  return { created, existing };
+}
+
+/**
+ * An owner must actively nominate each exact draft. VPS screenshot drafts are
+ * excluded unless selected through this operation after visual review.
+ */
+export async function setMarketingScheduleEligibility({ contentItemId, actorUserId, eligible }: { contentItemId: number; actorUserId: number; eligible: boolean }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  await ensureSettings(actorUserId);
+  const [item] = await db.select().from(marketingContentItems).where(eq(marketingContentItems.id, contentItemId)).limit(1);
+  if (!item) throw new Error("Marketing draft not found");
+  if (item.complianceStatus !== "passed") throw new Error("Only compliance-passed drafts can enter the scheduled queue");
+  if (item.status === "posted" || item.status === "publish_pending" || item.status === "rejected") throw new Error("This marketing item cannot be changed for the scheduled queue");
+  if (eligible) {
+    if (item.status !== "draft" && item.status !== "approved") throw new Error("Only a reviewable draft can be approved for scheduled publishing");
+    const transition = await db.update(marketingContentItems).set({
+      status: "approved",
+      approvedByUserId: actorUserId,
+      approvedAt: new Date(),
+      automationEligible: "yes",
+    }).where(and(eq(marketingContentItems.id, contentItemId), eq(marketingContentItems.status, item.status)));
+    if (!transition[0].affectedRows) throw new Error("This draft changed before it could be approved for the scheduled queue");
+    await db.insert(marketingContentAudits).values({ contentItemId, actorUserId, action: "approved", contentHash: item.contentHash, note: "Owner approved exact draft for scheduled Threads queue" });
+  } else {
+    const transition = await db.update(marketingContentItems).set({ automationEligible: "no" }).where(and(
+      eq(marketingContentItems.id, contentItemId),
+      eq(marketingContentItems.status, "approved"),
+      eq(marketingContentItems.automationEligible, "yes"),
+    ));
+    if (!transition[0].affectedRows) throw new Error("Only an approved scheduled item can be removed from the queue");
+    await db.insert(marketingContentAudits).values({ contentItemId, actorUserId, action: "revised", contentHash: item.contentHash, note: "Owner removed draft from scheduled Threads queue" });
+  }
+  return { success: true, scheduled: eligible };
+}
+
+export async function engageThreadsMarketingKillSwitch(ownerUserId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  const settings = await ensureSettings(ownerUserId);
+  await db.update(threadsMarketingAutomationSettings).set({ automaticPublishingEnabled: "no", killSwitchEngaged: "yes" })
+    .where(eq(threadsMarketingAutomationSettings.settingKey, THREADS_MARKETING_AUTOMATION_KEY));
+  await db.insert(threadsMarketingAutomationAudits).values({
+    settingKey: THREADS_MARKETING_AUTOMATION_KEY,
+    actorUserId: ownerUserId,
+    action: "schedule_paused",
+    note: settings.scheduleCronTaskUid ? "Kill switch engaged; scheduled publisher will skip all runs" : "Kill switch engaged before any schedule was created",
+  });
+  return getThreadsMarketingAutomationStatus(ownerUserId);
+}
+
+/**
+ * Links the platform-created task only after the owner has separately supplied
+ * the private invite link and explicitly confirmed automatic publishing.
+ */
+export async function activateThreadsMarketingSchedule({ ownerUserId, taskUid }: { ownerUserId: number; taskUid: string }) {
+  configuredInviteLink();
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  const settings = await ensureSettings(ownerUserId);
+  const wasConfigured = Boolean(settings.scheduleCronTaskUid);
+  await db.update(threadsMarketingAutomationSettings).set({
+    scheduleCronTaskUid: taskUid,
+    inviteLinkConfigured: "yes",
+    automaticPublishingEnabled: "yes",
+    killSwitchEngaged: "no",
+    cronExpression: DEFAULT_THREADS_MARKETING_CRON,
+  }).where(eq(threadsMarketingAutomationSettings.settingKey, THREADS_MARKETING_AUTOMATION_KEY));
+  await db.insert(threadsMarketingAutomationAudits).values({
+    settingKey: THREADS_MARKETING_AUTOMATION_KEY,
+    actorUserId: ownerUserId,
+    action: wasConfigured ? "schedule_resumed" : "schedule_created",
+    note: wasConfigured ? "Owner explicitly resumed scheduled Threads publisher" : "Owner explicitly enabled three-times-daily scheduled Threads publisher",
+  });
+  return getThreadsMarketingAutomationStatus(ownerUserId);
+}
+
+/** Internal metadata for the router; never returned to a browser. */
+export async function getThreadsMarketingTaskUid(ownerUserId: number): Promise<string | null> {
+  const settings = await readSettings(ownerUserId);
+  return settings?.scheduleCronTaskUid ?? null;
+}
+
+/** Called only by the authenticated Heartbeat endpoint. At most one item can leave the queue per run. */
+export async function runScheduledThreadsMarketing(taskUid: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  const [settings] = await db.select().from(threadsMarketingAutomationSettings).where(and(
+    eq(threadsMarketingAutomationSettings.settingKey, THREADS_MARKETING_AUTOMATION_KEY),
+    eq(threadsMarketingAutomationSettings.scheduleCronTaskUid, taskUid),
+  )).limit(1);
+  if (!settings) return { ok: true, skipped: "unknown_task" as const };
+  const writeRunAudit = async (action: "run_skipped" | "run_started" | "run_published" | "run_failed", note: string, contentItemId?: number) => {
+    await db.insert(threadsMarketingAutomationAudits).values({ settingKey: settings.settingKey, actorUserId: null, contentItemId: contentItemId ?? null, action, note: note.slice(0, 255) });
+  };
+  await db.update(threadsMarketingAutomationSettings).set({ lastRunAt: new Date() }).where(eq(threadsMarketingAutomationSettings.settingKey, settings.settingKey));
+  if (settings.automaticPublishingEnabled !== "yes" || settings.killSwitchEngaged === "yes") {
+    await writeRunAudit("run_skipped", "Kill switch is engaged or automatic publishing is disabled");
+    return { ok: true, skipped: "paused" as const };
+  }
+  if (!inviteAvailable()) {
+    await writeRunAudit("run_skipped", "Server-only invite link is unavailable; no Threads post attempted");
+    return { ok: true, skipped: "invite_unavailable" as const };
+  }
+  const [item] = await db.select().from(marketingContentItems).where(and(
+    eq(marketingContentItems.status, "approved"),
+    eq(marketingContentItems.automationEligible, "yes"),
+  )).orderBy(asc(marketingContentItems.scheduledFor), asc(marketingContentItems.id)).limit(1);
+  if (!item) {
+    await writeRunAudit("run_skipped", "No owner-approved eligible marketing draft is queued");
+    return { ok: true, skipped: "empty_queue" as const };
+  }
+  const attemptKey = createHash("sha256").update(`scheduled:${taskUid}:${item.id}:${item.contentHash}`).digest("hex");
+  const transition = await db.update(marketingContentItems).set({
+    status: "publish_pending",
+    publishAttemptKey: attemptKey,
+    publishAttemptedAt: new Date(),
+    publishErrorCode: null,
+    publishErrorMessage: null,
+  }).where(and(
+    eq(marketingContentItems.id, item.id),
+    eq(marketingContentItems.status, "approved"),
+    eq(marketingContentItems.automationEligible, "yes"),
+  ));
+  if (!transition[0].affectedRows) {
+    await writeRunAudit("run_skipped", "Candidate changed before atomic publish transition", item.id);
+    return { ok: true, skipped: "race_lost" as const };
+  }
+  await writeRunAudit("run_started", "One owner-approved scheduled item claimed for publication", item.id);
+  await db.insert(marketingContentAudits).values({ contentItemId: item.id, actorUserId: settings.ownerUserId, action: "publish_started", contentHash: item.contentHash, note: "Owner-governed scheduled Threads publication started" });
+  try {
+    const published = await publishThreadsPost({ ownerUserId: settings.ownerUserId, text: `${item.caption}\n\n${item.riskNotice}`, assetUrl: item.assetUrl });
+    const completed = await db.update(marketingContentItems).set({
+      status: "posted",
+      postedByUserId: settings.ownerUserId,
+      postedAt: new Date(),
+      externalPostId: published.externalPostId,
+      publishErrorCode: null,
+      publishErrorMessage: null,
+    }).where(and(
+      eq(marketingContentItems.id, item.id),
+      eq(marketingContentItems.status, "publish_pending"),
+      eq(marketingContentItems.publishAttemptKey, attemptKey),
+    ));
+    if (!completed[0].affectedRows) throw new Error("Publication state changed unexpectedly after provider success; inspect audit before retrying");
+    await db.insert(marketingContentAudits).values({ contentItemId: item.id, actorUserId: settings.ownerUserId, action: "published", contentHash: item.contentHash, note: published.hasImage ? "Scheduled Threads publication succeeded with one image" : "Scheduled Threads publication succeeded as text-only" });
+    await writeRunAudit("run_published", `Threads post confirmed: ${published.externalPostId}`, item.id);
+    try {
+      await createEvergreenGeminiDraftAfterPublish({ item, actorUserId: settings.ownerUserId });
+    } catch (replenishmentError) {
+      console.error("[Threads automation] Published post but evergreen replenishment failed", replenishmentError);
+    }
+    return { ok: true, posted: item.id, externalPostId: published.externalPostId };
+  } catch (error) {
+    const code = error instanceof ThreadsPublishError ? error.code : "PUBLISH_ERROR";
+    const message = error instanceof Error ? error.message : "Threads publication failed";
+    await db.update(marketingContentItems).set({ status: "publish_failed", publishErrorCode: code.slice(0, 64), publishErrorMessage: message.slice(0, 255) }).where(and(
+      eq(marketingContentItems.id, item.id),
+      eq(marketingContentItems.status, "publish_pending"),
+      eq(marketingContentItems.publishAttemptKey, attemptKey),
+    ));
+    await db.insert(marketingContentAudits).values({ contentItemId: item.id, actorUserId: settings.ownerUserId, action: "publish_failed", contentHash: item.contentHash, note: `Scheduled queue ${code}: ${message}`.slice(0, 255) });
+    await writeRunAudit("run_failed", `${code}: ${message}`, item.id);
+    return { ok: false, failed: item.id, errorCode: code };
+  }
+}

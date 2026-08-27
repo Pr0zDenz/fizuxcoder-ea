@@ -37,7 +37,7 @@ describe("customer portal administrator boundary", () => {
     expect(app).toContain('<Route path="/admin/operations" component={AdminOperations} />');
   });
 
-  it("keeps the marketing studio on its own administrator-gated route with approval-triggered wording", () => {
+  it("keeps the marketing studio on its own administrator-gated route with separated manual and scheduled publishing safeguards", () => {
     const studio = readFileSync(marketingStudioPath, "utf8");
     const app = readFileSync(appPath, "utf8");
     const routers = readFileSync(routersPath, "utf8");
@@ -45,9 +45,10 @@ describe("customer portal administrator boundary", () => {
     expect(studio).toContain('const isAdmin = user?.role === "admin";');
     expect(studio).toContain("if (!isAuthenticated)");
     expect(studio).toContain("if (!isAdmin)");
-    expect(studio).toContain("Approval publishes that approved item to the connected owner account");
-    expect(studio).toContain("no advertising campaign or spend capability");
-    expect(studio).toContain("One supplied image will be attached when this item is published.");
+    expect(studio).toContain("Manual approval can publish immediately. Scheduled publishing is a separate queue");
+    expect(studio).toContain("The join link is intentionally held only as server configuration");
+    expect(studio).toContain("Screenshot review required");
+    expect(studio).toContain("Approve for schedule");
     expect(studio).toContain('href="/api/threads/oauth/start"');
     expect(studio).toContain("trpc.marketing.");
     expect(app).toContain('<Route path="/admin/marketing" component={MarketingStudio} />');
@@ -56,6 +57,8 @@ describe("customer portal administrator boundary", () => {
     expect(routers).toContain("applyGeminiBotRevision: adminProcedure");
     expect(routers).toContain("retryPublish: adminProcedure");
     expect(routers).toContain("threadsConnection: adminProcedure");
+    expect(routers).toContain("automationStatus: adminProcedure");
+    expect(routers).toContain("enableThreeDailyPublishing: adminProcedure");
   });
 
   it("keeps administrator-only actions protected by server-side role checks", () => {

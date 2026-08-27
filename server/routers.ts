@@ -1,5 +1,6 @@
 import { COOKIE_NAME } from "@shared/const";
 import { TRPCError } from "@trpc/server";
+import { parse as parseCookieHeader } from "cookie";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -14,6 +15,8 @@ import { storageGetSignedUrl, storagePut } from "./storage";
 import { getDb } from "./db";
 import { getAdminCommandCenterSnapshot } from "./adminCommandCenter";
 import { getTelegramSignalDashboard, sendTelegramConnectionTest, updateTelegramSignalSettings, updateTelegramSignalSource } from "./telegramSignals";
+import { createHeartbeatJob, updateHeartbeatJob } from "./_core/heartbeat";
+import { activateThreadsMarketingSchedule, engageThreadsMarketingKillSwitch, getThreadsMarketingAutomationStatus, getThreadsMarketingTaskUid, prepareTelegramGrowthDrafts, setMarketingScheduleEligibility, verifyTelegramGrowthInviteLink, DEFAULT_THREADS_MARKETING_CRON } from "./threadsMarketingAutomation";
 import { productFiles, products } from "../drizzle/schema";
 
 export const appRouter = router({
@@ -185,6 +188,25 @@ export const appRouter = router({
   marketing: router({
     list: adminProcedure.query(() => listMarketingContent()),
     threadsConnection: adminProcedure.query(({ ctx }) => getThreadsConnectionStatus(ctx.user.id)),
+    automationStatus: adminProcedure.query(({ ctx }) => getThreadsMarketingAutomationStatus(ctx.user.id)),
+    verifyPrivateInviteLink: adminProcedure.mutation(({ ctx }) => verifyTelegramGrowthInviteLink(ctx.user.id)),
+    prepareTelegramGrowthDrafts: adminProcedure.mutation(({ ctx }) => prepareTelegramGrowthDrafts(ctx.user.id)),
+    setScheduleEligibility: adminProcedure.input(z.object({ contentItemId: z.number().int().positive(), eligible: z.boolean() })).mutation(({ ctx, input }) => setMarketingScheduleEligibility({ contentItemId: input.contentItemId, actorUserId: ctx.user.id, eligible: input.eligible })),
+    engageAutomationKillSwitch: adminProcedure.mutation(({ ctx }) => engageThreadsMarketingKillSwitch(ctx.user.id)),
+    enableThreeDailyPublishing: adminProcedure.input(z.object({ confirmationPhrase: z.literal("ENABLE THREADS AUTO POSTING") })).mutation(async ({ ctx }) => {
+      await verifyTelegramGrowthInviteLink(ctx.user.id);
+      const connection = await getThreadsConnectionStatus(ctx.user.id);
+      if (!connection.connected) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Connect the owner Threads account before enabling scheduled publishing" });
+      const session = parseCookieHeader(ctx.req.headers.cookie ?? "")[COOKIE_NAME] ?? "";
+      let taskUid = await getThreadsMarketingTaskUid(ctx.user.id);
+      if (taskUid) {
+        await updateHeartbeatJob(taskUid, { cron: DEFAULT_THREADS_MARKETING_CRON, path: "/api/scheduled/threads-marketing", method: "POST", payload: {}, description: "Owner-approved private Telegram-growth Threads campaign; one eligible post per run.", enable: true }, session);
+      } else {
+        const task = await createHeartbeatJob({ name: "owner-threads-marketing-three-daily", cron: DEFAULT_THREADS_MARKETING_CRON, path: "/api/scheduled/threads-marketing", method: "POST", payload: {}, description: "Owner-approved private Telegram-growth Threads campaign; one eligible post per run." }, session);
+        taskUid = task.taskUid;
+      }
+      return activateThreadsMarketingSchedule({ ownerUserId: ctx.user.id, taskUid });
+    }),
     seedTwoWeekPilot: adminProcedure.mutation(({ ctx }) => seedTwoWeekThreadsPilot(ctx.user.id)),
     applyGeminiBotRevision: adminProcedure.mutation(({ ctx }) => applyGeminiBotThreadsRevision(ctx.user.id)),
     approve: adminProcedure.input(z.object({ contentItemId: z.number().int().positive() })).mutation(({ ctx, input }) => approveMarketingContent({ contentItemId: input.contentItemId, actorUserId: ctx.user.id })),

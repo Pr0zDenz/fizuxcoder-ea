@@ -226,6 +226,7 @@ export const marketingContentItems = mysqlTable("marketingContentItems", {
   publishAttemptedAt: timestamp("publishAttemptedAt"),
   publishErrorCode: varchar("publishErrorCode", { length: 64 }),
   publishErrorMessage: varchar("publishErrorMessage", { length: 255 }),
+  automationEligible: mysqlEnum("automationEligible", ["yes", "no"]).notNull().default("no"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, table => [
@@ -250,6 +251,42 @@ export const marketingContentAudits = mysqlTable("marketingContentAudits", {
 }, table => [
   index("marketingContentAudits_item_created_idx").on(table.contentItemId, table.createdAt),
   index("marketingContentAudits_actor_created_idx").on(table.actorUserId, table.createdAt),
+]);
+
+/**
+ * Owner-controlled state for the recurring Threads marketing queue. The private
+ * Telegram invite URL stays in the server environment; only its configured
+ * status is persisted here.
+ */
+export const threadsMarketingAutomationSettings = mysqlTable("threadsMarketingAutomationSettings", {
+  settingKey: varchar("settingKey", { length: 48 }).primaryKey(),
+  ownerUserId: int("ownerUserId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  timezone: varchar("timezone", { length: 64 }).notNull().default("Asia/Kuala_Lumpur"),
+  cronExpression: varchar("cronExpression", { length: 64 }).notNull().default("0 30 1,6,12 * * *"),
+  automaticPublishingEnabled: mysqlEnum("automaticPublishingEnabled", ["yes", "no"]).notNull().default("no"),
+  killSwitchEngaged: mysqlEnum("killSwitchEngaged", ["yes", "no"]).notNull().default("yes"),
+  inviteLinkConfigured: mysqlEnum("inviteLinkConfigured", ["yes", "no"]).notNull().default("no"),
+  scheduleCronTaskUid: varchar("scheduleCronTaskUid", { length: 65 }),
+  lastRunAt: timestamp("lastRunAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [
+  index("thr_mkt_auto_owner_idx").on(table.ownerUserId),
+  index("thr_mkt_auto_task_uid_idx").on(table.scheduleCronTaskUid),
+]);
+
+/** Append-only configuration and publish-run evidence for the scheduled queue. */
+export const threadsMarketingAutomationAudits = mysqlTable("threadsMarketingAutomationAudits", {
+  id: int("id").autoincrement().primaryKey(),
+  settingKey: varchar("settingKey", { length: 48 }).notNull().references(() => threadsMarketingAutomationSettings.settingKey, { onDelete: "cascade" }),
+  actorUserId: int("actorUserId").references(() => users.id, { onDelete: "set null" }),
+  contentItemId: int("contentItemId").references(() => marketingContentItems.id, { onDelete: "set null" }),
+  action: mysqlEnum("action", ["settings_updated", "schedule_created", "schedule_paused", "schedule_resumed", "run_skipped", "run_started", "run_published", "run_failed"]).notNull(),
+  note: varchar("note", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, table => [
+  index("thr_mkt_auto_audit_setting_created_idx").on(table.settingKey, table.createdAt),
+  index("thr_mkt_auto_audit_content_created_idx").on(table.contentItemId, table.createdAt),
 ]);
 
 /**
