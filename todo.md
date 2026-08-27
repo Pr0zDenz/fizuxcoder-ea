@@ -348,3 +348,14 @@
 - [x] Deliver the exact VPS replacement instructions for the updated MQ5; MetaEditor compilation remains an operator-side check.
 - [x] Diagnose why a manual entry during `BEARISH (PULLBACK)` did not use the expected bullish Safe TP: the unconditional pullback-cap branch could apply a bearish H4 TP1 to an opposite-direction bullish basket.
 - [x] Correct direction-aware Safe TP selection in both Cloudflare MQ5 copies; the cap now applies only when basket direction matches macro direction, preserving opposite-direction manual baskets and existing spread/trading safeguards.
+
+- [ ] Audit the existing owner-only admin pages, dashboards, EA-event intake, and database models for a unified interactive operations dashboard.
+- [ ] Define the Telegram channel signal lifecycle, content fields, owner approval boundary, error handling, and delivery audit requirements.
+- [ ] Build a protected interactive admin dashboard for MasterServer health, EA configurations, signal events, marketing intake, entitlement/delivery evidence, and Telegram queue management.
+- [ ] Add validated automatic Telegram signal delivery for eligible EA setup events, with duplicate protection, delivery auditing, and an owner-controlled kill switch.
+- [ ] Configure Telegram Bot API credentials and authorized channel identity through secure project secrets only after owner confirmation.
+- [ ] Verify administrator access control, signal audit records, and one owner-authorized Telegram test delivery before enabling operational use.
+
+- [x] Patch the supplied production `MasterServer_customer_fulfillment_fixed.py` so `/update` requires and validates an authorized `account_number`.
+- [x] Store runtime overrides per account and merge only the requesting account’s override into `/config` responses.
+- [x] Syntax-check the patched MasterServer and provide non-destructive VPS restart and two-account isolation tests.
