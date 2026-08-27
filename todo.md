@@ -389,3 +389,11 @@
 - [x] Remove the phrase “M1 Fibo” from the Telegram TP and SL reference labels without changing their source values or delivery behavior.
 - [x] Send one owner-authorized, clearly labelled non-trading Telegram mock using the simplified TP1, TP2, TP3, and SL (−1.0) wording for visual confirmation; delivered as Telegram message ID 8.
 - [x] Change the Telegram header to “Gemini Bot EA Signal” and render the informational stop field as “SL” without exposing the internal −1.0 calculation label.
+- [x] Add event-driven Telegram reply updates for authorized signal TP1, TP2, TP3, and SL hits with quote-to-original-message behavior, strict deduplication, event ordering, and append-only audit evidence.
+- [x] Extend the Telegram-enabled NewLook MQ5 payload with lifecycle events and validate the operator-side compile/test handoff; MetaEditor execution remains operator-side.
+- [x] Add regression coverage for lifecycle authorization, duplicate prevention, out-of-order events, kill switch behavior, and reply delivery failure handling.
+
+- [x] Implement EA-reported Telegram-only TP1/TP2/TP3/SL lifecycle updates that reply to the original signal and never alter order placement, Safe TP, or stop-loss execution.
+- [x] Add lifecycle event validation, authorization, ordering, deduplication, failure audits, and regression tests.
+- [x] Update the Telegram-enabled NewLook MQ5 deployment source and operator handoff for display-only lifecycle reporting; MetaEditor compilation remains operator-side.
+

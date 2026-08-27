@@ -148,6 +148,13 @@
       "when": 1787830257858,
       "tag": "0020_acoustic_mauler",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "5",
+      "when": 1787833018062,
+      "tag": "0021_complete_marvel_boy",
+      "breakpoints": true
     }
   ]
 }

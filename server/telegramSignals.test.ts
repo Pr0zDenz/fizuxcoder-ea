@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { brokerNeutralSymbol, deliveryState, formatMockTelegramSignal, formatTelegramSignal, parseTelegramSignalInput, parseTelegramSignalSourceInput, resolveTelegramSignalEligibility } from "./telegramSignals";
+import { brokerNeutralSymbol, deliveryState, formatMockTelegramSignal, formatTelegramLifecycleUpdate, formatTelegramSignal, isLifecycleStageAllowed, parseTelegramLifecycleInput, parseTelegramSignalInput, parseTelegramSignalSourceInput, resolveTelegramSignalEligibility } from "./telegramSignals";
 
 describe("Telegram signal contract", () => {
   const validSetup = {
@@ -60,6 +60,27 @@ describe("Telegram signal contract", () => {
     expect(deliveryState(undefined)).toMatchObject({ armed: false, state: "not_configured" });
     expect(deliveryState({ channelId: "@fizuxsignal", automaticDeliveryEnabled: "yes", killSwitchEngaged: "yes" })).toMatchObject({ armed: false, state: "kill_switch" });
     expect(deliveryState({ channelId: "@fizuxsignal", automaticDeliveryEnabled: "no", killSwitchEngaged: "no" })).toMatchObject({ armed: false, state: "paused" });
+  });
+
+  it("parses and formats display-only TP and SL lifecycle updates", () => {
+    const tp = parseTelegramLifecycleInput({ eventId: "gemini-230069105-XAUUSD-tp1-1787819001", originalEventId: "gemini-230069105-XAUUSD-signal-1787839260", eventType: "tp1_hit", accountNumber: "230069105", symbol: "XAUUSD.vx", direction: "SELL", hitPrice: "4596.58", occurredDate: "27-Aug-2026", occurredAt: "20:05:00" });
+    const sl = parseTelegramLifecycleInput({ eventId: "gemini-230069105-XAUUSD-sl-1787819002", originalEventId: "gemini-230069105-XAUUSD-signal-1787839260", eventType: "sl_hit", accountNumber: "230069105", symbol: "XAUUSD.vx", direction: "SELL", hitPrice: "4603.75", occurredDate: "27-Aug-2026", occurredAt: "20:06:00" });
+    expect(tp.stage).toBe("TP1");
+    expect(formatTelegramLifecycleUpdate(tp)).toContain("✅ TP1 HIT");
+    expect(formatTelegramLifecycleUpdate(tp)).toContain("Hit price: 4596.58");
+    expect(formatTelegramLifecycleUpdate(tp)).toContain("Display update only");
+    expect(sl.stage).toBe("SL");
+    expect(formatTelegramLifecycleUpdate(sl)).toContain("🛑 SL HIT");
+    expect(() => parseTelegramLifecycleInput({ eventId: "bad", originalEventId: "signal-123456", eventType: "tp1_hit", accountNumber: "230069105", symbol: "XAUUSD", direction: "SELL", hitPrice: "4596.58", occurredDate: "27-Aug-2026", occurredAt: "20:05:00" })).toThrow("eventId is invalid");
+    expect(() => parseTelegramLifecycleInput({ eventId: "lifecycle-123456", originalEventId: "signal-123456", eventType: "tp4_hit", accountNumber: "230069105", symbol: "XAUUSD", direction: "SELL", hitPrice: "4596.58", occurredDate: "27-Aug-2026", occurredAt: "20:05:00" })).toThrow("eventType must be tp1_hit, tp2_hit, tp3_hit, or sl_hit");
+  });
+
+  it("enforces lifecycle stage ordering and duplicate protection without blocking an SL report", () => {
+    expect(isLifecycleStageAllowed([], "TP1")).toEqual({ allowed: true });
+    expect(isLifecycleStageAllowed(["TP1"], "TP1")).toEqual({ allowed: false, reason: "stage_already_recorded" });
+    expect(isLifecycleStageAllowed(["TP1", "TP3"], "TP2")).toEqual({ allowed: false, reason: "out_of_order" });
+    expect(isLifecycleStageAllowed(["TP1", "TP2", "TP3"], "SL")).toEqual({ allowed: true });
+    expect(isLifecycleStageAllowed(["SL"], "SL")).toEqual({ allowed: false, reason: "stage_already_recorded" });
   });
 
   it("validates an owner-approved source without granting customer entitlement data", () => {

@@ -361,6 +361,29 @@ export const telegramSignalEvents = mysqlTable("telegramSignalEvents", {
   index("telegramSignalEvents_account_created_idx").on(table.accountNumber, table.createdAt),
 ]);
 
+/** One display-only TP/SL milestone update linked to an already-delivered setup message. */
+export const telegramSignalLifecycleUpdates = mysqlTable("telegramSignalLifecycleUpdates", {
+  id: int("id").autoincrement().primaryKey(),
+  originalSignalEventId: int("originalSignalEventId").notNull().references(() => telegramSignalEvents.id, { onDelete: "cascade" }),
+  lifecycleEventId: varchar("lifecycleEventId", { length: 96 }).notNull(),
+  accountNumber: varchar("accountNumber", { length: 20 }).notNull(),
+  symbol: varchar("symbol", { length: 64 }).notNull(),
+  direction: mysqlEnum("direction", ["BUY", "SELL"]).notNull(),
+  stage: mysqlEnum("stage", ["TP1", "TP2", "TP3", "SL"]).notNull(),
+  hitPrice: varchar("hitPrice", { length: 32 }).notNull(),
+  eaDate: varchar("eaDate", { length: 11 }).notNull(),
+  eaTime: varchar("eaTime", { length: 8 }).notNull(),
+  status: mysqlEnum("status", ["received", "delivering", "delivered", "failed", "rejected"]).notNull().default("received"),
+  replyMessageId: varchar("replyMessageId", { length: 64 }),
+  failureReason: varchar("failureReason", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [
+  uniqueIndex("telegramSignalLifecycleUpdates_event_unique").on(table.lifecycleEventId),
+  uniqueIndex("telegramSignalLifecycleUpdates_stage_unique").on(table.originalSignalEventId, table.stage),
+  index("telegramSignalLifecycleUpdates_original_created_idx").on(table.originalSignalEventId, table.createdAt),
+]);
+
 /** Append-only Telegram signal lifecycle log. Bot credentials are never stored here. */
 export const telegramSignalAudits = mysqlTable("telegramSignalAudits", {
   id: int("id").autoincrement().primaryKey(),

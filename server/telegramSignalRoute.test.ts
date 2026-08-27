@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
-const { receiveTelegramSignalMock } = vi.hoisted(() => ({ receiveTelegramSignalMock: vi.fn() }));
+const { receiveTelegramSignalMock, receiveTelegramLifecycleMock } = vi.hoisted(() => ({ receiveTelegramSignalMock: vi.fn(), receiveTelegramLifecycleMock: vi.fn() }));
 vi.mock("./geminiEventIntakeRoute", () => ({ validSecret: vi.fn(() => false) }));
-vi.mock("./telegramSignals", () => ({ parseTelegramSignalInput: vi.fn(), receiveTelegramSignal: receiveTelegramSignalMock }));
+vi.mock("./telegramSignals", () => ({ parseTelegramLifecycleInput: vi.fn(), parseTelegramSignalInput: vi.fn(), receiveTelegramLifecycleUpdate: receiveTelegramLifecycleMock, receiveTelegramSignal: receiveTelegramSignalMock }));
 
 import { validSecret } from "./geminiEventIntakeRoute";
-import { parseTelegramSignalInput } from "./telegramSignals";
+import { parseTelegramLifecycleInput, parseTelegramSignalInput } from "./telegramSignals";
 import { registerTelegramSignalRoute } from "./telegramSignalRoute";
 
 function response() {
@@ -39,6 +39,22 @@ describe("Telegram signal intake route", () => {
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith({ ok: false, error: "direction must be BUY or SELL" });
     expect(receiveTelegramSignalMock).not.toHaveBeenCalled();
+  });
+
+  it("dispatches an authenticated lifecycle hit update without exposing the ingest key", async () => {
+    const parsed = { eventId: "signal-tp1-123456", originalEventId: "signal-123456", eventType: "tp1_hit", accountNumber: "230069105", symbol: "XAUUSD.vx", direction: "SELL", stage: "TP1", hitPrice: "4596.58", occurredDate: "27-Aug-2026", occurredAt: "20:05:00" };
+    vi.mocked(validSecret).mockReturnValueOnce(true);
+    vi.mocked(parseTelegramLifecycleInput).mockReturnValueOnce(parsed as never);
+    receiveTelegramLifecycleMock.mockResolvedValueOnce({ created: true, id: 10, status: "delivered", delivered: true, replyMessageId: "99" });
+    const app = { get: vi.fn(), post: vi.fn() };
+    registerTelegramSignalRoute(app as never);
+    const handler = app.post.mock.calls[0][1];
+    const res = response();
+    await handler({ header: () => "valid-key", body: { ...parsed, "X-Gemini-Event-Key": "must-not-forward" } }, res);
+    expect(parseTelegramLifecycleInput).toHaveBeenCalledWith(expect.objectContaining({ eventType: "tp1_hit", originalEventId: "signal-123456", hitPrice: "4596.58" }));
+    expect(receiveTelegramLifecycleMock).toHaveBeenCalledWith(parsed);
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(res.json).toHaveBeenCalledWith({ ok: true, created: true, id: 10, status: "delivered", delivered: true, replyMessageId: "99" });
   });
 
   it("forwards validated optional M1 Fibonacci TP and −1.0 stop-reference fields without exposing the ingest key", async () => {

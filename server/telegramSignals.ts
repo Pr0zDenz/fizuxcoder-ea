@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { and, desc, eq } from "drizzle-orm";
-import { entitlements, telegramSignalAudits, telegramSignalEvents, telegramSignalSettings, telegramSignalSettingsAudits, telegramSignalSourceAudits, telegramSignalSources } from "../drizzle/schema";
+import { entitlements, telegramSignalAudits, telegramSignalEvents, telegramSignalLifecycleUpdates, telegramSignalSettings, telegramSignalSettingsAudits, telegramSignalSourceAudits, telegramSignalSources } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import { getDb } from "./db";
 
@@ -20,6 +20,20 @@ type SignalInput = {
   fiboTp3?: string;
   fiboSlNeg100?: string;
   stopLoss?: string;
+  occurredDate: string;
+  occurredAt: string;
+};
+
+type LifecycleStage = "TP1" | "TP2" | "TP3" | "SL";
+type LifecycleInput = {
+  eventId: string;
+  originalEventId: string;
+  eventType: "tp1_hit" | "tp2_hit" | "tp3_hit" | "sl_hit";
+  accountNumber: string;
+  symbol: string;
+  direction: "BUY" | "SELL";
+  stage: LifecycleStage;
+  hitPrice: string;
   occurredDate: string;
   occurredAt: string;
 };
@@ -63,6 +77,45 @@ export function parseTelegramSignalInput(body: Record<string, unknown>): SignalI
   return { eventId, eventType, accountNumber, symbol, direction, entryPrice, takeProfit, fiboTp1, fiboTp2, fiboTp3, fiboSlNeg100, stopLoss, occurredDate, occurredAt };
 }
 
+export function parseTelegramLifecycleInput(body: Record<string, unknown>): LifecycleInput {
+  const eventId = cleanText(body.eventId, 96);
+  const originalEventId = cleanText(body.originalEventId, 96);
+  const eventType = body.eventType === "tp1_hit" || body.eventType === "tp2_hit" || body.eventType === "tp3_hit" || body.eventType === "sl_hit" ? body.eventType : null;
+  const accountNumber = cleanText(body.accountNumber, 20);
+  const symbol = cleanText(body.symbol, 64);
+  const direction = body.direction === "BUY" || body.direction === "SELL" ? body.direction : null;
+  const hitPrice = safeNumericText(body.hitPrice, "hitPrice", true);
+  const occurredDate = cleanText(body.occurredDate, 11);
+  const occurredAt = cleanText(body.occurredAt, 8);
+  if (!/^[A-Za-z0-9_-]{6,96}$/.test(eventId)) throw new Error("eventId is invalid");
+  if (!/^[A-Za-z0-9_-]{6,96}$/.test(originalEventId)) throw new Error("originalEventId is invalid");
+  if (!eventType) throw new Error("eventType must be tp1_hit, tp2_hit, tp3_hit, or sl_hit");
+  if (!/^\d{4,20}$/.test(accountNumber)) throw new Error("accountNumber is invalid");
+  if (!/^[A-Za-z0-9_.-]{1,64}$/.test(symbol)) throw new Error("symbol is invalid");
+  if (!direction) throw new Error("direction must be BUY or SELL");
+  if (!/^\d{2}-[A-Za-z]{3}-\d{4}$/.test(occurredDate)) throw new Error("occurredDate must use DD-MMM-YYYY format");
+  if (!/^(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$/.test(occurredAt)) throw new Error("occurredAt must use 24-hour HH:mm:ss format");
+  const stage = eventType === "sl_hit" ? "SL" : eventType.slice(0, 3).toUpperCase() as LifecycleStage;
+  return { eventId, originalEventId, eventType, accountNumber, symbol, direction, stage, hitPrice: hitPrice!, occurredDate, occurredAt };
+}
+
+export function formatTelegramLifecycleUpdate(update: LifecycleInput) {
+  const icon = update.stage === "SL" ? "🛑" : "✅";
+  const label = update.stage === "SL" ? "SL HIT" : `${update.stage} HIT`;
+  return [
+    `${icon} ${label}`,
+    `📡 Gemini Bot EA Signal update`,
+    `📊 Symbol: ${brokerNeutralSymbol(update.symbol)}`,
+    `📈 Direction: ${update.direction}`,
+    `💵 Hit price: ${update.hitPrice}`,
+    `📅 Event Date: ${update.occurredDate}`,
+    `🕒 Event Time: ${update.occurredAt} GMT+8`,
+    "",
+    `⚠️ ${DEFAULT_RISK_NOTE}`,
+    "Display update only: no MT5 order was placed, modified, or closed by this notification.",
+  ].join("\\n");
+}
+
 export function brokerNeutralSymbol(symbol: string) {
   return symbol.split(/[._-]/, 1)[0] || symbol;
 }
@@ -79,6 +132,17 @@ export function resolveTelegramSignalEligibility(input: { hasActiveCustomerEntit
   if (input.hasActiveCustomerEntitlement) return { eligible: true, origin: "customer_entitlement" as const };
   if (input.hasEnabledInternalSource) return { eligible: true, origin: "owner_approved_internal_source" as const };
   return { eligible: false, origin: "none" as const };
+}
+
+const LIFECYCLE_STAGE_ORDER: Record<LifecycleStage, number> = { TP1: 1, TP2: 2, TP3: 3, SL: 4 };
+
+export function isLifecycleStageAllowed(priorStages: LifecycleStage[], nextStage: LifecycleStage) {
+  if (priorStages.includes(nextStage)) return { allowed: false, reason: "stage_already_recorded" as const };
+  if (nextStage === "SL") return { allowed: true as const };
+  if (priorStages.some(stage => stage !== "SL" && LIFECYCLE_STAGE_ORDER[stage] > LIFECYCLE_STAGE_ORDER[nextStage])) {
+    return { allowed: false, reason: "out_of_order" as const };
+  }
+  return { allowed: true as const };
 }
 
 export function formatTelegramSignal(signal: SignalInput) {
@@ -186,12 +250,12 @@ export async function updateTelegramSignalSettings(input: { actorUserId: number;
   return getTelegramSignalDashboard();
 }
 
-async function sendTelegramMessage(channelId: string, text: string) {
+async function sendTelegramMessage(channelId: string, text: string, replyToMessageId?: string) {
   if (!ENV.telegramBotToken) throw new Error("Telegram bot token is not configured");
   const response = await fetch(`https://api.telegram.org/bot${ENV.telegramBotToken}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: channelId, text, disable_web_page_preview: true }),
+    body: JSON.stringify({ chat_id: channelId, text, disable_web_page_preview: true, ...(replyToMessageId ? { reply_parameters: { message_id: Number(replyToMessageId) } } : {}) }),
     signal: AbortSignal.timeout(15_000),
   });
   const payload = await response.json().catch(() => null) as { ok?: boolean; description?: string; result?: { message_id?: number } } | null;
@@ -215,6 +279,47 @@ async function recordAudit(signalEventId: number, action: "received" | "validate
   const db = await getDb();
   if (!db) throw new Error("Database is unavailable");
   await db.insert(telegramSignalAudits).values({ signalEventId, action, actorUserId, note: note.slice(0, 255) });
+}
+
+export async function receiveTelegramLifecycleUpdate(update: LifecycleInput) {
+  const { db, settings } = await getSettings();
+  const [original] = await db.select().from(telegramSignalEvents).where(eq(telegramSignalEvents.eventId, update.originalEventId)).limit(1);
+  if (!original || original.status !== "delivered" || !original.telegramMessageId) throw new Error("Original delivered Telegram signal was not found");
+  if (original.accountNumber !== update.accountNumber || brokerNeutralSymbol(original.symbol) !== brokerNeutralSymbol(update.symbol) || original.direction !== update.direction) throw new Error("Lifecycle event does not match the original signal");
+  const [activeEntitlement, ownerApprovedSource] = await Promise.all([
+    db.select({ id: entitlements.id }).from(entitlements).where(and(eq(entitlements.mt5AccountNumber, update.accountNumber), eq(entitlements.status, "active"))).limit(1),
+    db.select({ accountNumber: telegramSignalSources.accountNumber }).from(telegramSignalSources).where(and(eq(telegramSignalSources.accountNumber, update.accountNumber), eq(telegramSignalSources.active, "yes"))).limit(1),
+  ]);
+  if (!resolveTelegramSignalEligibility({ hasActiveCustomerEntitlement: Boolean(activeEntitlement[0]), hasEnabledInternalSource: Boolean(ownerApprovedSource[0]) }).eligible) throw new Error("Lifecycle account is no longer authorized");
+  const [existing] = await db.select().from(telegramSignalLifecycleUpdates).where(eq(telegramSignalLifecycleUpdates.lifecycleEventId, update.eventId)).limit(1);
+  if (existing) return { created: false, id: existing.id, status: existing.status, delivered: existing.status === "delivered" };
+  const prior = await db.select({ stage: telegramSignalLifecycleUpdates.stage }).from(telegramSignalLifecycleUpdates).where(eq(telegramSignalLifecycleUpdates.originalSignalEventId, original.id));
+  const stageDecision = isLifecycleStageAllowed(prior.map(item => item.stage as LifecycleStage), update.stage);
+  if (!stageDecision.allowed && stageDecision.reason === "stage_already_recorded") return { created: false, id: original.id, status: "rejected" as const, delivered: false, reason: stageDecision.reason };
+  if (!stageDecision.allowed && stageDecision.reason === "out_of_order") throw new Error("Lifecycle event arrived out of order");
+  const result = await db.insert(telegramSignalLifecycleUpdates).values({ originalSignalEventId: original.id, lifecycleEventId: update.eventId, accountNumber: update.accountNumber, symbol: update.symbol, direction: update.direction, stage: update.stage, hitPrice: update.hitPrice, eaDate: update.occurredDate, eaTime: update.occurredAt, status: "received" });
+  const lifecycleId = Number(result[0].insertId);
+  await recordAudit(original.id, "received", `EA lifecycle event received: ${update.stage}`);
+  const state = deliveryState(settings);
+  if (!state.armed) {
+    await db.update(telegramSignalLifecycleUpdates).set({ status: "rejected", failureReason: state.message }).where(eq(telegramSignalLifecycleUpdates.id, lifecycleId));
+    await recordAudit(original.id, "suppressed", `Lifecycle ${update.stage} recorded but not posted: ${state.message}`);
+    return { created: true, id: lifecycleId, status: "rejected" as const, delivered: false };
+  }
+  const messageText = formatTelegramLifecycleUpdate(update);
+  await db.update(telegramSignalLifecycleUpdates).set({ status: "delivering" }).where(eq(telegramSignalLifecycleUpdates.id, lifecycleId));
+  await recordAudit(original.id, "delivery_started", `Telegram reply delivery started for ${update.stage}.`);
+  try {
+    const replyMessageId = await sendTelegramMessage(settings!.channelId!, messageText, original.telegramMessageId);
+    await db.update(telegramSignalLifecycleUpdates).set({ status: "delivered", replyMessageId }).where(eq(telegramSignalLifecycleUpdates.id, lifecycleId));
+    await recordAudit(original.id, "delivered", `Telegram reply ${replyMessageId} confirmed for ${update.stage}.`);
+    return { created: true, id: lifecycleId, status: "delivered" as const, delivered: true, replyMessageId };
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : "Telegram lifecycle reply failed";
+    await db.update(telegramSignalLifecycleUpdates).set({ status: "failed", failureReason: reason.slice(0, 255) }).where(eq(telegramSignalLifecycleUpdates.id, lifecycleId));
+    await recordAudit(original.id, "failed", `Lifecycle ${update.stage}: ${reason}`);
+    throw new Error(reason);
+  }
 }
 
 export async function receiveTelegramSignal(signal: SignalInput) {
