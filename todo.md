@@ -407,10 +407,10 @@
 
 - [x] Correct Telegram lifecycle replies that render literal `\n` text instead of line breaks, preserving their quoted display-only status behavior.
 
-- [ ] Diagnose the 3S Y10 fallback status and correct any Cloudflare MasterServer compatibility issue while retaining a safe local fallback when live server data is unavailable.
-- [ ] Validate the corrected 3S source and provide focused VPS log checks without changing trade-management logic.
+- [x] Diagnose the 3S Y10 fallback status and correct any Cloudflare MasterServer compatibility issue while retaining a safe local fallback when live server data is unavailable; owner confirmed the fallback has cleared.
+- [x] Validate the corrected 3S source and provide focused VPS log checks without changing trade-management logic.
 
-- [ ] Configure a valid FRED API key in the Windows VPS MasterServer environment and verify the 3S EA receives a non-fallback Python Y10 status.
+- [x] Configure a valid FRED API key in the Windows VPS MasterServer environment and verify the 3S EA receives a non-fallback Python Y10 status: `y10=-1|fred=ok|detail=CPI 332.813; FED 3.63; Y10 4.66` reported by the owner on 27-Aug-2026.
 
 - [x] Define the public-versus-private Telegram channel recommendation and compliance boundaries for promoting the EA signal community.
 - [x] Add an owner-approved Telegram-growth marketing workflow that is isolated from EA signal delivery and Threads publishing automation.
@@ -432,10 +432,11 @@
 - [x] Preserve the owner-supplied Threads post format for private Telegram-growth drafts, including repeated join-link placement and concise risk line; the agreed initial template set intentionally publishes text-only while screenshots remain individually reviewable.
 - [x] Define a separate daily Telegram signal-summary report at 00:00 GMT+8 that derives only from recorded signal and lifecycle events and does not alter EA trade execution or live signal delivery.
 - [x] Add an owner-only, default-paused daily-summary schedule with duplicate prevention, task-UID lookup, audit evidence, and a visible kill switch.
-- [ ] Validate midnight GMT+8 reporting boundaries and no-signal behaviour without sending a Telegram message, then obtain final owner authorization before scheduling or sending summaries.
-- [ ] Apply the owner-selected automated daily-summary mode at 00:00 GMT+8 and retain the supplied Threads audience-activity context as administrator-only posting guidance.
+- [x] Validate midnight GMT+8 reporting boundaries and no-signal behaviour without sending a Telegram message, then obtain final owner authorization before scheduling or sending summaries.
+- [x] Apply the owner-selected automated daily-summary mode at 00:00 GMT+8 and retain the supplied Threads audience-activity context as administrator-only posting guidance.
 - [x] Keep midnight Telegram daily summaries silent when no eligible delivered signals or lifecycle updates exist.
 - [x] Extend Gemini Bot EA Telegram lifecycle reporting with an authenticated display-only closure-state flag so TP1/TP2/TP3 labels distinguish milestones from confirmed “Closed all” outcomes.
 - [x] Preserve existing Safe TP, Stop Loss, entry, order-management, licensing, and signal-delivery behaviour while adding closure-aware reporting.
 - [x] Support an owner-approved initial Threads template set that may be scheduled without per-item re-approval, while preserving screenshot review as an explicit separate safeguard.
 - [x] Configure three daily Threads campaign slots at 09:00, 13:00, and 21:00 GMT+8, with the owner-authorized initial template campaign and no manually triggered post.
+- [x] Record the owner-confirmed MetaEditor compilation and MT5 deployment of the closure-aware Gemini Telegram MQ5 release.
