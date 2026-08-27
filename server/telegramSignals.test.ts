@@ -68,6 +68,8 @@ describe("Telegram signal contract", () => {
     expect(tp.stage).toBe("TP1");
     expect(formatTelegramLifecycleUpdate(tp)).toContain("✅ TP1 HIT");
     expect(formatTelegramLifecycleUpdate(tp)).toContain("Hit price: 4596.58");
+    expect(formatTelegramLifecycleUpdate(tp)).toContain("\n📡 Gemini Bot EA Signal update\n");
+    expect(formatTelegramLifecycleUpdate(tp)).not.toContain("\\n");
     expect(formatTelegramLifecycleUpdate(tp)).toContain("Display update only");
     expect(sl.stage).toBe("SL");
     expect(formatTelegramLifecycleUpdate(sl)).toContain("🛑 SL HIT");

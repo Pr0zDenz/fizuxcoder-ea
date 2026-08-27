@@ -113,7 +113,7 @@ export function formatTelegramLifecycleUpdate(update: LifecycleInput) {
     "",
     `⚠️ ${DEFAULT_RISK_NOTE}`,
     "Display update only: no MT5 order was placed, modified, or closed by this notification.",
-  ].join("\\n");
+  ].join("\n");
 }
 
 export function brokerNeutralSymbol(symbol: string) {

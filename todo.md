@@ -404,3 +404,5 @@
 - [x] Audit the supplied 3S Universal EA against the current Cloudflare MasterServer and account-scoped fulfilment contract.
 - [x] Revise the 3S Universal EA only where necessary for current MasterServer/environment compatibility, preserving trading and licence behavior.
 - [x] Statically validate the revised 3S source and provide safe VPS compilation and attachment instructions; MetaEditor compilation remains operator-side.
+
+- [x] Correct Telegram lifecycle replies that render literal `\n` text instead of line breaks, preserving their quoted display-only status behavior.
