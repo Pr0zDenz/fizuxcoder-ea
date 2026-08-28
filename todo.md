@@ -492,3 +492,8 @@
 - [x] Report untriggered pending limit-order cancellations with the exact reason and basket-wide association, without changing EA order logic.
 - [x] Add formatter, route, source-integrity, and authorization regression tests; retain no live-message replay.
 - [x] Validate TypeScript, full tests, production build, and prepare a distinct MQ5 handoff only if source changes are required.
+
+- [x] Trace why a Gemini SELL SL event reported hit price 4581.48 while setup SL was 4593.88.
+- [x] Add direction-aware validation so lifecycle SL events cannot be delivered when the hit price is inconsistent with the setup SL.
+- [x] Add regression coverage and preserve display-only behavior without replaying the historical message.
+- [x] Validate the fix and prepare a new MQ5 handoff only if the EA observer requires correction.

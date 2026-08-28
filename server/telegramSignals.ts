@@ -59,6 +59,13 @@ function safeNumericText(value: unknown, label: string, required = false) {
   return text;
 }
 
+export function isConsistentStopLossHit(direction: "BUY" | "SELL", hitPrice: string, setupStopLoss: string | null | undefined) {
+  const hit = Number(hitPrice);
+  const stop = setupStopLoss == null ? NaN : Number(setupStopLoss);
+  if (!Number.isFinite(hit) || !Number.isFinite(stop)) return false;
+  return direction === "BUY" ? hit <= stop : hit >= stop;
+}
+
 function parseEntryLayers(value: unknown) {
   if (value === undefined) return undefined;
   if (!Array.isArray(value) || value.length > 20) throw new Error("entryLayers must be an array of at most 20 layers");
@@ -508,6 +515,10 @@ export async function receiveTelegramLifecycleUpdate(update: LifecycleInput) {
   const [original] = await db.select().from(telegramSignalEvents).where(eq(telegramSignalEvents.eventId, update.originalEventId)).limit(1);
   if (!original || original.status !== "delivered" || !original.telegramMessageId) throw new Error("Original delivered Telegram signal was not found");
   if (original.accountNumber !== update.accountNumber || brokerNeutralSymbol(original.symbol) !== brokerNeutralSymbol(update.symbol) || original.direction !== update.direction) throw new Error("Lifecycle event does not match the original signal");
+  if (update.stage === "SL") {
+    const setupStopLoss = original.fiboSlNeg100 ?? original.stopLoss;
+    if (!isConsistentStopLossHit(update.direction, update.hitPrice, setupStopLoss)) throw new Error("SL hit price is inconsistent with the original setup stop-loss");
+  }
   await assertLifecycleAccountAuthorization(db, update.accountNumber);
   const [existing] = await db.select().from(telegramSignalLifecycleUpdates).where(eq(telegramSignalLifecycleUpdates.lifecycleEventId, update.eventId)).limit(1);
   if (existing) return { created: false, id: existing.id, status: existing.status, delivered: existing.status === "delivered" };

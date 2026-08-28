@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { brokerNeutralSymbol, buildTelegramSignalPersistenceValues, deliveryState, formatMockTelegramSignal, formatTelegramLifecycleUpdate, formatTelegramSignal, isLifecycleStageAllowed, isMatchingBasketClosureSignal, parseTelegramLifecycleInput, parseTelegramSignalInput, parseTelegramSignalSourceInput, resolveTelegramSignalEligibility } from "./telegramSignals";
+import { brokerNeutralSymbol, buildTelegramSignalPersistenceValues, deliveryState, formatMockTelegramSignal, formatTelegramLifecycleUpdate, formatTelegramSignal, isConsistentStopLossHit, isLifecycleStageAllowed, isMatchingBasketClosureSignal, parseTelegramLifecycleInput, parseTelegramSignalInput, parseTelegramSignalSourceInput, resolveTelegramSignalEligibility } from "./telegramSignals";
 
 describe("Telegram signal contract", () => {
   const validSetup = {
@@ -74,6 +74,14 @@ describe("Telegram signal contract", () => {
     expect(() => parseTelegramSignalInput({ ...validSetup, basketId: "basket id" })).toThrow("basketId is invalid");
     expect(() => parseTelegramSignalInput({ ...validSetup, entryLayers: [{ layer: 1, orderType: "STOP", price: "4599.20" }] })).toThrow("entryLayers[0].orderType is invalid");
     expect(() => parseTelegramLifecycleInput({ eventId: "lifecycle-123456", originalEventId: "signal-123456", eventType: "tp1_hit", accountNumber: "230069105", symbol: "XAUUSD", direction: "SELL", hitPrice: "4596.58", triggeredEntryLayer: 0, occurredDate: "2026-08-27", occurredAt: "20:05:00" })).toThrow("triggeredEntryLayer is invalid");
+  });
+
+  it("rejects an SL hit that is on the wrong side of the original setup stop-loss", () => {
+    expect(isConsistentStopLossHit("SELL", "4581.48", "4593.88")).toBe(false);
+    expect(isConsistentStopLossHit("SELL", "4593.88", "4593.88")).toBe(true);
+    expect(isConsistentStopLossHit("BUY", "4581.48", "4570.00")).toBe(false);
+    expect(isConsistentStopLossHit("BUY", "4569.99", "4570.00")).toBe(true);
+    expect(isConsistentStopLossHit("SELL", "4593.88", undefined)).toBe(false);
   });
 
   it("does not arm automatic publication while configuration is incomplete or the kill switch is engaged", () => {
