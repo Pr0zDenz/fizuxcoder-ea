@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { decodeScreenshot, registerGeminiEventIntakeRoute } from "./geminiEventIntakeRoute";
+import { buildGeminiEventMarketingCaption, MARKETING_RISK_NOTICE } from "./marketingStudio";
 
 const PNG_BASE64 = Buffer.from("89504e470d0a1a0a", "hex").toString("base64");
 
@@ -12,6 +13,14 @@ describe("Gemini VPS event intake", () => {
   it("rejects unsupported or malformed screenshot payloads", () => {
     expect(() => decodeScreenshot("not-base64", "image/png")).toThrow(/invalid/);
     expect(() => decodeScreenshot(PNG_BASE64, "application/pdf")).toThrow(/supported/);
+  });
+
+  it("keeps TP-hit marketing copy within the final Threads limit and free of public account data", () => {
+    const caption = buildGeminiEventMarketingCaption({ eventType: "tp2_hit", occurredLabel: "2026-08-28T03:00:00.000Z", symbol: "XAUUSD" });
+    expect(`${caption}\n\n${MARKETING_RISK_NOTICE}`.length).toBeLessThanOrEqual(500);
+    expect(caption).toContain("Private Telegram access is controlled");
+    expect(caption).not.toContain("230069105");
+    expect(caption).not.toContain("Reported event amount");
   });
 
   it("registers only the dedicated event endpoint", () => {
@@ -40,5 +49,7 @@ describe("Gemini VPS event intake", () => {
     expect(routeText).toContain('role: "admin"');
     expect(routeText).toContain('if (ownerOpenId)');
     expect(routeText).not.toContain("publishThreadsPost");
+    expect(routeText).toContain('"tp1_hit", "tp2_hit", "tp3_hit"');
+    expect(serviceText).toContain("telegram_channel_marketing_review");
   });
 });

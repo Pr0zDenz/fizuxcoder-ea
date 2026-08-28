@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import { timingSafeEqual } from "node:crypto";
 import { ENV } from "./_core/env";
 import { getAdminUsers, getUserByEmail, getUserByOpenId, upsertUser } from "./db";
-import { createGeminiVpsEventDraft } from "./marketingStudio";
+import { createGeminiVpsEventDraft, GeminiScreenshotEventType } from "./marketingStudio";
 
 const MAX_SCREENSHOT_BYTES = 8 * 1024 * 1024;
 const MIME_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
@@ -58,7 +58,8 @@ export function registerGeminiEventIntakeRoute(app: Express) {
     try {
       const body = req.body as Record<string, unknown>;
       const eventId = typeof body.eventId === "string" ? body.eventId : "";
-      const eventType = body.eventType === "setup" || body.eventType === "take_profit" ? body.eventType : null;
+      const allowedEventTypes: GeminiScreenshotEventType[] = ["setup", "take_profit", "tp1_hit", "tp2_hit", "tp3_hit"];
+      const eventType = typeof body.eventType === "string" && allowedEventTypes.includes(body.eventType as GeminiScreenshotEventType) ? body.eventType as GeminiScreenshotEventType : null;
       if (!eventId || !eventType) return res.status(400).json({ ok: false, error: "eventId and eventType are required" });
       const screenshot = decodeScreenshot(body.screenshotBase64, body.screenshotMimeType);
       const owner = await getOwnerAuditIdentity();

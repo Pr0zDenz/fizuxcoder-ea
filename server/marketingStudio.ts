@@ -218,7 +218,16 @@ export async function applyGeminiBotThreadsAdditions(actorUserId: number) {
 
 export const GEMINI_EVENT_PORTAL_URL = "https://fizuxea-jxctlods.manus.space/portal";
 
-export async function createGeminiVpsEventDraft({ eventId, eventType, screenshot, screenshotMimeType, occurredAt, accountLabel, symbol, profitAmount, actorUserId }: { eventId: string; eventType: "setup" | "take_profit"; screenshot: Buffer; screenshotMimeType: "image/png" | "image/jpeg" | "image/webp"; occurredAt?: string; accountLabel?: string; symbol?: string; profitAmount?: number; actorUserId: number }) {
+export type GeminiScreenshotEventType = "setup" | "take_profit" | "tp1_hit" | "tp2_hit" | "tp3_hit";
+
+export function buildGeminiEventMarketingCaption({ eventType, occurredLabel, symbol }: { eventType: GeminiScreenshotEventType; occurredLabel: string; symbol?: string }) {
+  const eventLabel = eventType === "tp1_hit" ? "TP1 hit event" : eventType === "tp2_hit" ? "TP2 hit event" : eventType === "tp3_hit" ? "TP3 hit event" : eventType === "take_profit" ? "take-profit event" : "setup event";
+  const symbolContext = symbol ? ` Symbol: ${symbol.slice(0, 20)}.` : "";
+  const channelContext = eventType === "tp1_hit" || eventType === "tp2_hit" || eventType === "tp3_hit" ? " Private Telegram access is controlled; use the portal for the workflow." : "";
+  return `Gemini Bot EA ${eventLabel} observed at ${occurredLabel}.${symbolContext}${channelContext} Owner-supplied event evidence only, not a promise or forecast. Semak konteks penuh, drawdown, kos dan execution context. Portal: ${GEMINI_EVENT_PORTAL_URL} #GeminiBotEA #MT5 #RiskFirst`;
+}
+
+export async function createGeminiVpsEventDraft({ eventId, eventType, screenshot, screenshotMimeType, occurredAt, accountLabel, symbol, profitAmount, actorUserId }: { eventId: string; eventType: GeminiScreenshotEventType; screenshot: Buffer; screenshotMimeType: "image/png" | "image/jpeg" | "image/webp"; occurredAt?: string; accountLabel?: string; symbol?: string; profitAmount?: number; actorUserId: number }) {
   const db = await getDb();
   if (!db) throw new Error("Database is unavailable");
   const safeEventId = eventId.trim().replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 96);
@@ -228,12 +237,9 @@ export async function createGeminiVpsEventDraft({ eventId, eventType, screenshot
   if (existing) return { created: false, contentItemId: existing.id, status: existing.status };
 
   const stored = await storagePut(`threads/gemini-vps-events/${safeEventId}.png`, screenshot, screenshotMimeType);
-  const eventLabel = eventType === "take_profit" ? "take-profit event" : "setup event";
+  const eventLabel = eventType === "tp1_hit" ? "TP1 hit event" : eventType === "tp2_hit" ? "TP2 hit event" : eventType === "tp3_hit" ? "TP3 hit event" : eventType === "take_profit" ? "take-profit event" : "setup event";
   const occurredLabel = occurredAt ? new Date(occurredAt).toISOString() : new Date().toISOString();
-  const accountContext = accountLabel ? ` Account label: ${accountLabel.slice(0, 40)}.` : "";
-  const symbolContext = symbol ? ` Symbol: ${symbol.slice(0, 20)}.` : "";
-  const profitContext = typeof profitAmount === "number" && Number.isFinite(profitAmount) ? ` Reported event amount: ${profitAmount.toFixed(2)}; verify the full account context before publication.` : "";
-  const caption = `Gemini Bot EA ${eventLabel} captured at ${occurredLabel}.${accountContext}${symbolContext}${profitContext} Owner-supplied event evidence only, not a promise or forecast. Semak konteks penuh, kerugian, drawdown, kos, dan keadaan pelaksanaan sebelum membuat keputusan. Visit the portal / Lihat portal: ${GEMINI_EVENT_PORTAL_URL} #GeminiBotEA #MT5 #TradingEvidence #RiskManagement`;
+  const caption = buildGeminiEventMarketingCaption({ eventType, occurredLabel, symbol });
   const hash = contentHash({ title: `Gemini Bot EA — ${eventLabel}`, caption, language: "en_ms", assetUrl: stored.url, assetAlt: `Owner-supplied Gemini Bot EA ${eventLabel} screenshot`, destinationUrl: GEMINI_EVENT_PORTAL_URL });
   const result = await db.insert(marketingContentItems).values({
     contentKey,
@@ -247,7 +253,7 @@ export async function createGeminiVpsEventDraft({ eventId, eventType, screenshot
     scheduledFor: null,
     status: "draft",
     complianceStatus: "passed",
-    complianceFlags: JSON.stringify(["evergreen_vps_event", "no_expiry", "signal_screenshot_owner_review", "approval_required", `event_type_${eventType}`]),
+    complianceFlags: JSON.stringify(["evergreen_vps_event", "no_expiry", "signal_screenshot_owner_review", "telegram_channel_marketing_review", "approval_required", `event_type_${eventType}`]),
     contentHash: hash,
   });
   const contentItemId = Number(result[0].insertId);

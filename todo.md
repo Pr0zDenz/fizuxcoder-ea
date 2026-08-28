@@ -466,3 +466,8 @@
 - [x] Inspect and correct literal `\\n\\n` separators in the ecosystem Threads caption while preserving the server-only private invite.
 - [x] Add regression coverage for real newline rendering and final 1–500 character validation.
 - [x] Validate the repaired stored draft without retrying or sending a Threads post.
+
+- [x] Define a TP1/TP2/TP3 screenshot marketing intake linked to authenticated Gemini lifecycle evidence.
+- [x] Create owner-review-only screenshot marketing drafts with privacy redaction, risk disclosure, caption limits, and no automatic Threads publication.
+- [x] Add tests for lifecycle authorization, duplicate protection, screenshot metadata, standard-customer access, and preservation of EA trading/reporting behavior.
+- [x] Validate with full tests, TypeScript, production build, and owner review before checkpoint.

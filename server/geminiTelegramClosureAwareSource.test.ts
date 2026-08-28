@@ -13,6 +13,15 @@ describe("Gemini Telegram closure-aware MQL5 release", () => {
     expect(source).toContain('SendTelegramLifecycleUpdate("tp3_hit", 3, locked_fibo_tp3, position_set_closed, now)');
   });
 
+  it("creates stage-specific TP screenshot drafts through the display-only marketing queue", async () => {
+    const source = await readFile(sourceUrl, "utf8");
+    expect(source).toContain('QueueMarketingScreenshot("tp1_hit")');
+    expect(source).toContain('QueueMarketingScreenshot("tp2_hit")');
+    expect(source).toContain('QueueMarketingScreenshot("tp3_hit")');
+    expect(source).toContain('StringFind(event_type, "tp") == 0');
+    expect(source).toContain('UploadMarketingScreenshot(file_name, event_type, event_id, event_time)');
+  });
+
   it("keeps the closure observer separate from order modification and closure", async () => {
     const source = await readFile(sourceUrl, "utf8");
     const observer = source.slice(source.indexOf("bool HasManagedOpenPosition()"), source.indexOf("void PersistTelegramLifecycleState"));

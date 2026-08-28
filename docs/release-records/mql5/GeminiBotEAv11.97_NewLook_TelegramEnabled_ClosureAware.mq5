@@ -584,16 +584,16 @@ void MonitorTelegramLifecycle()
     ReportTelegramBasketCancellation(now);
     if(last_telegram_signal_direction == 1)
     {
-        if(locked_fibo_tp1 > 0.0 && bid >= locked_fibo_tp1 && telegram_last_tp_stage_reported < 1) SendTelegramLifecycleUpdate("tp1_hit", 1, locked_fibo_tp1, position_set_closed, now);
-        if(locked_fibo_tp2 > 0.0 && bid >= locked_fibo_tp2 && telegram_last_tp_stage_reported < 2 && telegram_last_tp_stage_reported >= 1) SendTelegramLifecycleUpdate("tp2_hit", 2, locked_fibo_tp2, position_set_closed, now);
-        if(locked_fibo_tp3 > 0.0 && bid >= locked_fibo_tp3 && telegram_last_tp_stage_reported < 3 && telegram_last_tp_stage_reported >= 2) SendTelegramLifecycleUpdate("tp3_hit", 3, locked_fibo_tp3, position_set_closed, now);
+        if(locked_fibo_tp1 > 0.0 && bid >= locked_fibo_tp1 && telegram_last_tp_stage_reported < 1) { SendTelegramLifecycleUpdate("tp1_hit", 1, locked_fibo_tp1, position_set_closed, now); QueueMarketingScreenshot("tp1_hit"); }
+        if(locked_fibo_tp2 > 0.0 && bid >= locked_fibo_tp2 && telegram_last_tp_stage_reported < 2 && telegram_last_tp_stage_reported >= 1) { SendTelegramLifecycleUpdate("tp2_hit", 2, locked_fibo_tp2, position_set_closed, now); QueueMarketingScreenshot("tp2_hit"); }
+        if(locked_fibo_tp3 > 0.0 && bid >= locked_fibo_tp3 && telegram_last_tp_stage_reported < 3 && telegram_last_tp_stage_reported >= 2) { SendTelegramLifecycleUpdate("tp3_hit", 3, locked_fibo_tp3, position_set_closed, now); QueueMarketingScreenshot("tp3_hit"); }
         if(locked_fibo_sl_neg100 > 0.0 && bid <= locked_fibo_sl_neg100 && !telegram_sl_reported) SendTelegramLifecycleUpdate("sl_hit", 4, locked_fibo_sl_neg100, false, now);
     }
     else
     {
-        if(locked_fibo_tp1 > 0.0 && ask <= locked_fibo_tp1 && telegram_last_tp_stage_reported < 1) SendTelegramLifecycleUpdate("tp1_hit", 1, locked_fibo_tp1, position_set_closed, now);
-        if(locked_fibo_tp2 > 0.0 && ask <= locked_fibo_tp2 && telegram_last_tp_stage_reported < 2 && telegram_last_tp_stage_reported >= 1) SendTelegramLifecycleUpdate("tp2_hit", 2, locked_fibo_tp2, position_set_closed, now);
-        if(locked_fibo_tp3 > 0.0 && ask <= locked_fibo_tp3 && telegram_last_tp_stage_reported < 3 && telegram_last_tp_stage_reported >= 2) SendTelegramLifecycleUpdate("tp3_hit", 3, locked_fibo_tp3, position_set_closed, now);
+        if(locked_fibo_tp1 > 0.0 && ask <= locked_fibo_tp1 && telegram_last_tp_stage_reported < 1) { SendTelegramLifecycleUpdate("tp1_hit", 1, locked_fibo_tp1, position_set_closed, now); QueueMarketingScreenshot("tp1_hit"); }
+        if(locked_fibo_tp2 > 0.0 && ask <= locked_fibo_tp2 && telegram_last_tp_stage_reported < 2 && telegram_last_tp_stage_reported >= 1) { SendTelegramLifecycleUpdate("tp2_hit", 2, locked_fibo_tp2, position_set_closed, now); QueueMarketingScreenshot("tp2_hit"); }
+        if(locked_fibo_tp3 > 0.0 && ask <= locked_fibo_tp3 && telegram_last_tp_stage_reported < 3 && telegram_last_tp_stage_reported >= 2) { SendTelegramLifecycleUpdate("tp3_hit", 3, locked_fibo_tp3, position_set_closed, now); QueueMarketingScreenshot("tp3_hit"); }
         if(locked_fibo_sl_neg100 > 0.0 && ask >= locked_fibo_sl_neg100 && !telegram_sl_reported) SendTelegramLifecycleUpdate("sl_hit", 4, locked_fibo_sl_neg100, false, now);
     }
 }
@@ -728,7 +728,7 @@ void QueueMarketingScreenshot(string event_type)
 {
 if(!Enable_Marketing_Screenshot) return;
 if(event_type == "setup" && !Capture_Setup_Screenshot) return;
-if(event_type == "take_profit" && !Capture_TakeProfit_Screenshot) return;
+if((event_type == "take_profit" || StringFind(event_type, "tp") == 0) && !Capture_TakeProfit_Screenshot) return;
 datetime now = TimeCurrent();
 if(last_marketing_capture_time > 0 && (now - last_marketing_capture_time) < Screenshot_Min_Interval_Sec)
 {
