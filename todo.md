@@ -462,3 +462,7 @@
 - [x] Add fail-closed final-caption validation and a regression test so invalid Threads text cannot be submitted.
 - [x] Correct the affected draft or publication preparation path without retrying or sending a live Threads post.
 - [x] Run focused tests, full tests, TypeScript, build, and save a checkpoint after the safe fix.
+
+- [x] Inspect and correct literal `\\n\\n` separators in the ecosystem Threads caption while preserving the server-only private invite.
+- [x] Add regression coverage for real newline rendering and final 1–500 character validation.
+- [x] Validate the repaired stored draft without retrying or sending a Threads post.

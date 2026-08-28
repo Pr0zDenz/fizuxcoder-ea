@@ -5,7 +5,7 @@ vi.mock("./threadsOAuth", () => ({
 }));
 
 import { getThreadsAuthorizationForPublishing } from "./threadsOAuth";
-import { publishThreadsPost } from "./threadsPublisher";
+import { normalizeThreadsText, publishThreadsPost } from "./threadsPublisher";
 
 const authorization = {
   ownerUserId: 1,
@@ -46,6 +46,10 @@ describe("Threads automatic publisher", () => {
     expect(result.hasImage).toBe(false);
     expect(body.get("media_type")).toBe("TEXT");
     expect(body.get("image_url")).toBeNull();
+  });
+
+  it("normalizes literal escaped line breaks before publication", () => {
+    expect(normalizeThreadsText("Observe dulu:\\n\\nAutomated trading carries risk.")).toBe("Observe dulu:\n\nAutomated trading carries risk.");
   });
 
   it("rejects oversized text before contacting Threads", async () => {

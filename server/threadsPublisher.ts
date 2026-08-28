@@ -12,8 +12,12 @@ export class ThreadsPublishError extends Error {
 
 export const THREADS_MAX_TEXT_LENGTH = 500;
 
+export function normalizeThreadsText(text: string): string {
+  return text.replace(/\\r\\n/g, "\n").replace(/\\n/g, "\n").replace(/\\r/g, "\r");
+}
+
 export function validateThreadsText(text: string): string {
-  const normalized = text.trim();
+  const normalized = normalizeThreadsText(text).trim();
   if (!normalized || normalized.length > THREADS_MAX_TEXT_LENGTH) {
     throw new ThreadsPublishError("INVALID_TEXT", "The approved Threads text must contain 1–500 characters");
   }
