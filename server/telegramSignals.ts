@@ -82,6 +82,28 @@ export function parseTelegramSignalInput(body: Record<string, unknown>): SignalI
   return { eventId, eventType, accountNumber, symbol, direction, basketId, entryPrice, takeProfit, fiboTp1, fiboTp2, fiboTp3, fiboSlNeg100, stopLoss, occurredDate, occurredAt };
 }
 
+export function buildTelegramSignalPersistenceValues(signal: SignalInput, messageText: string) {
+  return {
+    eventId: signal.eventId,
+    eventType: signal.eventType,
+    accountNumber: signal.accountNumber,
+    symbol: signal.symbol,
+    direction: signal.direction,
+    basketId: signal.basketId ?? null,
+    entryPrice: signal.entryPrice,
+    takeProfit: signal.takeProfit ?? null,
+    fiboTp1: signal.fiboTp1 ?? null,
+    fiboTp2: signal.fiboTp2 ?? null,
+    fiboTp3: signal.fiboTp3 ?? null,
+    fiboSlNeg100: signal.fiboSlNeg100 ?? null,
+    stopLoss: signal.stopLoss ?? null,
+    riskNote: DEFAULT_RISK_NOTE,
+    messageText,
+    eaDate: signal.occurredDate,
+    eaTime: signal.occurredAt,
+  };
+}
+
 export function parseTelegramLifecycleInput(body: Record<string, unknown>): LifecycleInput {
   const eventId = cleanText(body.eventId, 96);
   const originalEventId = cleanText(body.originalEventId, 96);
@@ -497,7 +519,7 @@ export async function receiveTelegramSignal(signal: SignalInput) {
   ]);
   const eligibility = resolveTelegramSignalEligibility({ hasActiveCustomerEntitlement: Boolean(activeEntitlement[0]), hasEnabledInternalSource: Boolean(ownerApprovedSource[0]) });
   if (!eligibility.eligible) {
-    const result = await db.insert(telegramSignalEvents).values({ eventId: signal.eventId, eventType: signal.eventType, accountNumber: signal.accountNumber, symbol: signal.symbol, direction: signal.direction, entryPrice: signal.entryPrice, takeProfit: signal.takeProfit ?? null, fiboTp1: signal.fiboTp1 ?? null, fiboTp2: signal.fiboTp2 ?? null, fiboTp3: signal.fiboTp3 ?? null, fiboSlNeg100: signal.fiboSlNeg100 ?? null, stopLoss: signal.stopLoss ?? null, riskNote: DEFAULT_RISK_NOTE, messageText, status: "rejected", failureCode: "account_not_authorized", failureReason: "No active portal entitlement or approved internal signal-source record exists for this MT5 account.", eaDate: signal.occurredDate, eaTime: signal.occurredAt });
+    const result = await db.insert(telegramSignalEvents).values({ ...buildTelegramSignalPersistenceValues(signal, messageText), status: "rejected", failureCode: "account_not_authorized", failureReason: "No active portal entitlement or approved internal signal-source record exists for this MT5 account." });
     const insertedId = Number(result[0].insertId);
     await recordAudit(insertedId, "received", `EA event received: ${signal.eventType}`);
     await recordAudit(insertedId, "rejected", "The originating MT5 account has no active portal entitlement or approved internal signal-source record.");
@@ -508,7 +530,7 @@ export async function receiveTelegramSignal(signal: SignalInput) {
   const status = shouldSuppress ? "suppressed" as const : "received" as const;
   let insertedId: number;
   try {
-    const result = await db.insert(telegramSignalEvents).values({ eventId: signal.eventId, eventType: signal.eventType, accountNumber: signal.accountNumber, symbol: signal.symbol, direction: signal.direction, entryPrice: signal.entryPrice, takeProfit: signal.takeProfit ?? null, fiboTp1: signal.fiboTp1 ?? null, fiboTp2: signal.fiboTp2 ?? null, fiboTp3: signal.fiboTp3 ?? null, fiboSlNeg100: signal.fiboSlNeg100 ?? null, stopLoss: signal.stopLoss ?? null, riskNote: DEFAULT_RISK_NOTE, messageText, status, eaDate: signal.occurredDate, eaTime: signal.occurredAt });
+    const result = await db.insert(telegramSignalEvents).values({ ...buildTelegramSignalPersistenceValues(signal, messageText), status });
     insertedId = Number(result[0].insertId);
   } catch (error) {
     const duplicate = await db.select().from(telegramSignalEvents).where(eq(telegramSignalEvents.eventId, signal.eventId)).limit(1);

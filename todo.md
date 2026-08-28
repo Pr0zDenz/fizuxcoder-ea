@@ -450,3 +450,6 @@
 - [x] Fan out one “Basket cancelled / orders cleared” reply only to delivered setup signals that share the exact active basket identity, while keeping confirmed basket-profit closure distinct.
 - [x] Preserve all order cancellation, deletion, position closing, Safe TP, SL, and entry logic; validate the new report cannot trigger or modify any MT5 action and never replay a historical signal during implementation.
 - [x] Deliver the latest compile-ready Gemini Telegram MQ5 source containing both basket-wide closure and basket-cancellation reporting after validation.
+- [x] Diagnose the reported HTTP 400 “Basket outcome does not match the referenced delivered setup signal” failures from the supplied Gemini MT5 logs: the portal parsed but did not persist the EA-supplied setup basket ID.
+- [x] Correct basket outcome matching so every delivered setup signal in the same confirmed managed basket receives its factual closure or cancellation reply, without touching unrelated baskets or replaying past notifications.
+- [x] Verify the revised MQ5 observer preserves basket identity through its existing management cycle and validate the two-setup basket case without sending a live channel message.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { brokerNeutralSymbol, deliveryState, formatMockTelegramSignal, formatTelegramLifecycleUpdate, formatTelegramSignal, isLifecycleStageAllowed, isMatchingBasketClosureSignal, parseTelegramLifecycleInput, parseTelegramSignalInput, parseTelegramSignalSourceInput, resolveTelegramSignalEligibility } from "./telegramSignals";
+import { brokerNeutralSymbol, buildTelegramSignalPersistenceValues, deliveryState, formatMockTelegramSignal, formatTelegramLifecycleUpdate, formatTelegramSignal, isLifecycleStageAllowed, isMatchingBasketClosureSignal, parseTelegramLifecycleInput, parseTelegramSignalInput, parseTelegramSignalSourceInput, resolveTelegramSignalEligibility } from "./telegramSignals";
 
 describe("Telegram signal contract", () => {
   const validSetup = {
@@ -36,6 +36,11 @@ describe("Telegram signal contract", () => {
     expect(formatTelegramSignal(signal)).toContain("📅 Event Date: 27-Aug-2026");
     expect(formatTelegramSignal(signal)).toContain("🕒 Event Time: 09:00:00 GMT+8");
     expect(brokerNeutralSymbol("XAUUSD.vx")).toBe("XAUUSD");
+    expect(buildTelegramSignalPersistenceValues(signal, "message")).toMatchObject({
+      eventId: validSetup.eventId,
+      basketId: "basket-230069105-XAUUSD-PERIOD_M1-1787839260",
+      messageText: "message",
+    });
   });
 
   it("labels the owner-only mock event as non-trading while preserving the EA clock time", () => {
