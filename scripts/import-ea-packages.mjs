@@ -10,11 +10,13 @@ const UPLOAD_DIR = "/home/ubuntu/upload";
 
 const packages = {
   "gemini-bot-ea": [
+    ["Gemini Bot EA v11.97_VIP", "GeminiBotEAv11.97_VIP_package.zip"],
     ["Gemini Bot EA v11.97", "GeminiBotEAv11.97.ex5"],
     ["FizuxCoder News Calendar v5.00 Tradays", "FizuxCoder_News_Calendar_v5.00_Tradays.ex5"],
     ["FMCBR Fractal", "FMCBR-Fractal.ex5"],
   ],
   "3s-universal-ea": [
+    ["3S Universal EA_VIP", "3SUniversalEA_customer_license_VIP_package.zip"],
     ["3S Universal EA", "3SUniversalEA.ex5"],
     ["DT3 ZigZag LauerX", "DT3-ZigZag-LauerX.ex5"],
     ["3S Basket Dashboard", "3SBasketDashboard.ex5"],

@@ -507,3 +507,17 @@
 - [x] Ensure the milestone is aggregated across all matching setup signals in the basket and never inferred without evidence.
 - [x] Add regression coverage for TP1, TP2, TP3, and no-confirmed-TP closure reasons.
 - [x] Re-run validation and save a checkpoint without replaying the existing live basket message.
+
+- [x] Inventory the current Gemini Bot EA, 3 Serangkai EA, and protected ea_package library records before changing customer delivery.
+- [x] Create distinct customer-safe MQ5 variants with admin, Telegram, marketing screenshot, mock/test, and internal control hooks removed while preserving trading and licensing logic.
+- [x] Package and version both customer-safe EA artifacts with installation guidance and protected delivery metadata.
+- [x] Update the owner-controlled ea_package access library idempotently without exposing files or secrets to standard customers.
+- [x] Add source-integrity, package-access, authorization, and regression tests; validate TypeScript, full tests, build, and operator-side MetaEditor requirements.
+
+- [x] Use the exact `_VIP` suffix behind each customer EA filename and display name for the new protected package records.
+
+- [x] Finalize customer-safe Gemini Bot EA and 3 Serangkai `_VIP` MQ5 source stripping
+- [x] Package each `_VIP` source with its customer installation README
+- [x] Register the `_VIP` ZIP packages in the protected `ea_package` library with `_VIP` display names
+- [x] Run source audits, Vitest regression tests, TypeScript checks, and production build
+- [x] Deliver final VIP source and ZIP handoff files
