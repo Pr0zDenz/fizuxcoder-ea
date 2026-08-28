@@ -453,3 +453,7 @@
 - [x] Diagnose the reported HTTP 400 “Basket outcome does not match the referenced delivered setup signal” failures from the supplied Gemini MT5 logs: the portal parsed but did not persist the EA-supplied setup basket ID.
 - [x] Correct basket outcome matching so every delivered setup signal in the same confirmed managed basket receives its factual closure or cancellation reply, without touching unrelated baskets or replaying past notifications.
 - [x] Verify the revised MQ5 observer preserves basket identity through its existing management cycle and validate the two-setup basket case without sending a live channel message.
+- [x] Define factual, risk-compliant infographic content that distinguishes Gemini Bot EA, 3 Serangkai EA, secure licensing, and the private Telegram signal workflow without market-prediction or return claims.
+- [x] Create a polished Malay-first “one ecosystem, multiple disciplines” infographic inspired by the supplied educational layout, without reproducing its artwork or wording.
+- [x] Prepare complementary Threads and private Telegram-invite campaign drafts that use the infographic as an owner-reviewed asset and preserve the approved schedule, link privacy, and risk disclosure safeguards.
+- [x] Validate asset accessibility, campaign claim boundaries, and standard-customer access controls before owner approval or any scheduled publication.

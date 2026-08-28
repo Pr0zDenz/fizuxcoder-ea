@@ -34,6 +34,30 @@ const TELEGRAM_GROWTH_SEEDS = [
   },
 ] as const;
 
+const ECOSYSTEM_GROWTH_SEEDS = [
+  {
+    contentKey: "threads-ecosystem-two-eas",
+    title: "Satu ecosystem. Dua EA. Bukan satu shortcut.",
+    caption: "Nak faham FizuxCoder dengan lebih jelas? Gemini Bot EA fokus pada setup dan signal workflow. 3 Serangkai EA pula guna macro, basket dan Safe TP workflow. Dua approach berbeza—tetapi disiplin, semakan dan risk awareness tetap penting. Observe dulu dalam private channel:",
+    assetUrl: "/manus-storage/fizuxcoder-ecosystem-infographic-a_f14c1b85.png",
+    assetAlt: "FizuxCoder Gemini Bot EA and 3 Serangkai EA ecosystem infographic",
+  },
+  {
+    contentKey: "threads-ecosystem-workflow",
+    title: "Bukan magic button—workflow yang boleh anda semak.",
+    caption: "Gemini Bot EA dan 3 Serangkai EA bukan janji market akan ikut kita. Kedua-duanya ialah workflow MT5 yang perlu difahami, dikonfigurasi dan dipantau. Channel ini tunjuk setup serta update sebagai konteks untuk belajar—bukan arahan untuk copy blindly. Observe dulu:",
+    assetUrl: "/manus-storage/fizuxcoder-ecosystem-infographic-b_31c99bc1.png",
+    assetAlt: "FizuxCoder EA workflow, licensing, and private Telegram signal infographic",
+  },
+  {
+    contentKey: "threads-ecosystem-private-channel",
+    title: "Signal update yang boleh diikuti dengan lebih teratur.",
+    caption: "Dalam private Telegram channel, anda boleh observe setup context dan update TP/SL atau basket outcome yang direkodkan oleh workflow Gemini Bot EA. Ia bukan forecast dan bukan jaminan result. Semak cara sistem berkomunikasi, kemudian test plan sendiri di demo. Join untuk observe:",
+    assetUrl: "/manus-storage/fizuxcoder-ecosystem-infographic-a_f14c1b85.png",
+    assetAlt: "FizuxCoder risk-aware Expert Advisor ecosystem infographic",
+  },
+] as const;
+
 type AutomationSettings = typeof threadsMarketingAutomationSettings.$inferSelect;
 
 export function validateTelegramMarketingInviteLink(value: string): boolean {
@@ -61,13 +85,13 @@ function inviteAvailable(): boolean {
   return validateTelegramMarketingInviteLink(ENV.telegramMarketingInviteLink);
 }
 
-function copyHash(seed: { title: string; caption: string; contentKey: string }) {
+function copyHash(seed: { title: string; caption: string; contentKey: string; assetUrl?: string; assetAlt?: string }) {
   return createHash("sha256").update(JSON.stringify({
     title: seed.title,
     caption: seed.caption,
     language: "en_ms",
-    assetUrl: null,
-    assetAlt: null,
+    assetUrl: seed.assetUrl ?? null,
+    assetAlt: seed.assetAlt ?? null,
     destinationUrl: "https://fizuxea-jxctlods.manus.space/portal",
     riskNotice: MARKETING_RISK_NOTICE,
   })).digest("hex");
@@ -191,6 +215,54 @@ export async function prepareTelegramGrowthDrafts(ownerUserId: number) {
       action: "revised",
       contentHash: copyHash({ ...seed, caption }),
       note: "Private Telegram invite template created; campaign approval is required before scheduling",
+    });
+    created += 1;
+  }
+  return { created, existing };
+}
+
+/** Creates owner-review ecosystem education drafts only. They are not part of the pre-approved template set or active schedule. */
+export async function prepareEcosystemTelegramGrowthDrafts(ownerUserId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  const inviteLink = configuredInviteLink();
+  await verifyTelegramGrowthInviteLink(ownerUserId);
+  let created = 0;
+  let existing = 0;
+  for (const seed of ECOSYSTEM_GROWTH_SEEDS) {
+    const caption = `${seed.caption}\n\n${inviteLink}\n${inviteLink}\n${inviteLink}\n\n•\nTrading involves risk.\n\n#ExpertAdvisor #TradingMalaysia #DemoFirst #MT5`;
+    const contentKey = `${seed.contentKey}-${createHash("sha256").update(inviteLink).digest("hex").slice(0, 12)}`;
+    const [prior] = await db.select({ id: marketingContentItems.id }).from(marketingContentItems)
+      .where(eq(marketingContentItems.contentKey, contentKey)).limit(1);
+    if (prior) {
+      existing += 1;
+      continue;
+    }
+    const draft = { ...seed, caption };
+    const hash = copyHash(draft);
+    const result = await db.insert(marketingContentItems).values({
+      contentKey,
+      title: seed.title,
+      caption,
+      language: "en_ms",
+      assetUrl: seed.assetUrl,
+      assetAlt: seed.assetAlt,
+      destinationUrl: "https://fizuxea-jxctlods.manus.space/portal",
+      riskNotice: MARKETING_RISK_NOTICE,
+      scheduledFor: null,
+      status: "draft",
+      complianceStatus: "passed",
+      complianceFlags: JSON.stringify(["telegram_private_invite", "ecosystem_education", "generated_infographic_owner_review", "not_initial_template_set", "not_signal_evidence"]),
+      contentHash: hash,
+      automationEligible: "no",
+    });
+    const contentItemId = Number(result[0].insertId);
+    await db.insert(marketingContentAudits).values({
+      contentItemId,
+      actorUserId: ownerUserId,
+      action: "revised",
+      contentHash: hash,
+      note: "Gemini and 3 Serangkai ecosystem infographic draft created; explicit owner review is required before scheduling",
     });
     created += 1;
   }

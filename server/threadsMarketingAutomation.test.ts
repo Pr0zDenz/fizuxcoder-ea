@@ -12,7 +12,7 @@ vi.mock("./threadsPublisher", () => ({
 }));
 vi.mock("./storage", () => ({ storagePut: vi.fn() }));
 
-import { approveInitialTelegramGrowthTemplateSet, DEFAULT_THREADS_MARKETING_CRON, runScheduledThreadsMarketing, validateTelegramMarketingInviteLink } from "./threadsMarketingAutomation";
+import { approveInitialTelegramGrowthTemplateSet, DEFAULT_THREADS_MARKETING_CRON, prepareEcosystemTelegramGrowthDrafts, runScheduledThreadsMarketing, validateTelegramMarketingInviteLink } from "./threadsMarketingAutomation";
 
 const source = readFileSync(new URL("./threadsMarketingAutomation.ts", import.meta.url), "utf8");
 const routeSource = readFileSync(new URL("./threadsMarketingScheduleRoute.ts", import.meta.url), "utf8");
@@ -50,6 +50,62 @@ describe("private Telegram invite Threads automation safeguards", () => {
     expect(source).toContain("${inviteLink}\\n${inviteLink}\\n${inviteLink}");
     expect(source).toContain("\\n\\n•\\nTrading involves risk.\\n\\n#ExpertAdvisor #DemoFirst #TradingMalaysia");
     expect(source).toContain("Jangan rush sebab one screenshot. Join the channel:");
+  });
+
+  it("keeps Gemini-and-3S ecosystem infographic drafts factual, private, and outside the active schedule", () => {
+    expect(source).toContain("const ECOSYSTEM_GROWTH_SEEDS");
+    expect(source).toContain("Gemini Bot EA fokus pada setup dan signal workflow");
+    expect(source).toContain("3 Serangkai EA pula guna macro, basket dan Safe TP workflow");
+    expect(source).toContain("generated_infographic_owner_review");
+    expect(source).toContain("not_initial_template_set");
+    expect(source).toContain('automationEligible: "no"');
+    expect(source).not.toContain("guaranteed returns");
+  });
+
+  it("maps both generated assets to draft-only ecosystem records", async () => {
+    const settings = { settingKey: "owner_threads_marketing", ownerUserId: 1, automaticPublishingEnabled: "no", killSwitchEngaged: "yes" };
+    const insertValues = vi.fn().mockResolvedValue([{ insertId: 101 }]);
+    const rows = (values: unknown[]) => ({
+      then: (resolve: (value: unknown[]) => unknown, reject?: (reason: unknown) => unknown) => Promise.resolve(values).then(resolve, reject),
+      limit: vi.fn().mockResolvedValue(values),
+    });
+    const db = {
+      select: vi.fn((selection?: object) => ({ from: vi.fn(() => ({ where: vi.fn(() => rows(selection ? [] : [settings])) })) })),
+      update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn().mockResolvedValue([{ affectedRows: 1 }]) })) })),
+      insert: vi.fn(() => ({ values: insertValues })),
+    };
+    getDbMock.mockResolvedValue(db);
+
+    await expect(prepareEcosystemTelegramGrowthDrafts(1)).resolves.toEqual({ created: 3, existing: 0 });
+    const insertedDrafts = insertValues.mock.calls.map(([value]) => value).filter((value: any) => "assetUrl" in value) as Array<Record<string, any>>;
+    expect(insertedDrafts).toHaveLength(3);
+    expect(insertedDrafts.map(item => item.assetUrl)).toEqual([
+      "/manus-storage/fizuxcoder-ecosystem-infographic-a_f14c1b85.png",
+      "/manus-storage/fizuxcoder-ecosystem-infographic-b_31c99bc1.png",
+      "/manus-storage/fizuxcoder-ecosystem-infographic-a_f14c1b85.png",
+    ]);
+    expect(insertedDrafts.every(item => item.status === "draft" && item.automationEligible === "no")).toBe(true);
+    expect(insertedDrafts.every(item => item.complianceFlags.includes("generated_infographic_owner_review"))).toBe(true);
+  });
+
+  it("does not recreate ecosystem drafts when the secure invite-specific records already exist", async () => {
+    const settings = { settingKey: "owner_threads_marketing", ownerUserId: 1, automaticPublishingEnabled: "no", killSwitchEngaged: "yes" };
+    const existing = [{ id: 900 }];
+    const insertValues = vi.fn().mockResolvedValue([{ insertId: 1 }]);
+    const rows = (values: unknown[]) => ({
+      then: (resolve: (value: unknown[]) => unknown, reject?: (reason: unknown) => unknown) => Promise.resolve(values).then(resolve, reject),
+      limit: vi.fn().mockResolvedValue(values),
+    });
+    const db = {
+      select: vi.fn((selection?: object) => ({ from: vi.fn(() => ({ where: vi.fn(() => rows(selection ? existing : [settings])) })) })),
+      update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn().mockResolvedValue([{ affectedRows: 1 }]) })) })),
+      insert: vi.fn(() => ({ values: insertValues })),
+    };
+    getDbMock.mockResolvedValue(db);
+
+    await expect(prepareEcosystemTelegramGrowthDrafts(1)).resolves.toEqual({ created: 0, existing: 3 });
+    expect(insertValues).toHaveBeenCalledWith(expect.objectContaining({ action: "settings_updated" }));
+    expect(insertValues).not.toHaveBeenCalledWith(expect.objectContaining({ assetUrl: expect.any(String) }));
   });
 
   it("approves only the agreed template set and leaves a VPS screenshot out of the bulk queue", async () => {
