@@ -78,7 +78,8 @@ describe("Telegram signal contract", () => {
     expect(formatTelegramLifecycleUpdate(tp)).toContain("Hit price: 4596.58");
     expect(formatTelegramLifecycleUpdate(tp)).toContain("\n📡 Gemini Bot EA Signal update\n");
     expect(formatTelegramLifecycleUpdate(tp)).not.toContain("\\n");
-    expect(formatTelegramLifecycleUpdate(tp)).toContain("Display update only");
+    expect(formatTelegramLifecycleUpdate(tp)).not.toContain("Display update only");
+    expect(formatTelegramLifecycleUpdate(tp)).not.toContain("no MT5 order was placed");
     expect(sl.stage).toBe("SL");
     expect(formatTelegramLifecycleUpdate(sl)).toContain("🛑 SL HIT");
     expect(formatTelegramLifecycleUpdate(sl)).not.toContain("Closed all");
@@ -93,6 +94,8 @@ describe("Telegram signal contract", () => {
     expect(basketCancelled.stage).toBe("BASKET_CANCELLED");
     expect(formatTelegramLifecycleUpdate(basketCancelled)).toContain("⚠️ BASKET PENDING ORDERS CLEARED");
     expect(formatTelegramLifecycleUpdate(basketCancelled)).toContain("Any open position remains managed by the EA.");
+    expect(formatTelegramLifecycleUpdate(basketClosed)).not.toContain("Display update only");
+    expect(formatTelegramLifecycleUpdate(basketCancelled)).not.toContain("Display update only");
     expect(() => parseTelegramLifecycleInput({ eventId: "bad", originalEventId: "signal-123456", eventType: "tp1_hit", accountNumber: "230069105", symbol: "XAUUSD", direction: "SELL", hitPrice: "4596.58", occurredDate: "27-Aug-2026", occurredAt: "20:05:00" })).toThrow("eventId is invalid");
     expect(() => parseTelegramLifecycleInput({ eventId: "lifecycle-123456", originalEventId: "signal-123456", eventType: "tp4_hit", accountNumber: "230069105", symbol: "XAUUSD", direction: "SELL", hitPrice: "4596.58", occurredDate: "27-Aug-2026", occurredAt: "20:05:00" })).toThrow("eventType must be tp1_hit, tp2_hit, tp3_hit, sl_hit, basket_closed, or basket_cancelled");
     expect(() => parseTelegramLifecycleInput({ eventId: "lifecycle-123456", originalEventId: "signal-123456", eventType: "basket_closed", accountNumber: "230069105", symbol: "XAUUSD", direction: "SELL", hitPrice: "4596.58", positionSetClosed: true, occurredDate: "27-Aug-2026", occurredAt: "20:05:00" })).toThrow("basketId is required for basket outcome events");

@@ -145,7 +145,6 @@ export function formatTelegramLifecycleUpdate(update: LifecycleInput) {
       `🕒 Event Time: ${update.occurredAt} GMT+8`,
       "",
       `⚠️ ${DEFAULT_RISK_NOTE}`,
-      "Display update only: no MT5 order was placed, modified, or closed by this notification.",
     ].join("\n");
   }
   if (update.stage === "BASKET_CANCELLED") {
@@ -159,7 +158,6 @@ export function formatTelegramLifecycleUpdate(update: LifecycleInput) {
       `🕒 Event Time: ${update.occurredAt} GMT+8`,
       "",
       `⚠️ ${DEFAULT_RISK_NOTE}`,
-      "Display update only: no MT5 order was placed, modified, or closed by this notification.",
     ].join("\n");
   }
   const icon = update.stage === "SL" ? "🛑" : "✅";
@@ -175,7 +173,6 @@ export function formatTelegramLifecycleUpdate(update: LifecycleInput) {
     `🕒 Event Time: ${update.occurredAt} GMT+8`,
     "",
     `⚠️ ${DEFAULT_RISK_NOTE}`,
-    "Display update only: no MT5 order was placed, modified, or closed by this notification.",
   ].join("\n");
 }
 
