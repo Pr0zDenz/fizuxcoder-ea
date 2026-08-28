@@ -18,7 +18,7 @@ vi.mock("./threadsPublisher", () => {
   };
 });
 
-import { GEMINI_BOT_THREADS_ADDITIONS, GEMINI_BOT_THREADS_REVISION, TWO_WEEK_THREADS_PILOT, applyGeminiBotThreadsAdditions, applyGeminiBotThreadsRevision, approveMarketingContent, createEvergreenGeminiDraftAfterPublish, markMarketingContentPosted, rejectMarketingContent } from "./marketingStudio";
+import { ARCHIVED_MARKETING_FLAG, GEMINI_BOT_THREADS_ADDITIONS, GEMINI_BOT_THREADS_REVISION, TWO_WEEK_THREADS_PILOT, applyGeminiBotThreadsAdditions, applyGeminiBotThreadsRevision, approveMarketingContent, cleanupArchivedMarketingContent, createEvergreenGeminiDraftAfterPublish, isArchivedMarketingContent, markMarketingContentPosted, rejectMarketingContent } from "./marketingStudio";
 
 function draftItem(overrides: Record<string, unknown> = {}) {
   return {
@@ -70,6 +70,40 @@ describe("private marketing studio safeguards", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     publishThreadsPostMock.mockResolvedValue({ externalPostId: "threads-post-1", hasImage: true });
+  });
+
+  it("classifies only explicitly superseded rejected content as archived", () => {
+    expect(isArchivedMarketingContent({ status: "rejected", complianceFlags: JSON.stringify([ARCHIVED_MARKETING_FLAG]) })).toBe(true);
+    expect(isArchivedMarketingContent({ status: "rejected", complianceFlags: JSON.stringify(["signal_screenshot_owner_review"]) })).toBe(false);
+    expect(isArchivedMarketingContent({ status: "draft", complianceFlags: JSON.stringify([ARCHIVED_MARKETING_FLAG]) })).toBe(false);
+  });
+
+  it("cleans only explicitly archived records and reports partial deletion safely", async () => {
+    const selectWhere = vi.fn().mockResolvedValue([{ id: 9 }, { id: 10 }]);
+    const deleteWhere = vi.fn()
+      .mockResolvedValueOnce([{ affectedRows: 1 }])
+      .mockResolvedValueOnce([{ affectedRows: 0 }]);
+    const db = {
+      select: vi.fn(() => ({ from: vi.fn(() => ({ where: selectWhere })) })),
+      delete: vi.fn(() => ({ where: deleteWhere })),
+    };
+    getDbMock.mockResolvedValue(db);
+
+    await expect(cleanupArchivedMarketingContent(1)).resolves.toEqual({ success: true, deleted: 1, remaining: 1 });
+    expect(db.delete).toHaveBeenCalledTimes(2);
+    expect(deleteWhere).toHaveBeenCalledTimes(2);
+  });
+
+  it("is idempotent when no explicit archived records remain", async () => {
+    const selectWhere = vi.fn().mockResolvedValue([]);
+    const db = {
+      select: vi.fn(() => ({ from: vi.fn(() => ({ where: selectWhere })) })),
+      delete: vi.fn(),
+    };
+    getDbMock.mockResolvedValue(db);
+
+    await expect(cleanupArchivedMarketingContent(1)).resolves.toEqual({ success: true, deleted: 0, remaining: 0 });
+    expect(db.delete).not.toHaveBeenCalled();
   });
 
   it("permanently removes an owner-rejected draft and does not create a rejected content record", async () => {

@@ -480,3 +480,9 @@
 - [x] Remove the internal “Display update only…” line from subscriber-facing Telegram lifecycle notifications.
 - [x] Preserve internal audit/context wording and all EA trading, Safe TP, SL, basket, and licensing behavior.
 - [x] Update formatter and route tests, run full validation, and save a checkpoint.
+
+- [x] Define explicit archive markers and safe cleanup scope for superseded/archived marketing records.
+- [x] Add owner-only segmented Content Studio views for all, drafts, scheduled, published, failed, and archived content.
+- [x] Add a confirmation-protected cleanup action that deletes only explicitly archived records and preserves active, scheduled, failed, screenshot-review, and published content.
+- [x] Add tests for filter counts, deletion scope, idempotency, standard-customer access, and UI refresh feedback.
+- [x] Run full tests, TypeScript, production build, visual verification, and save a checkpoint.

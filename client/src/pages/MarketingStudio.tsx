@@ -5,6 +5,18 @@ import { AlertTriangle, ArrowLeft, Check, Clipboard, ExternalLink, Loader2, Lock
 import { useMemo, useState } from "react";
 
 type ContentStatus = "draft" | "approved" | "publish_pending" | "publish_failed" | "posted" | "rejected";
+type ContentView = "all" | "draft" | "scheduled" | "approved" | "posted" | "publish_failed" | "archived";
+
+const contentViews: ContentView[] = ["all", "draft", "scheduled", "approved", "posted", "publish_failed", "archived"];
+const contentViewLabels: Record<ContentView, string> = {
+  all: "All content",
+  draft: "Draft review",
+  scheduled: "Scheduled",
+  approved: "Approved",
+  posted: "Published",
+  publish_failed: "Failed",
+  archived: "Archived",
+};
 
 const statusStyle: Record<ContentStatus, string> = {
   draft: "border-[#e5a631]/40 bg-[#e5a631]/10 text-[#e5a631]",
@@ -28,6 +40,17 @@ function isEcosystemInfographicDraft(item: { complianceFlags: string | null }) {
   return Boolean(item.complianceFlags?.includes("generated_infographic_owner_review"));
 }
 
+function isArchivedItem(item: { status: ContentStatus; complianceFlags: string | null }) {
+  return item.status === "rejected" && Boolean(item.complianceFlags?.includes("superseded_by_gemini_20_day_campaign"));
+}
+
+function matchesContentView(item: { status: ContentStatus; automationEligible: "yes" | "no"; complianceFlags: string | null }, view: ContentView) {
+  if (view === "all") return true;
+  if (view === "archived") return isArchivedItem(item);
+  if (view === "scheduled") return item.automationEligible === "yes";
+  return item.status === view;
+}
+
 export default function MarketingStudio() {
   const { user, loading, isAuthenticated } = useAuth();
   const isAdmin = user?.role === "admin";
@@ -39,6 +62,8 @@ export default function MarketingStudio() {
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [enablePhrase, setEnablePhrase] = useState("");
   const [templateApprovalPhrase, setTemplateApprovalPhrase] = useState("");
+  const [contentView, setContentView] = useState<ContentView>("all");
+  const [archiveCleanupPhrase, setArchiveCleanupPhrase] = useState("");
 
   const refresh = async () => {
     await Promise.all([
@@ -68,6 +93,10 @@ export default function MarketingStudio() {
   });
   const reject = trpc.marketing.reject.useMutation({
     onSuccess: async () => { setMessage("Draft permanently removed from the content studio. No Threads post was sent."); await refresh(); },
+    onError: error => setMessage(error.message),
+  });
+  const cleanupArchived = trpc.marketing.cleanupArchived.useMutation({
+    onSuccess: async result => { setMessage(`${result.deleted} archived item(s) permanently removed. Active, scheduled, failed, screenshot-review, and published content was preserved.`); setArchiveCleanupPhrase(""); await refresh(); },
     onError: error => setMessage(error.message),
   });
   const verifyInvite = trpc.marketing.verifyPrivateInviteLink.useMutation({
@@ -101,11 +130,15 @@ export default function MarketingStudio() {
 
   const counts = useMemo(() => ({
     draft: studio.data?.filter(item => item.status === "draft").length ?? 0,
+    scheduled: studio.data?.filter(item => item.automationEligible === "yes").length ?? 0,
     approved: studio.data?.filter(item => item.status === "approved").length ?? 0,
     posted: studio.data?.filter(item => item.status === "posted").length ?? 0,
-    archived: studio.data?.filter(item => item.status === "rejected" && item.complianceFlags?.includes("superseded_by_gemini_20_day_campaign")).length ?? 0,
+    failed: studio.data?.filter(item => item.status === "publish_failed").length ?? 0,
+    archived: studio.data?.filter(isArchivedItem).length ?? 0,
     ecosystemInfographics: studio.data?.filter(isEcosystemInfographicDraft).length ?? 0,
   }), [studio.data]);
+
+  const visibleItems = useMemo(() => studio.data?.filter(item => matchesContentView(item, contentView)) ?? [], [studio.data, contentView]);
 
   const copyCaption = async (id: number, caption: string) => {
     try {
@@ -139,12 +172,26 @@ export default function MarketingStudio() {
         </div>
       </section>
 
-      <section className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-5" aria-label="Content queue status">
+      <section className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-6" aria-label="Content queue status">
         <StatusCard label="Draft review" value={counts.draft} tone="text-[#e5a631]" />
-        <StatusCard label="Scheduled queue" value={automation.data?.queuedCount ?? 0} tone="text-[#6de0d8]" />
+        <StatusCard label="Scheduled queue" value={counts.scheduled} tone="text-[#6de0d8]" />
         <StatusCard label="Approved manual" value={counts.approved} tone="text-[#0eafa7]" />
         <StatusCard label="Published" value={counts.posted} tone="text-[#d3f1d8]" />
+        <StatusCard label="Failed" value={counts.failed} tone="text-[#f0b1a0]" />
         <StatusCard label="Archived" value={counts.archived} tone="text-[#f0b1a0]" />
+      </section>
+
+      <section className="mt-6 rounded-[1.25rem] border border-white/15 bg-white/[.045] p-4 lg:p-5" aria-label="Content views and archive cleanup">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex flex-wrap gap-2" role="tablist" aria-label="Content studio views">
+            {contentViews.map(view => <button key={view} type="button" role="tab" aria-selected={contentView === view} onClick={() => setContentView(view)} className={`rounded-full border px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[.1em] transition ${contentView === view ? "border-[#6de0d8]/70 bg-[#0eafa7]/20 text-[#d7fffa]" : "border-white/15 text-[#c7d1cb] hover:border-[#6de0d8]/45 hover:text-[#f4f0e8]"}`}>{contentViewLabels[view]} <span className="ml-1 opacity-70">{view === "all" ? studio.data?.length ?? 0 : view === "draft" ? counts.draft : view === "scheduled" ? counts.scheduled : view === "approved" ? counts.approved : view === "posted" ? counts.posted : view === "publish_failed" ? counts.failed : counts.archived}</span></button>)}
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <input value={archiveCleanupPhrase} onChange={event => setArchiveCleanupPhrase(event.target.value)} placeholder="Type DELETE ARCHIVED CONTENT" aria-label="Archive cleanup confirmation" className="h-10 min-w-64 rounded-xl border border-white/15 bg-black/20 px-3 font-mono text-[10px] text-[#f4f0e8] outline-none placeholder:text-[#8fa8a0] focus:border-[#d67a63]" />
+            <button type="button" onClick={() => cleanupArchived.mutate({ confirmationPhrase: archiveCleanupPhrase as "DELETE ARCHIVED CONTENT" })} disabled={cleanupArchived.isPending || archiveCleanupPhrase !== "DELETE ARCHIVED CONTENT" || counts.archived === 0} className="button-outline !border-[#d67a63]/65 !text-[#f0b1a0] disabled:opacity-50">{cleanupArchived.isPending ? <Loader2 size={15} className="animate-spin" /> : <X size={15} />}{cleanupArchived.isPending ? "Removing archive" : "Remove archived"}</button>
+          </div>
+        </div>
+        <p className="mt-3 text-xs leading-5 text-[#8fa8a0]">Showing {visibleItems.length} of {studio.data?.length ?? 0} records. Archive cleanup targets only the explicit superseded campaign marker and preserves live, scheduled, failed, screenshot-review, and published content.</p>
       </section>
 
       <section className="mt-6 rounded-[1.5rem] border border-[#6de0d8]/35 bg-[linear-gradient(130deg,rgba(14,175,167,.16),rgba(12,21,20,.62))] p-5 shadow-[4px_4px_0_rgba(14,175,167,.14)] lg:p-6" data-testid="telegram-growth-funnel">
@@ -172,7 +219,7 @@ export default function MarketingStudio() {
 
       <section className="mt-8 space-y-5">
         {studio.isLoading && <div className="grid min-h-40 place-items-center rounded-[1.5rem] border border-white/15 bg-white/5"><Loader2 className="animate-spin text-[#e5a631]" /></div>}
-        {studio.data?.map(item => {
+        {visibleItems.map(item => {
           const screenshot = isScreenshotDraft(item);
           const scheduleEligible = item.automationEligible === "yes";
           return <article key={item.id} className="rounded-[1.5rem] border border-white/15 bg-white/[.045] p-5 shadow-[4px_4px_0_rgba(229,166,49,.16)] lg:p-6" data-testid={`marketing-item-${item.id}`}>
@@ -180,7 +227,7 @@ export default function MarketingStudio() {
             <div className="mt-5 grid gap-4 border-t border-white/10 pt-5 lg:grid-cols-[1fr_auto]"><div><p className="font-mono text-[9px] font-bold uppercase tracking-[.12em] text-[#e5a631]">Required risk notice</p><p className="mt-1 text-xs leading-5 text-[#c7d1cb]">{item.riskNotice}</p><p className="mt-2 text-[11px] leading-5 text-[#8fa8a0]">{item.assetUrl ? "One supplied image is retained for review before posting." : "This item will publish as text-only."}</p>{item.status === "publish_failed" && <p className="mt-2 text-xs leading-5 text-[#f0b1a0]">Publication failed: {item.publishErrorMessage ?? "Review the connection and retry."}</p>}</div><div className="flex flex-wrap items-center gap-2"><button type="button" onClick={() => void copyCaption(item.id, item.caption)} className="button-outline !border-white/20 !text-[#f4f0e8]">{copiedId === item.id ? <Check size={15} /> : <Clipboard size={15} />}{copiedId === item.id ? "Copied" : "Copy caption"}</button>{(item.status === "draft" || (item.status === "approved" && scheduleEligible)) && <button type="button" onClick={() => setEligibility.mutate({ contentItemId: item.id, eligible: !scheduleEligible })} disabled={setEligibility.isPending} className="button-outline !border-[#6de0d8]/55 !text-[#f4f0e8]">{scheduleEligible ? <X size={15} /> : <ShieldCheck size={15} />}{scheduleEligible ? "Remove from schedule" : "Approve for schedule"}</button>}{item.status === "draft" && <><button type="button" onClick={() => approve.mutate({ contentItemId: item.id })} disabled={approve.isPending || retryPublish.isPending || setEligibility.isPending} aria-busy={approve.isPending} className="button-primary">{approve.isPending ? <Loader2 className="animate-spin" size={15} /> : <Send size={15} />}{approve.isPending ? "Publishing" : "Approve & publish"}</button><button type="button" onClick={() => reject.mutate({ contentItemId: item.id })} disabled={reject.isPending} className="button-outline !border-[#d67a63]/70 !text-[#f0b1a0]" title="Permanently remove this draft"><X size={15} />{reject.isPending ? "Removing" : "Reject & remove"}</button></>}{item.status === "publish_failed" && <><button type="button" onClick={() => retryPublish.mutate({ contentItemId: item.id })} disabled={retryPublish.isPending || approve.isPending} aria-busy={retryPublish.isPending} className="button-primary !bg-[#0eafa7]">{retryPublish.isPending ? <Loader2 className="animate-spin" size={15} /> : <RefreshCw size={15} />}{retryPublish.isPending ? "Retrying" : "Retry publish"}</button><button type="button" onClick={() => reject.mutate({ contentItemId: item.id })} disabled={reject.isPending} className="button-outline !border-[#d67a63]/70 !text-[#f0b1a0]" title="Permanently remove this failed draft"><X size={15} />{reject.isPending ? "Removing" : "Remove draft"}</button></>}{item.status === "publish_pending" && <p role="status" className="rounded-lg border border-[#e5a631]/40 bg-[#e5a631]/10 px-3 py-2 text-xs text-[#f4d27e]">Publishing to Threads. The result appears after provider confirmation.</p>}</div></div>
           </article>;
         })}
-        {!studio.isLoading && !studio.data?.length && <div className="rounded-[1.5rem] border border-dashed border-white/20 p-10 text-center"><p className="font-display text-3xl">No drafts yet.</p><p className="mx-auto mt-3 max-w-md text-sm leading-6 text-[#c7d1cb]">Prepare the evergreen queue or validate the private invitation configuration to add owner-review growth drafts. Neither action posts to Threads.</p></div>}
+        {!studio.isLoading && visibleItems.length === 0 && <div className="rounded-[1.5rem] border border-dashed border-white/20 p-10 text-center"><p className="font-display text-3xl">No {contentView === "all" ? "content" : contentViewLabels[contentView].toLowerCase()} found.</p><p className="mx-auto mt-3 max-w-md text-sm leading-6 text-[#c7d1cb]">Choose another view or prepare new owner-review content. No publication is triggered by changing this view.</p></div>}
       </section>
     </main>
   </div>;

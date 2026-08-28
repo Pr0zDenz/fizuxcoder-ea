@@ -43,6 +43,7 @@ describe("administrator-only portal procedures", () => {
     const caller = appRouter.createCaller(customerContext());
 
     await expect(caller.marketing.list()).rejects.toThrow("You do not have required permission");
+    await expect(caller.marketing.cleanupArchived({ confirmationPhrase: "DELETE ARCHIVED CONTENT" })).rejects.toThrow("You do not have required permission");
     await expect(caller.marketing.seedTwoWeekPilot()).rejects.toThrow("You do not have required permission");
     await expect(caller.marketing.applyGeminiBotRevision()).rejects.toThrow("You do not have required permission");
     await expect(caller.marketing.prepareEcosystemGrowthDrafts()).rejects.toThrow("You do not have required permission");

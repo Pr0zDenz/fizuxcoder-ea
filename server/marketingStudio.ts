@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, like } from "drizzle-orm";
 import { createHash } from "node:crypto";
 import { marketingContentAudits, marketingContentItems } from "../drizzle/schema";
 import { getDb } from "./db";
@@ -80,10 +80,28 @@ function pilotScheduledFor(dayOffset: number) {
   return scheduled;
 }
 
+export const ARCHIVED_MARKETING_FLAG = "superseded_by_gemini_20_day_campaign";
+
+export function isArchivedMarketingContent(item: { status: string; complianceFlags: string | null }) {
+  return item.status === "rejected" && Boolean(item.complianceFlags?.includes(ARCHIVED_MARKETING_FLAG));
+}
+
 export async function listMarketingContent() {
   const db = await getDb();
   if (!db) throw new Error("Database is unavailable");
   return db.select().from(marketingContentItems).orderBy(asc(marketingContentItems.scheduledFor), asc(marketingContentItems.id));
+}
+
+export async function cleanupArchivedMarketingContent(_actorUserId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  const rows = await db.select({ id: marketingContentItems.id }).from(marketingContentItems).where(and(eq(marketingContentItems.status, "rejected"), like(marketingContentItems.complianceFlags, `%${ARCHIVED_MARKETING_FLAG}%`)));
+  let deleted = 0;
+  for (const row of rows) {
+    const result = await db.delete(marketingContentItems).where(and(eq(marketingContentItems.id, row.id), eq(marketingContentItems.status, "rejected")));
+    if (result[0]?.affectedRows) deleted += 1;
+  }
+  return { success: true, deleted, remaining: rows.length - deleted };
 }
 
 export async function seedTwoWeekThreadsPilot(actorUserId: number) {

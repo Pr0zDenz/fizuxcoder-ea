@@ -9,7 +9,7 @@ import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_
 import { createToyyibPayBill, inspectToyyibPayCreateBill } from "./toyyibpay";
 import { attachProviderBill, beginPaymentOrder, bindCustomerMt5Account, claimPermanentBillPayment, createNoChargeTestPurchase, getCatalog, getCustomerLibrary, getCustomerOrderStatus, getRequestOrigin, getSecureFileForCustomer, getTestCatalog, packageStorageKey, removePendingOrder, safeFileName } from "./paymentPortal";
 import { getMasterServerPaymentCallbackUrl } from "./masterServer";
-import { applyGeminiBotThreadsRevision, approveMarketingContent, listMarketingContent, markMarketingContentPosted, rejectMarketingContent, retryMarketingContentPublication, seedTwoWeekThreadsPilot } from "./marketingStudio";
+import { applyGeminiBotThreadsRevision, approveMarketingContent, cleanupArchivedMarketingContent, listMarketingContent, markMarketingContentPosted, rejectMarketingContent, retryMarketingContentPublication, seedTwoWeekThreadsPilot } from "./marketingStudio";
 import { getThreadsConnectionStatus } from "./threadsOAuth";
 import { storageGetSignedUrl, storagePut } from "./storage";
 import { getDb } from "./db";
@@ -202,6 +202,7 @@ export const appRouter = router({
   }),
   marketing: router({
     list: adminProcedure.query(() => listMarketingContent()),
+    cleanupArchived: adminProcedure.input(z.object({ confirmationPhrase: z.literal("DELETE ARCHIVED CONTENT") })).mutation(({ ctx }) => cleanupArchivedMarketingContent(ctx.user.id)),
     threadsConnection: adminProcedure.query(({ ctx }) => getThreadsConnectionStatus(ctx.user.id)),
     automationStatus: adminProcedure.query(({ ctx }) => getThreadsMarketingAutomationStatus(ctx.user.id)),
     verifyPrivateInviteLink: adminProcedure.mutation(({ ctx }) => verifyTelegramGrowthInviteLink(ctx.user.id)),
