@@ -521,3 +521,7 @@
 - [x] Register the `_VIP` ZIP packages in the protected `ea_package` library with `_VIP` display names
 - [x] Run source audits, Vitest regression tests, TypeScript checks, and production build
 - [x] Deliver final VIP source and ZIP handoff files
+
+- [x] Investigate missing Telegram daily summary for 2026-08-28 00:00 GMT+8
+- [x] Verify midnight summary schedule execution, empty-day policy, eligible signal rows, and delivery outcome
+- [x] Correct the summary workflow if a portal-side defect is confirmed and add regression coverage

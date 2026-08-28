@@ -41,9 +41,11 @@ export function getDailySummaryWindow(now: Date = new Date()) {
   const previousLocalDate = new Date(Date.UTC(currentMalaysiaDay.year, currentMalaysiaDay.month - 1, currentMalaysiaDay.day - 1));
   const target = { year: previousLocalDate.getUTCFullYear(), month: previousLocalDate.getUTCMonth() + 1, day: previousLocalDate.getUTCDate() };
   // Malaysia is UTC+8 year-round: local 00:00 is previous UTC day at 16:00.
-  const start = new Date(Date.UTC(target.year, target.month - 1, target.day - 1, 16, 0, 0));
+  const start = new Date(Date.UTC(target.year, target.month - 1, target.day, 16, 0, 0));
   const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
-  return { summaryDate: dayLabel(target.year, target.month, target.day), start, end };
+  const summaryDate = `${String(target.year).padStart(4, "0")}-${String(target.month).padStart(2, "0")}-${String(target.day).padStart(2, "0")}`;
+  const summaryLabel = dayLabel(target.year, target.month, target.day);
+  return { summaryDate, summaryLabel, start, end };
 }
 
 export function formatTelegramDailySummary({ summaryDate, setups, lifecycleUpdates }: { summaryDate: string; setups: DeliveredSetup[]; lifecycleUpdates: DeliveredLifecycle[] }) {
@@ -220,13 +222,13 @@ export async function runTelegramDailySummary(taskUid: string, now: Date = new D
   const slCount = lifecycleUpdates.filter(item => item.stage === "SL").length;
   if (!hasRecordedChannelActivity && settings.sendWhenNoSignals !== "yes") {
     await db.update(telegramDailySummaryRuns).set({ status: "skipped", setupCount: 0, takeProfitCount: 0, stopLossCount: 0, completedAt: new Date() }).where(eq(telegramDailySummaryRuns.id, runId));
-    await db.insert(telegramDailySummaryAudits).values({ settingKey: DAILY_SUMMARY_KEY, runId, actorUserId: null, action: "run_skipped", note: `No delivered channel events for ${window.summaryDate}; no-message policy selected` });
+    await db.insert(telegramDailySummaryAudits).values({ settingKey: DAILY_SUMMARY_KEY, runId, actorUserId: null, action: "run_skipped", note: `No delivered channel events for ${window.summaryLabel}; no-message policy selected` });
     return { ok: true, skipped: "no_signals" as const, summaryDate: window.summaryDate };
   }
-  const messageText = formatTelegramDailySummary({ summaryDate: window.summaryDate, setups, lifecycleUpdates });
+  const messageText = formatTelegramDailySummary({ summaryDate: window.summaryLabel, setups, lifecycleUpdates });
   const messageHash = createHash("sha256").update(messageText).digest("hex");
   await db.update(telegramDailySummaryRuns).set({ setupCount: setups.length, takeProfitCount: tpCount, stopLossCount: slCount, messageHash }).where(eq(telegramDailySummaryRuns.id, runId));
-  await db.insert(telegramDailySummaryAudits).values({ settingKey: DAILY_SUMMARY_KEY, runId, actorUserId: null, action: "run_started", note: `Daily summary assembled for ${window.summaryDate}` });
+  await db.insert(telegramDailySummaryAudits).values({ settingKey: DAILY_SUMMARY_KEY, runId, actorUserId: null, action: "run_started", note: `Daily summary assembled for ${window.summaryLabel}` });
   try {
     const destination = await getTelegramDailySummaryDestination();
     const telegramMessageId = await sendTelegramMessage(destination.channelId, messageText);

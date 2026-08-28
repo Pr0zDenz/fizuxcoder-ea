@@ -24,8 +24,9 @@ describe("midnight Telegram daily signal summary", () => {
   });
 
   it("summarizes the completed Malaysia calendar day rather than the first minutes of the new day", () => {
-    const window = getDailySummaryWindow(new Date("2026-08-29T16:00:00.000Z"));
-    expect(window.summaryDate).toBe("29-Aug-2026");
+    const window = getDailySummaryWindow(new Date("2026-08-28T16:00:00.000Z"));
+    expect(window.summaryDate).toBe("2026-08-28");
+    expect(window.summaryLabel).toBe("28-Aug-2026");
     expect(window.start.toISOString()).toBe("2026-08-28T16:00:00.000Z");
     expect(window.end.toISOString()).toBe("2026-08-29T16:00:00.000Z");
   });
@@ -57,7 +58,7 @@ describe("midnight Telegram daily signal summary", () => {
     };
     getDbMock.mockResolvedValue(db);
 
-    await expect(runTelegramDailySummary("daily-cron-1", new Date("2026-08-29T16:00:00.000Z"))).resolves.toEqual({ ok: true, skipped: "paused" });
+    await expect(runTelegramDailySummary("daily-cron-1", new Date("2026-08-28T16:00:00.000Z"))).resolves.toEqual({ ok: true, skipped: "paused" });
     expect(sendTelegramMessageMock).not.toHaveBeenCalled();
     expect(insertValues).toHaveBeenCalledWith(expect.objectContaining({ action: "run_skipped" }));
   });
@@ -76,7 +77,7 @@ describe("midnight Telegram daily signal summary", () => {
     };
     getDbMock.mockResolvedValue(db);
 
-    await expect(runTelegramDailySummary("daily-cron-1", new Date("2026-08-29T16:00:00.000Z"))).resolves.toEqual({ ok: true, skipped: "no_signals", summaryDate: "29-Aug-2026" });
+    await expect(runTelegramDailySummary("daily-cron-1", new Date("2026-08-28T16:00:00.000Z"))).resolves.toEqual({ ok: true, skipped: "no_signals", summaryDate: "2026-08-28" });
     expect(sendTelegramMessageMock).not.toHaveBeenCalled();
     expect(insertValues).toHaveBeenCalledWith(expect.objectContaining({ action: "run_skipped", note: expect.stringContaining("no-message policy") }));
   });
