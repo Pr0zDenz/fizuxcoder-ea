@@ -192,7 +192,12 @@ bool     telegram_basket_closed_reported = false;
 bool     telegram_basket_cancelled_reported = false;
 bool     telegram_basket_had_open_position = false;
 bool     telegram_pending_order_cancellation_observed = false;
+int      telegram_triggered_entry_layer = 0;
+double   telegram_triggered_entry_price = 0.0;
+int      telegram_pending_orders_cancelled_count = 0;
 double   locked_fibo_sl_neg100 = 0.0;
+int      telegram_entry_layer_count = 0;
+double   telegram_entry_layer_prices[20];
 
 //+------------------------------------------------------------------+
 //| NATIVE NEWS INTEGRATION (Reads 3STradays Global Variables)       |
@@ -472,7 +477,48 @@ string months[12] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Se
 return StringFormat("%02d-%s-%04d", parts.day, months[parts.mon - 1], parts.year);
 }
 
-bool SendTelegramSetupSignal(int direction, double reference_price, double setup_tp1, double setup_tp2, double setup_tp3, double setup_sl_neg100, datetime event_time)
+string BuildTelegramEntryLayersJson(int direction, double base_price, double boundary_price, double step_points, double market_price)
+{
+    telegram_entry_layer_count = 0;
+    string json = "[";
+    int max_layers = runtime_MaxLayers;
+    if(max_layers < 1) max_layers = 1;
+    for(int i = 0; i < max_layers && i < 20; i++)
+    {
+        double entry_price = NormalizeDouble(direction == 1 ? base_price - (i * step_points) : base_price + (i * step_points), _Digits);
+        if(direction == 1 && entry_price < boundary_price) break;
+        if(direction == -1 && entry_price > boundary_price) break;
+        string order_type = (direction == 1 ? entry_price < market_price : entry_price > market_price) ? "LIMIT" : "MARKET";
+        telegram_entry_layer_prices[telegram_entry_layer_count] = entry_price;
+        telegram_entry_layer_count++;
+        if(StringLen(json) > 1) json += ",";
+        json += StringFormat("{\"layer\":%d,\"orderType\":\"%s\",\"price\":\"%s\"}", telegram_entry_layer_count, order_type, DoubleToString(entry_price, _Digits));
+    }
+    json += "]";
+    return json;
+}
+int DetectTelegramTriggeredEntryLayer()
+{
+    if(telegram_entry_layer_count <= 0) return 0;
+    for(int i = 0; i < PositionsTotal(); i++)
+    {
+        if(posInfo.SelectByIndex(i) && IsManagedPosition())
+        {
+            double open_price = posInfo.PriceOpen();
+            for(int layer = 0; layer < telegram_entry_layer_count; layer++)
+            {
+                if(MathAbs(open_price - telegram_entry_layer_prices[layer]) <= (20 * _Point))
+                {
+                    telegram_triggered_entry_price = open_price;
+                    return layer + 1;
+                }
+            }
+        }
+    }
+    return 0;
+}
+
+bool SendTelegramSetupSignal(int direction, double reference_price, double setup_tp1, double setup_tp2, double setup_tp3, double setup_sl_neg100, datetime event_time, string entry_layers_json = "[]")
 {
 if(!Enable_Telegram_Signal || Gemini_Event_Ingest_Key == "") return false;
 long account_number = AccountInfoInteger(ACCOUNT_LOGIN);
@@ -486,7 +532,7 @@ if(setup_tp1 > 0.0) fibo_targets += ",\"fiboTp1\":\"" + DoubleToString(setup_tp1
 if(setup_tp2 > 0.0) fibo_targets += ",\"fiboTp2\":\"" + DoubleToString(setup_tp2, _Digits) + "\"";
 if(setup_tp3 > 0.0) fibo_targets += ",\"fiboTp3\":\"" + DoubleToString(setup_tp3, _Digits) + "\"";
 if(setup_sl_neg100 > 0.0) fibo_targets += ",\"fiboSlNeg100\":\"" + DoubleToString(setup_sl_neg100, _Digits) + "\"";
-string payload = "{\"eventId\":\"" + JsonEscape(event_id) + "\",\"eventType\":\"setup\",\"accountNumber\":\"" + IntegerToString(account_number) + "\",\"symbol\":\"" + JsonEscape(_Symbol) + "\",\"direction\":\"" + direction_text + "\",\"basketId\":\"" + JsonEscape(basket_id) + "\",\"entryPrice\":\"" + DoubleToString(reference_price, _Digits) + "\"" + fibo_targets + ",\"occurredDate\":\"" + EaClockDateDdmmyyyy(gmt8_time) + "\",\"occurredAt\":\"" + EaClockTime24(gmt8_time) + "\"}";
+string payload = "{\"eventId\":\"" + JsonEscape(event_id) + "\",\"eventType\":\"setup\",\"accountNumber\":\"" + IntegerToString(account_number) + "\",\"symbol\":\"" + JsonEscape(_Symbol) + "\",\"direction\":\"" + direction_text + "\",\"basketId\":\"" + JsonEscape(basket_id) + "\",\"entryPrice\":\"" + DoubleToString(reference_price, _Digits) + "\"" + fibo_targets + ",\"entryLayers\":" + entry_layers_json + ",\"occurredDate\":\"" + EaClockDateDdmmyyyy(gmt8_time) + "\",\"occurredAt\":\"" + EaClockTime24(gmt8_time) + "\"}";
 char request_body[];
 char response_body[];
 string response_headers;
@@ -503,6 +549,9 @@ if((status == 201 || status == 200) && StringFind(response_text, "\"delivered\":
     last_telegram_signal_direction = direction;
     telegram_last_tp_stage_reported = 0;
     telegram_sl_reported = false;
+    telegram_triggered_entry_layer = 0;
+    telegram_triggered_entry_price = 0.0;
+    telegram_pending_orders_cancelled_count = 0;
     locked_fibo_sl_neg100 = setup_sl_neg100;
     PersistTelegramLifecycleState(event_time);
     return true;
@@ -510,7 +559,7 @@ if((status == 201 || status == 200) && StringFind(response_text, "\"delivered\":
 return false;
 }
 
-bool SendTelegramLifecycleUpdate(string event_type, int stage, double hit_price, bool position_set_closed, datetime event_time)
+bool SendTelegramLifecycleUpdate(string event_type, int stage, double hit_price, bool position_set_closed, datetime event_time, int triggered_layer = 0, double triggered_price = 0.0, int cancelled_pending_count = 0, string cancellation_reason = "")
 {
     if(!Enable_Telegram_Signal || Gemini_Event_Ingest_Key == "" || last_telegram_signal_event_id == "") return false;
     if(stage >= 1 && stage <= 3 && stage <= telegram_last_tp_stage_reported) return false;
@@ -520,7 +569,10 @@ bool SendTelegramLifecycleUpdate(string event_type, int stage, double hit_price,
 string lifecycle_id = StringFormat("gemini-%I64d-%s-%s-%s-%I64d", account_number, _Symbol, EnumToString(_Period), event_type, (long)event_time);
 datetime gmt8_time = TimeGMT() + 8 * 60 * 60;
 string basket_id = StringFormat("basket-%I64d-%s-%s-%I64d", account_number, _Symbol, EnumToString(_Period), (long)telegram_basket_started_at);
-string payload = "{\"eventId\":\"" + JsonEscape(lifecycle_id) + "\",\"originalEventId\":\"" + JsonEscape(last_telegram_signal_event_id) + "\",\"eventType\":\"" + JsonEscape(event_type) + "\",\"accountNumber\":\"" + IntegerToString(account_number) + "\",\"symbol\":\"" + JsonEscape(_Symbol) + "\",\"direction\":\"" + direction_text + "\",\"basketId\":\"" + JsonEscape(basket_id) + "\",\"hitPrice\":\"" + DoubleToString(hit_price, _Digits) + "\",\"positionSetClosed\":" + (position_set_closed ? "true" : "false") + ",\"occurredDate\":\"" + EaClockDateDdmmyyyy(gmt8_time) + "\",\"occurredAt\":\"" + EaClockTime24(gmt8_time) + "\"}";
+string layer_fields = "";
+if(triggered_layer > 0) layer_fields += StringFormat(",\"triggeredEntryLayer\":%d,\"triggeredEntryPrice\":\"%s\"", triggered_layer, DoubleToString(triggered_price > 0.0 ? triggered_price : hit_price, _Digits));
+if(cancelled_pending_count > 0) layer_fields += StringFormat(",\"cancelledPendingCount\":%d,\"cancellationReason\":\"%s\"", cancelled_pending_count, JsonEscape(cancellation_reason));
+string payload = "{\"eventId\":\"" + JsonEscape(lifecycle_id) + "\",\"originalEventId\":\"" + JsonEscape(last_telegram_signal_event_id) + "\",\"eventType\":\"" + JsonEscape(event_type) + "\",\"accountNumber\":\"" + IntegerToString(account_number) + "\",\"symbol\":\"" + JsonEscape(_Symbol) + "\",\"direction\":\"" + direction_text + "\",\"basketId\":\"" + JsonEscape(basket_id) + "\",\"hitPrice\":\"" + DoubleToString(hit_price, _Digits) + "\",\"positionSetClosed\":" + (position_set_closed ? "true" : "false") + layer_fields + ",\"occurredDate\":\"" + EaClockDateDdmmyyyy(gmt8_time) + "\",\"occurredAt\":\"" + EaClockTime24(gmt8_time) + "\"}";
     char request_body[];
     char response_body[];
     string response_headers;
@@ -550,7 +602,7 @@ bool ReportTelegramBasketClosure(datetime event_time)
     if(HasManagedExposure()) return false;
     if(!telegram_basket_had_open_position) return false;
     double observed_price = (last_telegram_signal_direction == 1) ? SymbolInfoDouble(_Symbol, SYMBOL_BID) : SymbolInfoDouble(_Symbol, SYMBOL_ASK);
-    return SendTelegramLifecycleUpdate("basket_closed", 5, observed_price, true, event_time);
+    return SendTelegramLifecycleUpdate("basket_closed", 5, observed_price, true, event_time, telegram_triggered_entry_layer, telegram_triggered_entry_price, telegram_pending_orders_cancelled_count, "TP1 reached; untriggered pending limit orders were cancelled");
 }
 
 bool HasManagedPendingOrder()
@@ -569,7 +621,7 @@ bool ReportTelegramBasketCancellation(datetime event_time)
     // Observer only: report only after an existing managed pending order was successfully deleted and none remain.
     if(!telegram_pending_order_cancellation_observed || HasManagedPendingOrder()) return false;
     double observed_price = (last_telegram_signal_direction == 1) ? SymbolInfoDouble(_Symbol, SYMBOL_BID) : SymbolInfoDouble(_Symbol, SYMBOL_ASK);
-    return SendTelegramLifecycleUpdate("basket_cancelled", 6, observed_price, false, event_time);
+    return SendTelegramLifecycleUpdate("basket_cancelled", 6, observed_price, false, event_time, telegram_triggered_entry_layer, telegram_triggered_entry_price, telegram_pending_orders_cancelled_count, "TP1 reached; untriggered pending limit orders were cancelled");
 }
 
 void MonitorTelegramLifecycle()
@@ -581,20 +633,26 @@ void MonitorTelegramLifecycle()
     // Observer only: evaluated after existing basket-management logic; never changes positions or orders.
     bool position_set_closed = !HasManagedOpenPosition();
     if(!position_set_closed) telegram_basket_had_open_position = true;
+    int detected_layer = DetectTelegramTriggeredEntryLayer();
+    if(detected_layer > 0 && telegram_triggered_entry_layer == 0)
+    {
+        telegram_triggered_entry_layer = detected_layer;
+        PersistTelegramLifecycleState(0);
+    }
     ReportTelegramBasketCancellation(now);
     if(last_telegram_signal_direction == 1)
     {
-        if(locked_fibo_tp1 > 0.0 && bid >= locked_fibo_tp1 && telegram_last_tp_stage_reported < 1) { SendTelegramLifecycleUpdate("tp1_hit", 1, locked_fibo_tp1, position_set_closed, now); QueueMarketingScreenshot("tp1_hit"); }
-        if(locked_fibo_tp2 > 0.0 && bid >= locked_fibo_tp2 && telegram_last_tp_stage_reported < 2 && telegram_last_tp_stage_reported >= 1) { SendTelegramLifecycleUpdate("tp2_hit", 2, locked_fibo_tp2, position_set_closed, now); QueueMarketingScreenshot("tp2_hit"); }
-        if(locked_fibo_tp3 > 0.0 && bid >= locked_fibo_tp3 && telegram_last_tp_stage_reported < 3 && telegram_last_tp_stage_reported >= 2) { SendTelegramLifecycleUpdate("tp3_hit", 3, locked_fibo_tp3, position_set_closed, now); QueueMarketingScreenshot("tp3_hit"); }
-        if(locked_fibo_sl_neg100 > 0.0 && bid <= locked_fibo_sl_neg100 && !telegram_sl_reported) SendTelegramLifecycleUpdate("sl_hit", 4, locked_fibo_sl_neg100, false, now);
+        if(locked_fibo_tp1 > 0.0 && bid >= locked_fibo_tp1 && telegram_last_tp_stage_reported < 1) { SendTelegramLifecycleUpdate("tp1_hit", 1, locked_fibo_tp1, position_set_closed, now, telegram_triggered_entry_layer, telegram_triggered_entry_price, telegram_pending_orders_cancelled_count, "TP1 reached; untriggered pending limit orders were cancelled"); QueueMarketingScreenshot("tp1_hit"); }
+        if(locked_fibo_tp2 > 0.0 && bid >= locked_fibo_tp2 && telegram_last_tp_stage_reported < 2 && telegram_last_tp_stage_reported >= 1) { SendTelegramLifecycleUpdate("tp2_hit", 2, locked_fibo_tp2, position_set_closed, now, telegram_triggered_entry_layer, telegram_triggered_entry_price, telegram_pending_orders_cancelled_count, "TP1 reached; untriggered pending limit orders were cancelled"); QueueMarketingScreenshot("tp2_hit"); }
+        if(locked_fibo_tp3 > 0.0 && bid >= locked_fibo_tp3 && telegram_last_tp_stage_reported < 3 && telegram_last_tp_stage_reported >= 2) { SendTelegramLifecycleUpdate("tp3_hit", 3, locked_fibo_tp3, position_set_closed, now, telegram_triggered_entry_layer, telegram_triggered_entry_price, telegram_pending_orders_cancelled_count, "TP1 reached; untriggered pending limit orders were cancelled"); QueueMarketingScreenshot("tp3_hit"); }
+        if(locked_fibo_sl_neg100 > 0.0 && bid <= locked_fibo_sl_neg100 && !telegram_sl_reported) SendTelegramLifecycleUpdate("sl_hit", 4, locked_fibo_sl_neg100, false, now, telegram_triggered_entry_layer, telegram_triggered_entry_price, telegram_pending_orders_cancelled_count, "");
     }
     else
     {
-        if(locked_fibo_tp1 > 0.0 && ask <= locked_fibo_tp1 && telegram_last_tp_stage_reported < 1) { SendTelegramLifecycleUpdate("tp1_hit", 1, locked_fibo_tp1, position_set_closed, now); QueueMarketingScreenshot("tp1_hit"); }
-        if(locked_fibo_tp2 > 0.0 && ask <= locked_fibo_tp2 && telegram_last_tp_stage_reported < 2 && telegram_last_tp_stage_reported >= 1) { SendTelegramLifecycleUpdate("tp2_hit", 2, locked_fibo_tp2, position_set_closed, now); QueueMarketingScreenshot("tp2_hit"); }
-        if(locked_fibo_tp3 > 0.0 && ask <= locked_fibo_tp3 && telegram_last_tp_stage_reported < 3 && telegram_last_tp_stage_reported >= 2) { SendTelegramLifecycleUpdate("tp3_hit", 3, locked_fibo_tp3, position_set_closed, now); QueueMarketingScreenshot("tp3_hit"); }
-        if(locked_fibo_sl_neg100 > 0.0 && ask >= locked_fibo_sl_neg100 && !telegram_sl_reported) SendTelegramLifecycleUpdate("sl_hit", 4, locked_fibo_sl_neg100, false, now);
+        if(locked_fibo_tp1 > 0.0 && ask <= locked_fibo_tp1 && telegram_last_tp_stage_reported < 1) { SendTelegramLifecycleUpdate("tp1_hit", 1, locked_fibo_tp1, position_set_closed, now, telegram_triggered_entry_layer, telegram_triggered_entry_price, telegram_pending_orders_cancelled_count, "TP1 reached; untriggered pending limit orders were cancelled"); QueueMarketingScreenshot("tp1_hit"); }
+        if(locked_fibo_tp2 > 0.0 && ask <= locked_fibo_tp2 && telegram_last_tp_stage_reported < 2 && telegram_last_tp_stage_reported >= 1) { SendTelegramLifecycleUpdate("tp2_hit", 2, locked_fibo_tp2, position_set_closed, now, telegram_triggered_entry_layer, telegram_triggered_entry_price, telegram_pending_orders_cancelled_count, "TP1 reached; untriggered pending limit orders were cancelled"); QueueMarketingScreenshot("tp2_hit"); }
+        if(locked_fibo_tp3 > 0.0 && ask <= locked_fibo_tp3 && telegram_last_tp_stage_reported < 3 && telegram_last_tp_stage_reported >= 2) { SendTelegramLifecycleUpdate("tp3_hit", 3, locked_fibo_tp3, position_set_closed, now, telegram_triggered_entry_layer, telegram_triggered_entry_price, telegram_pending_orders_cancelled_count, "TP1 reached; untriggered pending limit orders were cancelled"); QueueMarketingScreenshot("tp3_hit"); }
+        if(locked_fibo_sl_neg100 > 0.0 && ask >= locked_fibo_sl_neg100 && !telegram_sl_reported) SendTelegramLifecycleUpdate("sl_hit", 4, locked_fibo_sl_neg100, false, now, telegram_triggered_entry_layer, telegram_triggered_entry_price, telegram_pending_orders_cancelled_count, "");
     }
 }
 
@@ -622,6 +680,9 @@ void ClearTelegramLifecycleState()
     GlobalVariableDel(TelegramStateKey("basket_cancelled"));
     GlobalVariableDel(TelegramStateKey("had_position"));
     GlobalVariableDel(TelegramStateKey("pending_cancel"));
+    GlobalVariableDel(TelegramStateKey("triggered_layer"));
+    GlobalVariableDel(TelegramStateKey("triggered_price"));
+    GlobalVariableDel(TelegramStateKey("cancelled_count"));
     last_telegram_signal_event_id = "";
     last_telegram_signal_direction = 0;
     telegram_last_tp_stage_reported = 0;
@@ -631,6 +692,9 @@ void ClearTelegramLifecycleState()
     telegram_basket_cancelled_reported = false;
     telegram_basket_had_open_position = false;
     telegram_pending_order_cancellation_observed = false;
+    telegram_triggered_entry_layer = 0;
+    telegram_triggered_entry_price = 0.0;
+    telegram_pending_orders_cancelled_count = 0;
     locked_fibo_sl_neg100 = 0.0;
 }
 
@@ -670,6 +734,9 @@ void PersistTelegramLifecycleState(datetime setup_time)
     GlobalVariableSet(TelegramStateKey("basket_cancelled"), telegram_basket_cancelled_reported ? 1.0 : 0.0);
     GlobalVariableSet(TelegramStateKey("had_position"), telegram_basket_had_open_position ? 1.0 : 0.0);
     GlobalVariableSet(TelegramStateKey("pending_cancel"), telegram_pending_order_cancellation_observed ? 1.0 : 0.0);
+    GlobalVariableSet(TelegramStateKey("triggered_layer"), (double)telegram_triggered_entry_layer);
+    GlobalVariableSet(TelegramStateKey("triggered_price"), telegram_triggered_entry_price);
+    GlobalVariableSet(TelegramStateKey("cancelled_count"), (double)telegram_pending_orders_cancelled_count);
 }
 
 void RestoreTelegramLifecycleState()
@@ -691,6 +758,9 @@ void RestoreTelegramLifecycleState()
     telegram_basket_cancelled_reported = GlobalVariableCheck(TelegramStateKey("basket_cancelled")) && GlobalVariableGet(TelegramStateKey("basket_cancelled")) > 0.5;
     telegram_basket_had_open_position = GlobalVariableCheck(TelegramStateKey("had_position")) && GlobalVariableGet(TelegramStateKey("had_position")) > 0.5;
     telegram_pending_order_cancellation_observed = GlobalVariableCheck(TelegramStateKey("pending_cancel")) && GlobalVariableGet(TelegramStateKey("pending_cancel")) > 0.5;
+    telegram_triggered_entry_layer = GlobalVariableCheck(TelegramStateKey("triggered_layer")) ? (int)GlobalVariableGet(TelegramStateKey("triggered_layer")) : 0;
+    telegram_triggered_entry_price = GlobalVariableCheck(TelegramStateKey("triggered_price")) ? GlobalVariableGet(TelegramStateKey("triggered_price")) : 0.0;
+    telegram_pending_orders_cancelled_count = GlobalVariableCheck(TelegramStateKey("cancelled_count")) ? (int)GlobalVariableGet(TelegramStateKey("cancelled_count")) : 0;
     if(locked_fibo_tp1 <= 0.0 || locked_fibo_tp2 <= 0.0 || locked_fibo_tp3 <= 0.0 || locked_fibo_sl_neg100 <= 0.0) { ClearTelegramLifecycleState(); return; }
     long account_number = AccountInfoInteger(ACCOUNT_LOGIN);
     last_telegram_signal_event_id = StringFormat("gemini-%I64d-%s-%s-signal-%I64d", account_number, _Symbol, EnumToString(_Period), (long)setup_time);
@@ -2032,7 +2102,9 @@ if(valid_orders_placed)
     reentry_opp_tp_hit = false; 
     reentry_pa_detected = false; 
     opp_tp_level_hit = 0;
-    SendTelegramSetupSignal(locked_trend, is_buy_breakout ? ask : bid, current_tp1, current_tp2, current_tp3, current_sl_neg100, TimeCurrent());
+    double telegram_entry_boundary = locked_trend == 1 ? (anchor_a + diff * 0.236) : (anchor_a - diff * 0.236);
+    string entry_layers_json = BuildTelegramEntryLayersJson(locked_trend, fibo_786, telegram_entry_boundary, step_points, is_buy_breakout ? ask : bid);
+    SendTelegramSetupSignal(locked_trend, is_buy_breakout ? ask : bid, current_tp1, current_tp2, current_tp3, current_sl_neg100, TimeCurrent(), entry_layers_json);
     QueueMarketingScreenshot("setup");
 }
 
@@ -2467,14 +2539,16 @@ if(locked_trend == -1 && ask <= locked_fibo_tp1) del = true;
 
 if(del) {
     bool managed_order_deleted = false;
+    int deleted_pending_orders = 0;
     for(int i = OrdersTotal() - 1; i >= 0; i--) {
         ulong t = OrderGetTicket(i); 
         if(t > 0 && IsManagedOrder(t)) {
-            if(trade.OrderDelete(t)) managed_order_deleted = true;
+            if(trade.OrderDelete(t)) { managed_order_deleted = true; deleted_pending_orders++; }
         }
     }
     if(managed_order_deleted) {
         telegram_pending_order_cancellation_observed = true;
+        telegram_pending_orders_cancelled_count += deleted_pending_orders;
         PersistTelegramLifecycleState(0);
     }
 }

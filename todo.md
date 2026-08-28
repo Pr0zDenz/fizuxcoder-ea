@@ -486,3 +486,9 @@
 - [x] Add a confirmation-protected cleanup action that deletes only explicitly archived records and preserves active, scheduled, failed, screenshot-review, and published content.
 - [x] Add tests for filter counts, deletion scope, idempotency, standard-customer access, and UI refresh feedback.
 - [x] Run full tests, TypeScript, production build, visual verification, and save a checkpoint.
+
+- [x] Inspect the current Gemini setup payload, basket identity, lifecycle stages, and pending-order cancellation contract for layered entries.
+- [x] Add display-only reporting for every planned entry layer and identify the layer that actually triggered.
+- [x] Report untriggered pending limit-order cancellations with the exact reason and basket-wide association, without changing EA order logic.
+- [x] Add formatter, route, source-integrity, and authorization regression tests; retain no live-message replay.
+- [x] Validate TypeScript, full tests, production build, and prepare a distinct MQ5 handoff only if source changes are required.

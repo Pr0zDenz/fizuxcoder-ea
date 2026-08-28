@@ -43,6 +43,17 @@ describe("Telegram signal contract", () => {
     });
   });
 
+  it("renders every planned entry layer in the setup message", () => {
+    const signal = parseTelegramSignalInput({ ...validSetup, entryLayers: [
+      { layer: 1, orderType: "LIMIT", price: "4599.20" },
+      { layer: 2, orderType: "LIMIT", price: "4597.20" },
+      { layer: 3, orderType: "LIMIT", price: "4595.20" },
+    ] });
+    expect(signal.entryLayers).toHaveLength(3);
+    const text = formatTelegramSignal(signal);
+    expect(text).toContain("📥 Entry layers: Layer 1 LIMIT @ 4599.20 | Layer 2 LIMIT @ 4597.20 | Layer 3 LIMIT @ 4595.20");
+  });
+
   it("labels the owner-only mock event as non-trading while preserving the EA clock time", () => {
     const signal = parseTelegramSignalInput(validSetup);
     const text = formatMockTelegramSignal(signal);
@@ -61,6 +72,8 @@ describe("Telegram signal contract", () => {
     expect(() => parseTelegramSignalInput({ ...validSetup, occurredDate: "2026-08-27" })).toThrow("occurredDate must use DD-MMM-YYYY format");
     expect(() => parseTelegramSignalInput({ ...validSetup, occurredAt: "2026-08-27T01:00:00.000Z" })).toThrow("occurredAt must use 24-hour HH:mm:ss format");
     expect(() => parseTelegramSignalInput({ ...validSetup, basketId: "basket id" })).toThrow("basketId is invalid");
+    expect(() => parseTelegramSignalInput({ ...validSetup, entryLayers: [{ layer: 1, orderType: "STOP", price: "4599.20" }] })).toThrow("entryLayers[0].orderType is invalid");
+    expect(() => parseTelegramLifecycleInput({ eventId: "lifecycle-123456", originalEventId: "signal-123456", eventType: "tp1_hit", accountNumber: "230069105", symbol: "XAUUSD", direction: "SELL", hitPrice: "4596.58", triggeredEntryLayer: 0, occurredDate: "2026-08-27", occurredAt: "20:05:00" })).toThrow("triggeredEntryLayer is invalid");
   });
 
   it("does not arm automatic publication while configuration is incomplete or the kill switch is engaged", () => {
@@ -76,6 +89,9 @@ describe("Telegram signal contract", () => {
     expect(tp.positionSetClosed).toBe(true);
     expect(formatTelegramLifecycleUpdate(tp)).toContain("✅ TP1 HIT (Closed all) 💸");
     expect(formatTelegramLifecycleUpdate(tp)).toContain("Hit price: 4596.58");
+    const layeredTp = parseTelegramLifecycleInput({ eventId: "gemini-230069105-XAUUSD-tp1-layer-1787819006", originalEventId: "gemini-230069105-XAUUSD-signal-1787839260", eventType: "tp1_hit", accountNumber: "230069105", symbol: "XAUUSD.vx", direction: "SELL", hitPrice: "4596.58", positionSetClosed: false, triggeredEntryLayer: 1, triggeredEntryPrice: "4599.20", cancelledPendingCount: 2, cancellationReason: "TP1 reached; untriggered pending limit orders were cancelled", occurredDate: "27-Aug-2026", occurredAt: "20:05:00" });
+    expect(formatTelegramLifecycleUpdate(layeredTp)).toContain("📌 Triggered entry: Layer 1 @ 4599.20");
+    expect(formatTelegramLifecycleUpdate(layeredTp)).toContain("🧹 Pending limit orders cancelled: 2 (TP1 reached; untriggered pending limit orders were cancelled)");
     expect(formatTelegramLifecycleUpdate(tp)).toContain("\n📡 Gemini Bot EA Signal update\n");
     expect(formatTelegramLifecycleUpdate(tp)).not.toContain("\\n");
     expect(formatTelegramLifecycleUpdate(tp)).not.toContain("Display update only");

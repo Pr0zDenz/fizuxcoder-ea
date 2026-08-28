@@ -7,6 +7,8 @@ import { getDb } from "./db";
 const SETTINGS_KEY = "primary";
 const DEFAULT_RISK_NOTE = "Automated EA signal for market observation only. Trading involves risk; verify conditions, costs, and your own risk limits before acting.";
 
+export type TelegramEntryLayer = { layer: number; orderType: "LIMIT" | "MARKET"; price: string };
+
 type SignalInput = {
   eventId: string;
   eventType: "setup" | "take_profit";
@@ -21,6 +23,7 @@ type SignalInput = {
   fiboTp3?: string;
   fiboSlNeg100?: string;
   stopLoss?: string;
+  entryLayers?: TelegramEntryLayer[];
   occurredDate: string;
   occurredAt: string;
 };
@@ -37,6 +40,10 @@ type LifecycleInput = {
   hitPrice: string;
   positionSetClosed: boolean;
   basketId?: string;
+  triggeredEntryLayer?: number;
+  triggeredEntryPrice?: string;
+  cancelledPendingCount?: number;
+  cancellationReason?: string;
   occurredDate: string;
   occurredAt: string;
 };
@@ -50,6 +57,21 @@ function safeNumericText(value: unknown, label: string, required = false) {
   if (!text && !required) return undefined;
   if (!text || !/^-?\d+(?:\.\d+)?$/.test(text)) throw new Error(`${label} must be a numeric value`);
   return text;
+}
+
+function parseEntryLayers(value: unknown) {
+  if (value === undefined) return undefined;
+  if (!Array.isArray(value) || value.length > 20) throw new Error("entryLayers must be an array of at most 20 layers");
+  return value.map((raw, index) => {
+    if (!raw || typeof raw !== "object") throw new Error(`entryLayers[${index}] is invalid`);
+    const row = raw as Record<string, unknown>;
+    const layer = Number(row.layer);
+    const orderType = row.orderType === "LIMIT" || row.orderType === "MARKET" ? row.orderType : null;
+    const price = safeNumericText(row.price, `entryLayers[${index}].price`, true);
+    if (!Number.isInteger(layer) || layer < 1 || layer > 20) throw new Error(`entryLayers[${index}].layer is invalid`);
+    if (!orderType) throw new Error(`entryLayers[${index}].orderType is invalid`);
+    return { layer, orderType, price: price! } as TelegramEntryLayer;
+  }).sort((a, b) => a.layer - b.layer);
 }
 
 export function parseTelegramSignalInput(body: Record<string, unknown>): SignalInput {
@@ -66,6 +88,7 @@ export function parseTelegramSignalInput(body: Record<string, unknown>): SignalI
   const fiboTp3 = safeNumericText(body.fiboTp3, "fiboTp3");
   const fiboSlNeg100 = safeNumericText(body.fiboSlNeg100, "fiboSlNeg100");
   const stopLoss = safeNumericText(body.stopLoss, "stopLoss");
+  const entryLayers = parseEntryLayers(body.entryLayers);
   const occurredDate = cleanText(body.occurredDate, 11);
   const occurredAt = cleanText(body.occurredAt, 8);
 
@@ -79,7 +102,7 @@ export function parseTelegramSignalInput(body: Record<string, unknown>): SignalI
   if (!/^\d{2}-[A-Za-z]{3}-\d{4}$/.test(occurredDate)) throw new Error("occurredDate must use DD-MMM-YYYY format");
   if (!/^(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$/.test(occurredAt)) throw new Error("occurredAt must use 24-hour HH:mm:ss format");
 
-  return { eventId, eventType, accountNumber, symbol, direction, basketId, entryPrice, takeProfit, fiboTp1, fiboTp2, fiboTp3, fiboSlNeg100, stopLoss, occurredDate, occurredAt };
+  return { eventId, eventType, accountNumber, symbol, direction, basketId, entryPrice, takeProfit, fiboTp1, fiboTp2, fiboTp3, fiboSlNeg100, stopLoss, entryLayers, occurredDate, occurredAt };
 }
 
 export function buildTelegramSignalPersistenceValues(signal: SignalInput, messageText: string) {
@@ -115,6 +138,10 @@ export function parseTelegramLifecycleInput(body: Record<string, unknown>): Life
   if (body.positionSetClosed !== undefined && typeof body.positionSetClosed !== "boolean") throw new Error("positionSetClosed must be a boolean when supplied");
   const positionSetClosed = body.positionSetClosed === true;
   const basketId = cleanText(body.basketId, 128) || undefined;
+  const triggeredEntryLayer = body.triggeredEntryLayer === undefined ? undefined : Number(body.triggeredEntryLayer);
+  const triggeredEntryPrice = safeNumericText(body.triggeredEntryPrice, "triggeredEntryPrice");
+  const cancelledPendingCount = body.cancelledPendingCount === undefined ? undefined : Number(body.cancelledPendingCount);
+  const cancellationReason = cleanText(body.cancellationReason, 120) || undefined;
   const occurredDate = cleanText(body.occurredDate, 11);
   const occurredAt = cleanText(body.occurredAt, 8);
   if (!/^[A-Za-z0-9_-]{6,96}$/.test(eventId)) throw new Error("eventId is invalid");
@@ -124,13 +151,15 @@ export function parseTelegramLifecycleInput(body: Record<string, unknown>): Life
   if (!/^[A-Za-z0-9_.-]{1,64}$/.test(symbol)) throw new Error("symbol is invalid");
   if (!direction) throw new Error("direction must be BUY or SELL");
   if (basketId && !/^[A-Za-z0-9_-]{6,128}$/.test(basketId)) throw new Error("basketId is invalid");
+  if (triggeredEntryLayer !== undefined && (!Number.isInteger(triggeredEntryLayer) || triggeredEntryLayer < 1 || triggeredEntryLayer > 20)) throw new Error("triggeredEntryLayer is invalid");
+  if (cancelledPendingCount !== undefined && (!Number.isInteger(cancelledPendingCount) || cancelledPendingCount < 0 || cancelledPendingCount > 20)) throw new Error("cancelledPendingCount is invalid");
   if ((eventType === "basket_closed" || eventType === "basket_cancelled") && !basketId) throw new Error("basketId is required for basket outcome events");
   if (eventType === "basket_closed" && !positionSetClosed) throw new Error("basket_closed requires positionSetClosed=true");
   if (eventType === "basket_cancelled" && positionSetClosed) throw new Error("basket_cancelled requires positionSetClosed=false");
   if (!/^\d{2}-[A-Za-z]{3}-\d{4}$/.test(occurredDate)) throw new Error("occurredDate must use DD-MMM-YYYY format");
   if (!/^(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$/.test(occurredAt)) throw new Error("occurredAt must use 24-hour HH:mm:ss format");
   const stage = eventType === "sl_hit" ? "SL" : eventType === "basket_closed" ? "BASKET_CLOSED" : eventType === "basket_cancelled" ? "BASKET_CANCELLED" : eventType.slice(0, 3).toUpperCase() as LifecycleStage;
-  return { eventId, originalEventId, eventType, accountNumber, symbol, direction, stage, hitPrice: hitPrice!, positionSetClosed, basketId, occurredDate, occurredAt };
+  return { eventId, originalEventId, eventType, accountNumber, symbol, direction, stage, hitPrice: hitPrice!, positionSetClosed, basketId, triggeredEntryLayer, triggeredEntryPrice, cancelledPendingCount, cancellationReason, occurredDate, occurredAt };
 }
 
 export function formatTelegramLifecycleUpdate(update: LifecycleInput) {
@@ -141,6 +170,8 @@ export function formatTelegramLifecycleUpdate(update: LifecycleInput) {
       `📊 Symbol: ${brokerNeutralSymbol(update.symbol)}`,
       `📈 Direction: ${update.direction}`,
       "💼 Basket status: All managed basket positions are closed.",
+      update.triggeredEntryLayer ? `📌 Triggered entry: Layer ${update.triggeredEntryLayer}${update.triggeredEntryPrice ? ` @ ${update.triggeredEntryPrice}` : ""}` : null,
+      update.cancelledPendingCount ? `🧹 Pending limit orders cancelled: ${update.cancelledPendingCount}${update.cancellationReason ? ` (${update.cancellationReason})` : ""}` : null,
       `📅 Event Date: ${update.occurredDate}`,
       `🕒 Event Time: ${update.occurredAt} GMT+8`,
       "",
@@ -154,6 +185,8 @@ export function formatTelegramLifecycleUpdate(update: LifecycleInput) {
       `📊 Symbol: ${brokerNeutralSymbol(update.symbol)}`,
       `📈 Direction: ${update.direction}`,
       "💼 Basket status: Managed pending orders were cancelled or deleted. Any open position remains managed by the EA.",
+      update.triggeredEntryLayer ? `📌 Triggered entry: Layer ${update.triggeredEntryLayer}${update.triggeredEntryPrice ? ` @ ${update.triggeredEntryPrice}` : ""}` : null,
+      update.cancelledPendingCount ? `🧹 Pending limit orders cancelled: ${update.cancelledPendingCount}${update.cancellationReason ? ` (${update.cancellationReason})` : ""}` : null,
       `📅 Event Date: ${update.occurredDate}`,
       `🕒 Event Time: ${update.occurredAt} GMT+8`,
       "",
@@ -169,6 +202,8 @@ export function formatTelegramLifecycleUpdate(update: LifecycleInput) {
     `📊 Symbol: ${brokerNeutralSymbol(update.symbol)}`,
     `📈 Direction: ${update.direction}`,
     `💵 Hit price: ${update.hitPrice}`,
+    update.triggeredEntryLayer ? `📌 Triggered entry: Layer ${update.triggeredEntryLayer}${update.triggeredEntryPrice ? ` @ ${update.triggeredEntryPrice}` : ""}` : null,
+    update.cancelledPendingCount ? `🧹 Pending limit orders cancelled: ${update.cancelledPendingCount}${update.cancellationReason ? ` (${update.cancellationReason})` : ""}` : null,
     `📅 Event Date: ${update.occurredDate}`,
     `🕒 Event Time: ${update.occurredAt} GMT+8`,
     "",
@@ -212,6 +247,7 @@ export function formatTelegramSignal(signal: SignalInput) {
     signal.fiboTp2 ? `🎯 TP2: ${signal.fiboTp2}` : null,
     signal.fiboTp3 ? `🎯 TP3: ${signal.fiboTp3}` : null,
     signal.fiboSlNeg100 ? `🛡️ SL: ${signal.fiboSlNeg100}` : null,
+    signal.entryLayers?.length ? `📥 Entry layers: ${signal.entryLayers.map(layer => `Layer ${layer.layer} ${layer.orderType} @ ${layer.price}`).join(" | ")}` : null,
     signal.takeProfit ? `Safe TP: ${signal.takeProfit}` : null,
     signal.stopLoss ? `SL: ${signal.stopLoss}` : null,
   ].filter(Boolean);
