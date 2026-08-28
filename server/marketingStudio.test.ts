@@ -18,7 +18,7 @@ vi.mock("./threadsPublisher", () => {
   };
 });
 
-import { GEMINI_BOT_THREADS_ADDITIONS, GEMINI_BOT_THREADS_REVISION, TWO_WEEK_THREADS_PILOT, applyGeminiBotThreadsAdditions, applyGeminiBotThreadsRevision, approveMarketingContent, createEvergreenGeminiDraftAfterPublish, markMarketingContentPosted } from "./marketingStudio";
+import { GEMINI_BOT_THREADS_ADDITIONS, GEMINI_BOT_THREADS_REVISION, TWO_WEEK_THREADS_PILOT, applyGeminiBotThreadsAdditions, applyGeminiBotThreadsRevision, approveMarketingContent, createEvergreenGeminiDraftAfterPublish, markMarketingContentPosted, rejectMarketingContent } from "./marketingStudio";
 
 function draftItem(overrides: Record<string, unknown> = {}) {
   return {
@@ -40,13 +40,15 @@ function mockDatabase(item: Record<string, unknown>) {
   const updateWhere = vi.fn().mockResolvedValue([{ affectedRows: 1 }]);
   const updateSet = vi.fn(() => ({ where: updateWhere }));
   const insertValues = vi.fn().mockResolvedValue([{ insertId: 100 }]);
+  const deleteWhere = vi.fn().mockResolvedValue([{ affectedRows: 1 }]);
   const db = {
     select: vi.fn(() => ({ from: selectFrom })),
     update: vi.fn(() => ({ set: updateSet })),
     insert: vi.fn(() => ({ values: insertValues })),
+    delete: vi.fn(() => ({ where: deleteWhere })),
   };
   getDbMock.mockResolvedValue(db);
-  return { db, updateSet, updateWhere, insertValues };
+  return { db, updateSet, updateWhere, insertValues, deleteWhere };
 }
 
 function mockMissingDatabase() {
@@ -58,6 +60,7 @@ function mockMissingDatabase() {
     select: vi.fn(() => ({ from: selectFrom })),
     update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn().mockResolvedValue([{ affectedRows: 1 }]) })) })),
     insert: vi.fn(() => ({ values: insertValues })),
+    delete: vi.fn(() => ({ where: vi.fn().mockResolvedValue([{ affectedRows: 1 }]) })),
   };
   getDbMock.mockResolvedValue(db);
   return { db, insertValues };
@@ -67,6 +70,33 @@ describe("private marketing studio safeguards", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     publishThreadsPostMock.mockResolvedValue({ externalPostId: "threads-post-1", hasImage: true });
+  });
+
+  it("permanently removes an owner-rejected draft and does not create a rejected content record", async () => {
+    const { db, deleteWhere, insertValues } = mockDatabase(draftItem({ status: "draft" }));
+
+    await expect(rejectMarketingContent({ contentItemId: 9, actorUserId: 1, note: "Not suitable for campaign" })).resolves.toEqual({ success: true, deleted: true, contentItemId: 9 });
+    expect(db.delete).toHaveBeenCalled();
+    expect(deleteWhere).toHaveBeenCalled();
+    expect(insertValues).not.toHaveBeenCalled();
+  });
+
+  it("does not permanently remove posted or already approved content through rejection", async () => {
+    const posted = mockDatabase(draftItem({ status: "posted" }));
+    await expect(rejectMarketingContent({ contentItemId: 9, actorUserId: 1 })).rejects.toThrow("Only an unposted draft or failed draft");
+    expect(posted.db.delete).not.toHaveBeenCalled();
+
+    const approved = mockDatabase(draftItem({ status: "approved" }));
+    await expect(rejectMarketingContent({ contentItemId: 9, actorUserId: 1 })).rejects.toThrow("Only an unposted draft or failed draft");
+    expect(approved.db.delete).not.toHaveBeenCalled();
+  });
+
+  it("fails closed when the rejected draft was removed concurrently", async () => {
+    const { db, deleteWhere } = mockDatabase(draftItem({ status: "draft" }));
+    deleteWhere.mockResolvedValue([{ affectedRows: 0 }]);
+
+    await expect(rejectMarketingContent({ contentItemId: 9, actorUserId: 1 })).rejects.toThrow("already removed or has changed");
+    expect(db.delete).toHaveBeenCalledTimes(1);
   });
 
   it("does not allow an unapproved draft to be marked as manually posted", async () => {

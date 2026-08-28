@@ -472,10 +472,10 @@
 - [x] Add tests for lifecycle authorization, duplicate protection, screenshot metadata, standard-customer access, and preservation of EA trading/reporting behavior.
 - [x] Validate with full tests, TypeScript, production build, and owner review before checkpoint.
 
-- [ ] Define permanent removal semantics for owner-rejected marketing drafts and preserve safe audit/reference behavior.
-- [ ] Implement owner-only rejected-draft deletion from Marketing Studio without affecting unrelated or published content.
-- [ ] Add regression tests for deletion authorization, status restrictions, idempotency, and UI removal feedback.
-- [ ] Run full validation and save a checkpoint before delivering the change.
+- [x] Define permanent removal semantics for owner-rejected marketing drafts and preserve safe audit/reference behavior.
+- [x] Implement owner-only rejected-draft deletion from Marketing Studio without affecting unrelated or published content.
+- [x] Add regression tests for deletion authorization, status restrictions, idempotency, and UI removal feedback.
+- [x] Run full validation and save a checkpoint before delivering the change.
 
 - [x] Remove the internal “Display update only…” line from subscriber-facing Telegram lifecycle notifications.
 - [x] Preserve internal audit/context wording and all EA trading, Safe TP, SL, basket, and licensing behavior.

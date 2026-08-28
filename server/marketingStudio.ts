@@ -379,15 +379,15 @@ export function retryMarketingContentPublication({ contentItemId, actorUserId }:
   return publishApprovedMarketingContent({ contentItemId, actorUserId, retry: true });
 }
 
-export async function rejectMarketingContent({ contentItemId, actorUserId, note }: { contentItemId: number; actorUserId: number; note?: string }) {
+export async function rejectMarketingContent({ contentItemId, actorUserId: _actorUserId, note: _note }: { contentItemId: number; actorUserId: number; note?: string }) {
   const db = await getDb();
   if (!db) throw new Error("Database is unavailable");
   const [item] = await db.select().from(marketingContentItems).where(eq(marketingContentItems.id, contentItemId)).limit(1);
   if (!item) throw new Error("Marketing draft not found");
-  if (item.status === "posted") throw new Error("A posted item cannot be rejected");
-  await db.update(marketingContentItems).set({ status: "rejected", approvedByUserId: null, approvedAt: null }).where(eq(marketingContentItems.id, contentItemId));
-  await db.insert(marketingContentAudits).values({ contentItemId, actorUserId, action: "rejected", contentHash: item.contentHash, note: note?.slice(0, 255) || "Owner rejected draft" });
-  return { success: true };
+  if (item.status !== "draft" && item.status !== "publish_failed") throw new Error("Only an unposted draft or failed draft can be permanently rejected");
+  const deletion = await db.delete(marketingContentItems).where(and(eq(marketingContentItems.id, contentItemId), eq(marketingContentItems.status, item.status)));
+  if (!deletion[0]?.affectedRows) throw new Error("This draft is already removed or has changed");
+  return { success: true, deleted: true, contentItemId };
 }
 
 export async function markMarketingContentPosted({ contentItemId, actorUserId, externalPostId }: { contentItemId: number; actorUserId: number; externalPostId?: string }) {

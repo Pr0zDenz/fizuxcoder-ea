@@ -48,6 +48,7 @@ describe("administrator-only portal procedures", () => {
     await expect(caller.marketing.prepareEcosystemGrowthDrafts()).rejects.toThrow("You do not have required permission");
     await expect(caller.marketing.approve({ contentItemId: 1 })).rejects.toThrow("You do not have required permission");
     await expect(caller.marketing.retryPublish({ contentItemId: 1 })).rejects.toThrow("You do not have required permission");
+    await expect(caller.marketing.reject({ contentItemId: 1 })).rejects.toThrow("You do not have required permission");
     await expect(caller.marketing.markManuallyPosted({ contentItemId: 1 })).rejects.toThrow("You do not have required permission");
   });
 });
