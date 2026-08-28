@@ -2,7 +2,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { createHash } from "node:crypto";
 import { marketingContentAudits, marketingContentItems } from "../drizzle/schema";
 import { getDb } from "./db";
-import { publishThreadsPost, ThreadsPublishError } from "./threadsPublisher";
+import { buildThreadsPublicationText, publishThreadsPost, ThreadsPublishError } from "./threadsPublisher";
 import { storagePut } from "./storage";
 
 export const MARKETING_RISK_NOTICE = "Automated trading carries risk. Review the system and risk notes before deciding.";
@@ -334,7 +334,16 @@ async function publishApprovedMarketingContent({ contentItemId, actorUserId, ret
   const transition = await db.update(marketingContentItems).set({ status: "publish_pending", approvedByUserId: actorUserId, approvedAt: now, publishAttemptKey: attemptKey, publishAttemptedAt: now, publishErrorCode: null, publishErrorMessage: null }).where(and(eq(marketingContentItems.id, item.id), retry ? eq(marketingContentItems.status, "publish_failed") : eq(marketingContentItems.status, "draft")));
   if (!transition[0].affectedRows) throw new Error("This draft is already being processed or has changed");
   await db.insert(marketingContentAudits).values({ contentItemId: item.id, actorUserId, action: retry ? "publish_started" : "approved", contentHash: item.contentHash, note: retry ? "Automatic Threads publication retry started" : "Approval triggered automatic Threads publication" });
-  const text = `${item.caption}\n\n${item.riskNotice}`;
+  let text: string;
+  try {
+    text = buildThreadsPublicationText(item.caption, item.riskNotice);
+  } catch (error) {
+    const code = error instanceof ThreadsPublishError ? error.code : "INVALID_TEXT";
+    const message = error instanceof Error ? error.message : "The approved Threads text must contain 1–500 characters";
+    await db.update(marketingContentItems).set({ status: "publish_failed", publishErrorCode: code.slice(0, 64), publishErrorMessage: message.slice(0, 255) }).where(and(eq(marketingContentItems.id, item.id), eq(marketingContentItems.status, "publish_pending"), eq(marketingContentItems.publishAttemptKey, attemptKey)));
+    await db.insert(marketingContentAudits).values({ contentItemId: item.id, actorUserId, action: "publish_failed", contentHash: item.contentHash, note: `${code}: ${message}`.slice(0, 255) });
+    throw new Error(`Automatic Threads publication failed (${code}). ${message}`);
+  }
   try {
     const published = await publishThreadsPost({ ownerUserId: actorUserId, text, assetUrl: item.assetUrl });
     await db.update(marketingContentItems).set({ status: "posted", postedByUserId: actorUserId, postedAt: new Date(), externalPostId: published.externalPostId, publishErrorCode: null, publishErrorMessage: null }).where(and(eq(marketingContentItems.id, item.id), eq(marketingContentItems.status, "publish_pending"), eq(marketingContentItems.publishAttemptKey, attemptKey)));

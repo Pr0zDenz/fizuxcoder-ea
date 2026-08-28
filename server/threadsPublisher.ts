@@ -10,6 +10,22 @@ export class ThreadsPublishError extends Error {
   }
 }
 
+export const THREADS_MAX_TEXT_LENGTH = 500;
+
+export function validateThreadsText(text: string): string {
+  const normalized = text.trim();
+  if (!normalized || normalized.length > THREADS_MAX_TEXT_LENGTH) {
+    throw new ThreadsPublishError("INVALID_TEXT", "The approved Threads text must contain 1–500 characters");
+  }
+  return normalized;
+}
+
+export function buildThreadsPublicationText(caption: string, riskNotice?: string | null): string {
+  const normalizedCaption = caption.trim();
+  const normalizedRiskNotice = riskNotice?.trim() ?? "";
+  return validateThreadsText(normalizedRiskNotice ? `${normalizedCaption}\\n\\n${normalizedRiskNotice}` : normalizedCaption);
+}
+
 type ThreadsApiResponse = { id?: string; error?: { message?: string; type?: string; code?: number } };
 
 function safeProviderError(payload: ThreadsApiResponse | null, fallback: string) {
@@ -38,7 +54,7 @@ function resolvedImageUrl(assetUrl?: string | null) {
 }
 
 export async function publishThreadsPost({ ownerUserId, text, assetUrl, waitMs = THREADS_CONTAINER_WAIT_MS }: { ownerUserId: number; text: string; assetUrl?: string | null; waitMs?: number }) {
-  if (!text.trim() || text.length > 500) throw new ThreadsPublishError("INVALID_TEXT", "The approved Threads text must contain 1–500 characters");
+  text = validateThreadsText(text);
   const authorization = await getThreadsAuthorizationForPublishing(ownerUserId);
   if (!authorization) throw new ThreadsPublishError("NOT_CONNECTED", "Connect the owner Threads account before publishing");
   if (authorization.expiresAt && authorization.expiresAt.getTime() <= Date.now()) throw new ThreadsPublishError("TOKEN_EXPIRED", "The Threads authorization has expired; reconnect the owner account");

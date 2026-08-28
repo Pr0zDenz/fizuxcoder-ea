@@ -457,3 +457,8 @@
 - [x] Create a polished Malay-first “one ecosystem, multiple disciplines” infographic inspired by the supplied educational layout, without reproducing its artwork or wording.
 - [x] Prepare complementary Threads and private Telegram-invite campaign drafts that use the infographic as an owner-reviewed asset and preserve the approved schedule, link privacy, and risk disclosure safeguards.
 - [x] Validate asset accessibility, campaign claim boundaries, and standard-customer access controls before owner approval or any scheduled publication.
+
+- [x] Diagnose why an approved ecosystem Threads draft reaches publication with text outside the required 1–500 character range.
+- [x] Add fail-closed final-caption validation and a regression test so invalid Threads text cannot be submitted.
+- [x] Correct the affected draft or publication preparation path without retrying or sending a live Threads post.
+- [x] Run focused tests, full tests, TypeScript, build, and save a checkpoint after the safe fix.

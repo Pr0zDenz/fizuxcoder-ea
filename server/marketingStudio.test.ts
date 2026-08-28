@@ -3,12 +3,20 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const { getDbMock, publishThreadsPostMock } = vi.hoisted(() => ({ getDbMock: vi.fn(), publishThreadsPostMock: vi.fn() }));
 
 vi.mock("./db", () => ({ getDb: getDbMock }));
-vi.mock("./threadsPublisher", () => ({
-  publishThreadsPost: publishThreadsPostMock,
-  ThreadsPublishError: class ThreadsPublishError extends Error {
+vi.mock("./threadsPublisher", () => {
+  class MockThreadsPublishError extends Error {
     constructor(public readonly code: string, message: string) { super(message); }
-  },
-}));
+  }
+  return {
+    publishThreadsPost: publishThreadsPostMock,
+    ThreadsPublishError: MockThreadsPublishError,
+    buildThreadsPublicationText: (caption: string, riskNotice?: string | null) => {
+      const text = riskNotice ? `${caption.trim()}\n\n${riskNotice.trim()}` : caption.trim();
+      if (!text || text.length > 500) throw new MockThreadsPublishError("INVALID_TEXT", "The approved Threads text must contain 1–500 characters");
+      return text;
+    },
+  };
+});
 
 import { GEMINI_BOT_THREADS_ADDITIONS, GEMINI_BOT_THREADS_REVISION, TWO_WEEK_THREADS_PILOT, applyGeminiBotThreadsAdditions, applyGeminiBotThreadsRevision, approveMarketingContent, createEvergreenGeminiDraftAfterPublish, markMarketingContentPosted } from "./marketingStudio";
 
@@ -73,6 +81,15 @@ describe("private marketing studio safeguards", () => {
 
     await expect(approveMarketingContent({ contentItemId: 9, actorUserId: 1 })).rejects.toThrow("Resolve compliance review before publishing this draft");
     expect(updateSet).not.toHaveBeenCalled();
+    expect(publishThreadsPostMock).not.toHaveBeenCalled();
+  });
+
+  it("fails closed when the final caption plus risk notice exceeds 500 characters", async () => {
+    const { updateSet } = mockDatabase(draftItem({ caption: "x".repeat(480), riskNotice: "Automated trading carries risk." }));
+
+    await expect(approveMarketingContent({ contentItemId: 9, actorUserId: 1 })).rejects.toThrow("1–500 characters");
+    expect(updateSet).toHaveBeenCalledWith(expect.objectContaining({ status: "publish_pending" }));
+    expect(updateSet).toHaveBeenCalledWith(expect.objectContaining({ status: "publish_failed", publishErrorCode: "INVALID_TEXT" }));
     expect(publishThreadsPostMock).not.toHaveBeenCalled();
   });
 

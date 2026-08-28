@@ -9,7 +9,7 @@ import {
 import { ENV } from "./_core/env";
 import { getDb } from "./db";
 import { createEvergreenGeminiDraftAfterPublish, MARKETING_RISK_NOTICE } from "./marketingStudio";
-import { publishThreadsPost, ThreadsPublishError } from "./threadsPublisher";
+import { buildThreadsPublicationText, publishThreadsPost, ThreadsPublishError } from "./threadsPublisher";
 
 export const THREADS_MARKETING_AUTOMATION_KEY = "owner_threads_marketing";
 export const THREADS_MARKETING_TIMEZONE = "Asia/Kuala_Lumpur";
@@ -230,20 +230,26 @@ export async function prepareEcosystemTelegramGrowthDrafts(ownerUserId: number) 
   let created = 0;
   let existing = 0;
   for (const seed of ECOSYSTEM_GROWTH_SEEDS) {
-    const caption = `${seed.caption}\n\n${inviteLink}\n${inviteLink}\n${inviteLink}\n\n•\nTrading involves risk.\n\n#ExpertAdvisor #TradingMalaysia #DemoFirst #MT5`;
+    const compactCaption = `${seed.caption.replace(/Observe dulu dalam private channel:|Observe dulu:|Join untuk observe:/, "Observe dulu:")}\n\n${inviteLink}\n\n#ExpertAdvisor #TradingMalaysia #DemoFirst`;
     const contentKey = `${seed.contentKey}-${createHash("sha256").update(inviteLink).digest("hex").slice(0, 12)}`;
-    const [prior] = await db.select({ id: marketingContentItems.id }).from(marketingContentItems)
+    const [prior] = await db.select({ id: marketingContentItems.id, caption: marketingContentItems.caption, status: marketingContentItems.status }).from(marketingContentItems)
       .where(eq(marketingContentItems.contentKey, contentKey)).limit(1);
     if (prior) {
+      if ((prior.status === "draft" || prior.status === "publish_failed") && prior.caption !== compactCaption) {
+        const repairedDraft = { ...seed, caption: compactCaption };
+        const repairedHash = copyHash(repairedDraft);
+        await db.update(marketingContentItems).set({ caption: compactCaption, status: "draft", publishErrorCode: null, publishErrorMessage: null, contentHash: repairedHash }).where(eq(marketingContentItems.id, prior.id));
+        await db.insert(marketingContentAudits).values({ contentItemId: prior.id, actorUserId: ownerUserId, action: "revised", contentHash: repairedHash, note: "Compacted ecosystem infographic caption to the Threads 500-character limit; owner review remains required" });
+      }
       existing += 1;
       continue;
     }
-    const draft = { ...seed, caption };
+    const draft = { ...seed, caption: compactCaption };
     const hash = copyHash(draft);
     const result = await db.insert(marketingContentItems).values({
       contentKey,
       title: seed.title,
-      caption,
+      caption: compactCaption,
       language: "en_ms",
       assetUrl: seed.assetUrl,
       assetAlt: seed.assetAlt,
@@ -257,13 +263,7 @@ export async function prepareEcosystemTelegramGrowthDrafts(ownerUserId: number) 
       automationEligible: "no",
     });
     const contentItemId = Number(result[0].insertId);
-    await db.insert(marketingContentAudits).values({
-      contentItemId,
-      actorUserId: ownerUserId,
-      action: "revised",
-      contentHash: hash,
-      note: "Gemini and 3 Serangkai ecosystem infographic draft created; explicit owner review is required before scheduling",
-    });
+    await db.insert(marketingContentAudits).values({ contentItemId, actorUserId: ownerUserId, action: "revised", contentHash: hash, note: "Gemini and 3 Serangkai ecosystem infographic draft created; explicit owner review is required before scheduling" });
     created += 1;
   }
   return { created, existing };
@@ -442,7 +442,7 @@ export async function runScheduledThreadsMarketing(taskUid: string) {
   await writeRunAudit("run_started", "One owner-approved scheduled item claimed for publication", item.id);
   await db.insert(marketingContentAudits).values({ contentItemId: item.id, actorUserId: settings.ownerUserId, action: "publish_started", contentHash: item.contentHash, note: "Owner-governed scheduled Threads publication started" });
   try {
-    const published = await publishThreadsPost({ ownerUserId: settings.ownerUserId, text: `${item.caption}\n\n${item.riskNotice}`, assetUrl: item.assetUrl });
+    const published = await publishThreadsPost({ ownerUserId: settings.ownerUserId, text: buildThreadsPublicationText(item.caption, item.riskNotice), assetUrl: item.assetUrl });
     const completed = await db.update(marketingContentItems).set({
       status: "posted",
       postedByUserId: settings.ownerUserId,

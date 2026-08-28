@@ -86,6 +86,7 @@ describe("private Telegram invite Threads automation safeguards", () => {
     ]);
     expect(insertedDrafts.every(item => item.status === "draft" && item.automationEligible === "no")).toBe(true);
     expect(insertedDrafts.every(item => item.complianceFlags.includes("generated_infographic_owner_review"))).toBe(true);
+    expect(insertedDrafts.every(item => `${item.caption}\n\n${item.riskNotice}`.trim().length <= 500)).toBe(true);
   });
 
   it("does not recreate ecosystem drafts when the secure invite-specific records already exist", async () => {
