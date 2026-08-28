@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { entitlements, telegramSignalAudits, telegramSignalEvents, telegramSignalLifecycleUpdates, telegramSignalSettings, telegramSignalSettingsAudits, telegramSignalSourceAudits, telegramSignalSources } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import { getDb } from "./db";
@@ -169,7 +169,14 @@ export function parseTelegramLifecycleInput(body: Record<string, unknown>): Life
   return { eventId, originalEventId, eventType, accountNumber, symbol, direction, stage, hitPrice: hitPrice!, positionSetClosed, basketId, triggeredEntryLayer, triggeredEntryPrice, cancelledPendingCount, cancellationReason, occurredDate, occurredAt };
 }
 
-export function formatTelegramLifecycleUpdate(update: LifecycleInput) {
+export function resolveBasketClosureReason(recordedStages: string[]) {
+  const highestConfirmedTp = ["TP3", "TP2", "TP1"].find(stage => recordedStages.includes(stage));
+  return highestConfirmedTp
+    ? `Reason: ${highestConfirmedTp} reached — all basket positions closed.`
+    : "Reason: Confirmed basket closure after managed exposure cleared.";
+}
+
+export function formatTelegramLifecycleUpdate(update: LifecycleInput & { closureReason?: string }) {
   if (update.stage === "BASKET_CLOSED") {
     return [
       "✅ BASKET CLOSED (All basket positions closed) 💸",
@@ -177,6 +184,7 @@ export function formatTelegramLifecycleUpdate(update: LifecycleInput) {
       `📊 Symbol: ${brokerNeutralSymbol(update.symbol)}`,
       `📈 Direction: ${update.direction}`,
       "💼 Basket status: All managed basket positions are closed.",
+      `🧾 ${update.closureReason || resolveBasketClosureReason([])}`,
       update.triggeredEntryLayer ? `📌 Triggered entry: Layer ${update.triggeredEntryLayer}${update.triggeredEntryPrice ? ` @ ${update.triggeredEntryPrice}` : ""}` : null,
       update.cancelledPendingCount ? `🧹 Pending limit orders cancelled: ${update.cancelledPendingCount}${update.cancellationReason ? ` (${update.cancellationReason})` : ""}` : null,
       `📅 Event Date: ${update.occurredDate}`,
@@ -449,6 +457,13 @@ export async function receiveTelegramBasketOutcome(update: LifecycleInput) {
   ));
   const originals = candidates.filter(signal => isMatchingBasketClosureSignal(signal, update));
   if (!originals.length) throw new Error("No delivered Telegram setup signals match this basket outcome");
+  const priorLifecycleRows = await db.select({ stage: telegramSignalLifecycleUpdates.stage })
+    .from(telegramSignalLifecycleUpdates)
+    .where(and(
+      inArray(telegramSignalLifecycleUpdates.stage, ["TP1", "TP2", "TP3"]),
+      inArray(telegramSignalLifecycleUpdates.originalSignalEventId, originals.map(signal => signal.id)),
+    ));
+  const closureReason = resolveBasketClosureReason(priorLifecycleRows.map(row => row.stage));
 
   const state = deliveryState(settings);
   let created = 0;
@@ -495,7 +510,7 @@ export async function receiveTelegramBasketOutcome(update: LifecycleInput) {
     await db.update(telegramSignalLifecycleUpdates).set({ status: "delivering" }).where(eq(telegramSignalLifecycleUpdates.id, lifecycleId));
     await recordAudit(original.id, "delivery_started", `Telegram ${outcomeLabel} reply delivery started.`);
     try {
-      const replyMessageId = await sendTelegramMessage(settings!.channelId!, formatTelegramLifecycleUpdate(update), original.telegramMessageId!);
+      const replyMessageId = await sendTelegramMessage(settings!.channelId!, formatTelegramLifecycleUpdate({ ...update, closureReason }), original.telegramMessageId!);
       await db.update(telegramSignalLifecycleUpdates).set({ status: "delivered", replyMessageId }).where(eq(telegramSignalLifecycleUpdates.id, lifecycleId));
       await recordAudit(original.id, "delivered", `Telegram ${outcomeLabel} reply ${replyMessageId} confirmed.`);
       delivered++;

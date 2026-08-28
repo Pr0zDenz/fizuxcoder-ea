@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { brokerNeutralSymbol, buildTelegramSignalPersistenceValues, deliveryState, formatMockTelegramSignal, formatTelegramLifecycleUpdate, formatTelegramSignal, isConsistentStopLossHit, isLifecycleStageAllowed, isMatchingBasketClosureSignal, parseTelegramLifecycleInput, parseTelegramSignalInput, parseTelegramSignalSourceInput, resolveTelegramSignalEligibility } from "./telegramSignals";
+import { brokerNeutralSymbol, buildTelegramSignalPersistenceValues, deliveryState, formatMockTelegramSignal, formatTelegramLifecycleUpdate, formatTelegramSignal, isConsistentStopLossHit, isLifecycleStageAllowed, resolveBasketClosureReason, isMatchingBasketClosureSignal, parseTelegramLifecycleInput, parseTelegramSignalInput, parseTelegramSignalSourceInput, resolveTelegramSignalEligibility } from "./telegramSignals";
 
 describe("Telegram signal contract", () => {
   const validSetup = {
@@ -74,6 +74,13 @@ describe("Telegram signal contract", () => {
     expect(() => parseTelegramSignalInput({ ...validSetup, basketId: "basket id" })).toThrow("basketId is invalid");
     expect(() => parseTelegramSignalInput({ ...validSetup, entryLayers: [{ layer: 1, orderType: "STOP", price: "4599.20" }] })).toThrow("entryLayers[0].orderType is invalid");
     expect(() => parseTelegramLifecycleInput({ eventId: "lifecycle-123456", originalEventId: "signal-123456", eventType: "tp1_hit", accountNumber: "230069105", symbol: "XAUUSD", direction: "SELL", hitPrice: "4596.58", triggeredEntryLayer: 0, occurredDate: "2026-08-27", occurredAt: "20:05:00" })).toThrow("triggeredEntryLayer is invalid");
+  });
+
+  it("reports the highest confirmed TP milestone as the basket closure reason", () => {
+    expect(resolveBasketClosureReason(["TP1"])).toBe("Reason: TP1 reached — all basket positions closed.");
+    expect(resolveBasketClosureReason(["TP1", "TP2"])).toBe("Reason: TP2 reached — all basket positions closed.");
+    expect(resolveBasketClosureReason(["TP1", "TP2", "TP3"])).toBe("Reason: TP3 reached — all basket positions closed.");
+    expect(resolveBasketClosureReason(["SL"])).toBe("Reason: Confirmed basket closure after managed exposure cleared.");
   });
 
   it("rejects an SL hit that is on the wrong side of the original setup stop-loss", () => {

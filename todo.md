@@ -497,3 +497,13 @@
 - [x] Add direction-aware validation so lifecycle SL events cannot be delivered when the hit price is inconsistent with the setup SL.
 - [x] Add regression coverage and preserve display-only behavior without replaying the historical message.
 - [x] Validate the fix and prepare a new MQ5 handoff only if the EA observer requires correction.
+
+- [x] Trace whether TP3 was recorded before each basket-closed event.
+- [x] Add an evidence-based closure reason to basket-closed Telegram updates without guessing.
+- [x] Add regression coverage for TP3, non-TP3, and unknown closure reasons.
+- [x] Validate the wording-only reporting change and save a checkpoint without replaying live events.
+
+- [x] Make basket-closed Telegram updates report the highest confirmed TP milestone: TP1, TP2, or TP3.
+- [x] Ensure the milestone is aggregated across all matching setup signals in the basket and never inferred without evidence.
+- [x] Add regression coverage for TP1, TP2, TP3, and no-confirmed-TP closure reasons.
+- [x] Re-run validation and save a checkpoint without replaying the existing live basket message.
