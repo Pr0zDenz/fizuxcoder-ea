@@ -546,7 +546,7 @@
 - [x] Preserve the existing midnight notification summary as a separate report type
 - [x] Add authenticated outcome fields needed for exact pips, wins, losses, and streak calculations
 
-- [ ] Create and link the recurring heartbeat task for daily performance reporting at 23:59 GMT+8
-- [ ] Create and link the recurring heartbeat task for weekly performance reporting at 09:00 GMT+8
-- [ ] Enable performance-report delivery only after verifying the owner Telegram setting and task UIDs
-- [ ] Run a non-delivery validation against recorded outcomes before the first scheduled post
+- [x] Create and link the recurring heartbeat task for daily performance reporting at 23:59 GMT+8
+- [x] Create and link the recurring heartbeat task for weekly performance reporting at 09:00 GMT+8
+- [x] Enable performance-report delivery only after verifying the owner Telegram setting and task UIDs
+- [x] Run a non-delivery validation against recorded outcomes before the first scheduled post
