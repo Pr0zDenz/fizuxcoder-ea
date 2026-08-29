@@ -10,11 +10,11 @@ describe("Telegram performance reports", () => {
     expect(window.label).toBe("28 AUGUST");
   });
 
-  it("uses the previous Monday-Sunday period for the 09:00 Monday weekly report", () => {
+  it("uses the previous Monday-Friday trading week for the 09:00 Monday report", () => {
     const window = getPerformanceWindow("weekly", new Date("2026-08-31T01:00:00.000Z"));
     expect(window.start.toISOString()).toBe("2026-08-23T16:00:00.000Z");
-    expect(window.end.toISOString()).toBe("2026-08-30T16:00:00.000Z");
-    expect(window.label).toBe("24 AUGUST – 30 AUGUST");
+    expect(window.end.toISOString()).toBe("2026-08-28T16:00:00.000Z");
+    expect(window.label).toBe("24 AUGUST – 28 AUGUST");
   });
 
   it("normalizes a 0.54 gold movement to 5.4 project pips and derives terminal outcomes", () => {
@@ -32,8 +32,8 @@ describe("Telegram performance reports", () => {
     ];
     const daily = formatPerformanceReport("daily", outcomes, "28 AUGUST");
     const weekly = formatPerformanceReport("weekly", outcomes, "24 AUGUST – 28 AUGUST");
-    expect(daily).toContain("EAZY THE GREAT DAILY PERFORMANCE | 28 AUGUST");
-    expect(weekly).toContain("EAZY THE GREAT WEEKLY PERFORMANCE | 24 AUGUST – 28 AUGUST");
+    expect(daily).toContain("GEMINI QUANT BOT DAILY PERFORMANCE | 28 AUGUST");
+    expect(weekly).toContain("GEMINI QUANT BOT WEEKLY PERFORMANCE | 24 AUGUST – 28 AUGUST");
     expect(weekly).toContain("🟢GOLD BUY : +54pips");
     expect(weekly).toContain("🔴GOLD SELL : SL");
     expect(weekly).toContain("Total : 1 Win, 1 Loss");

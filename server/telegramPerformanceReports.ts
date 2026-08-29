@@ -43,10 +43,10 @@ export function getPerformanceWindow(reportType: "daily" | "weekly", now: Date =
   const current = malaysiaParts(now);
   const currentLocalDay = new Date(Date.UTC(current.year, current.month - 1, current.day));
   const localMidnightUtc = new Date(currentLocalDay.getTime() - 24 * 60 * 60 * 1000 + 16 * 60 * 60 * 1000);
-  const end = reportType === "daily" ? new Date(localMidnightUtc.getTime() + 24 * 60 * 60 * 1000) : localMidnightUtc;
-  const start = new Date(end.getTime() - (reportType === "daily" ? 24 : 24 * 7) * 60 * 60 * 1000);
+  const end = reportType === "daily" ? new Date(localMidnightUtc.getTime() + 24 * 60 * 60 * 1000) : new Date(localMidnightUtc.getTime() - 2 * 24 * 60 * 60 * 1000);
+  const start = new Date(end.getTime() - (reportType === "daily" ? 24 : 24 * 5) * 60 * 60 * 1000);
   const periodStartLocal = reportType === "daily" ? currentLocalDay : new Date(currentLocalDay.getTime() - ((currentLocalDay.getUTCDay() || 7) - 1 + 7) * 24 * 60 * 60 * 1000);
-  const periodEndLocal = reportType === "daily" ? currentLocalDay : new Date(periodStartLocal.getTime() + 6 * 24 * 60 * 60 * 1000);
+  const periodEndLocal = reportType === "daily" ? currentLocalDay : new Date(periodStartLocal.getTime() + 4 * 24 * 60 * 60 * 1000);
   const periodStartDate = isoDate(periodStartLocal.getUTCFullYear(), periodStartLocal.getUTCMonth() + 1, periodStartLocal.getUTCDate());
   const periodEndDate = isoDate(periodEndLocal.getUTCFullYear(), periodEndLocal.getUTCMonth() + 1, periodEndLocal.getUTCDate());
   return { start, end, periodStartDate, periodEndDate, label: reportType === "daily" ? labelFromIso(periodStartDate) : `${labelFromIso(periodStartDate)} – ${labelFromIso(periodEndDate)}` };
@@ -85,7 +85,7 @@ export function formatPerformanceReport(reportType: "daily" | "weekly", outcomes
     if (item.result !== "WIN") break;
     streak += 1;
   }
-  const header = reportType === "daily" ? `EAZY THE GREAT DAILY PERFORMANCE | ${periodLabel}` : `EAZY THE GREAT WEEKLY PERFORMANCE | ${periodLabel}`;
+  const header = reportType === "daily" ? `GEMINI QUANT BOT DAILY PERFORMANCE | ${periodLabel}` : `GEMINI QUANT BOT WEEKLY PERFORMANCE | ${periodLabel}`;
   const sections = reportType === "weekly" ? Array.from(new Set(outcomes.map(item => item.occurredDate))).map(date => {
     const dayOutcomes = outcomes.filter(item => item.occurredDate === date);
     return [`\n${date.toUpperCase()}`, ...dayOutcomes.map(item => `${item.result === "WIN" ? "🟢" : "🔴"}GOLD ${item.direction} : ${item.result === "WIN" ? `+${item.pips}pips` : "SL"}`)].join("\n");

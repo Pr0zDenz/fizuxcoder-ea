@@ -550,3 +550,15 @@
 - [x] Create and link the recurring heartbeat task for weekly performance reporting at 09:00 GMT+8
 - [x] Enable performance-report delivery only after verifying the owner Telegram setting and task UIDs
 - [x] Run a non-delivery validation against recorded outcomes before the first scheduled post
+
+- [x] Generate a non-delivery preview for today’s daily performance report
+- [x] Generate a non-delivery preview for the overdue previous-week performance report
+- [x] Verify both previews’ dates, outcome counts, pips, streaks, and safety wording
+- [x] Obtain explicit approval before publishing the overdue weekly report
+
+- [x] Align the weekly performance window to the completed Monday–Friday trading week before approval-gated publication
+
+- [x] Rename the weekly Telegram performance heading to GEMINI QUANT BOT WEEKLY PERFORMANCE
+- [x] Update weekly formatter tests and the saved preview artifact to use the new heading
+
+- [x] Rename the daily Telegram performance heading to GEMINI QUANT BOT DAILY PERFORMANCE
