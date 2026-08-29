@@ -525,3 +525,5 @@
 - [x] Investigate missing Telegram daily summary for 2026-08-28 00:00 GMT+8
 - [x] Verify midnight summary schedule execution, empty-day policy, eligible signal rows, and delivery outcome
 - [x] Correct the summary workflow if a portal-side defect is confirmed and add regression coverage
+
+- [x] Send the owner-authorized delayed 28 August 2026 Telegram summary immediately and record its delivery outcome
