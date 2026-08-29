@@ -8,7 +8,7 @@ Generated from delivered authenticated EA setup/lifecycle records without sendin
 GEMINI QUANT BOT DAILY PERFORMANCE | 30 AUGUST
 
 Total : 0 Win, 0 Loss
-Win Pips : 0 Pips⚜️
+Net Pips : 0 Pips⚜️
 
 ➖➖➖➖➖➖➖➖➖➖➖
 
@@ -27,30 +27,30 @@ Recorded window: 24 August 00:00 through 29 August 00:00 GMT+8. There were 40 de
 GEMINI QUANT BOT WEEKLY PERFORMANCE | 24 AUGUST – 28 AUGUST
 
 27-AUG-2026
-🔴GOLD SELL : SL
-🔴GOLD SELL : SL
+🔴GOLD SELL : SL -0pips
+🔴GOLD SELL : SL -0pips
 
 28-AUG-2026
-🔴GOLD SELL : SL
+🔴GOLD SELL : SL -0pips
 🟢GOLD SELL : +55.2pips
 🟢GOLD SELL : +31.3pips
-🔴GOLD SELL : SL
+🔴GOLD SELL : SL -0pips
 🟢GOLD SELL : +71.4pips
 🟢GOLD SELL : +16.8pips
 🟢GOLD SELL : +56.5pips
 🟢GOLD SELL : +2.6pips
 🟢GOLD SELL : +3.5pips
-🔴GOLD SELL : SL
+🔴GOLD SELL : SL -0pips
 🟢GOLD SELL : +20.9pips
 🟢GOLD SELL : +21.1pips
-🔴GOLD SELL : SL
+🔴GOLD SELL : SL -0pips
 🟢GOLD SELL : +312.9pips
-🔴GOLD SELL : SL
+🔴GOLD SELL : SL -0pips
 🟢GOLD SELL : +51.6pips
 🟢GOLD BUY : +27.9pips
 🟢GOLD BUY : +38.1pips
-🔴GOLD BUY : SL
-🔴GOLD BUY : SL
+🔴GOLD BUY : SL -0pips
+🔴GOLD BUY : SL -0pips
 🟢GOLD BUY : +57.1pips
 🟢GOLD BUY : +2.9pips
 🟢GOLD BUY : +32.5pips
@@ -59,7 +59,7 @@ GEMINI QUANT BOT WEEKLY PERFORMANCE | 24 AUGUST – 28 AUGUST
 🟢GOLD SELL : +53.6pips
 
 Total : 19 Win, 9 Loss
-Win Pips : 352.8 Pips⚜️
+Net Pips : 352.8 Pips⚜️
 
 ➖➖➖➖➖➖➖➖➖➖➖
 

@@ -477,6 +477,7 @@ export const telegramPerformanceReportRuns = mysqlTable("telegramPerformanceRepo
   reportType: mysqlEnum("reportType", ["daily", "weekly"]).notNull(),
   periodStart: timestamp("periodStart").notNull(),
   periodEnd: timestamp("periodEnd").notNull(),
+  revision: int("revision").notNull().default(0),
   status: mysqlEnum("status", ["running", "delivered", "failed", "skipped"]).notNull().default("running"),
   winCount: int("winCount").notNull().default(0),
   lossCount: int("lossCount").notNull().default(0),
@@ -488,7 +489,7 @@ export const telegramPerformanceReportRuns = mysqlTable("telegramPerformanceRepo
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   completedAt: timestamp("completedAt"),
 }, table => [
-  uniqueIndex("tg_performance_report_period_unique").on(table.reportType, table.periodStart, table.periodEnd),
+  uniqueIndex("tg_performance_report_period_revision_unique").on(table.reportType, table.periodStart, table.periodEnd, table.revision),
   index("tg_performance_report_setting_created_idx").on(table.settingKey, table.createdAt),
 ]);
 

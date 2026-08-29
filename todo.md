@@ -564,3 +564,8 @@
 - [x] Rename the daily Telegram performance heading to GEMINI QUANT BOT DAILY PERFORMANCE
 
 - [x] Publish the approved overdue GEMINI QUANT BOT weekly report for 24–28 August 2026 and record its Telegram delivery audit
+
+- [x] Display normalized loss pips beside every SL result in daily and weekly Gemini Quant Bot reports
+- [x] Verify net pips equals winning pips minus stop-loss pips in formatter tests and previews
+
+- [x] Repost the corrected overdue weekly report exactly once after SL loss pips are displayed

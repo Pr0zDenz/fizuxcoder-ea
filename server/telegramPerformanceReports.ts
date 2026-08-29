@@ -88,9 +88,9 @@ export function formatPerformanceReport(reportType: "daily" | "weekly", outcomes
   const header = reportType === "daily" ? `GEMINI QUANT BOT DAILY PERFORMANCE | ${periodLabel}` : `GEMINI QUANT BOT WEEKLY PERFORMANCE | ${periodLabel}`;
   const sections = reportType === "weekly" ? Array.from(new Set(outcomes.map(item => item.occurredDate))).map(date => {
     const dayOutcomes = outcomes.filter(item => item.occurredDate === date);
-    return [`\n${date.toUpperCase()}`, ...dayOutcomes.map(item => `${item.result === "WIN" ? "🟢" : "🔴"}GOLD ${item.direction} : ${item.result === "WIN" ? `+${item.pips}pips` : "SL"}`)].join("\n");
-  }) : outcomes.map(item => `${item.result === "WIN" ? "🟢" : "🔴"}GOLD ${item.direction} : ${item.result === "WIN" ? `+${item.pips}pips` : "SL"}`);
-  return [header, ...sections, "", `Total : ${wins.length} Win, ${losses.length} Loss`, `Win Pips : ${totalPips} Pips⚜️`, "", "➖➖➖➖➖➖➖➖➖➖➖", "", `${streak} WINSTREAKS ONGOING ✅`, "", "➖➖➖➖➖➖➖➖➖➖➖", "", "⚠️ Reported outcomes are based only on authenticated EA lifecycle records. Past results are not a guarantee of future performance. Trading involves risk."].join("\n");
+    return [`\n${date.toUpperCase()}`, ...dayOutcomes.map(item => `${item.result === "WIN" ? "🟢" : "🔴"}GOLD ${item.direction} : ${item.result === "WIN" ? `+${item.pips}pips` : `SL -${item.pips}pips`}`)].join("\n");
+  }) : outcomes.map(item => `${item.result === "WIN" ? "🟢" : "🔴"}GOLD ${item.direction} : ${item.result === "WIN" ? `+${item.pips}pips` : `SL -${item.pips}pips`}`);
+  return [header, ...sections, "", `Total : ${wins.length} Win, ${losses.length} Loss`, `Net Pips : ${totalPips} Pips⚜️`, "", "➖➖➖➖➖➖➖➖➖➖➖", "", `${streak} WINSTREAKS ONGOING ✅`, "", "➖➖➖➖➖➖➖➖➖➖➖", "", "⚠️ Reported outcomes are based only on authenticated EA lifecycle records. Past results are not a guarantee of future performance. Trading involves risk."].join("\n");
 }
 
 export async function runTelegramPerformanceReportByTask(taskUid: string, now: Date = new Date()) {
@@ -103,7 +103,7 @@ export async function runTelegramPerformanceReportByTask(taskUid: string, now: D
   return runTelegramPerformanceReport(reportType, now);
 }
 
-export async function runTelegramPerformanceReport(reportType: "daily" | "weekly", now: Date = new Date()) {
+export async function runTelegramPerformanceReport(reportType: "daily" | "weekly", now: Date = new Date(), revision = 0) {
   const db = await getDb();
   if (!db) throw new Error("Database is unavailable");
   const [settings] = await db.select().from(telegramDailySummarySettings).where(eq(telegramDailySummarySettings.settingKey, PERFORMANCE_SETTING_KEY)).limit(1);
@@ -118,7 +118,7 @@ export async function runTelegramPerformanceReport(reportType: "daily" | "weekly
   const hash = createHash("sha256").update(message).digest("hex");
   let runId: number;
   try {
-    const result = await db.insert(telegramPerformanceReportRuns).values({ settingKey: PERFORMANCE_SETTING_KEY, reportType, periodStart: window.start, periodEnd: window.end, status: "running", winCount: outcomes.filter(item => item.result === "WIN").length, lossCount: outcomes.filter(item => item.result === "LOSS").length, totalPips: String(roundPips(outcomes.reduce((sum, item) => sum + (item.result === "WIN" ? item.pips : -item.pips), 0))), currentWinStreak: (() => { let value = 0; for (const item of outcomes.slice().reverse()) { if (item.result !== "WIN") break; value += 1; } return value; })(), messageHash: hash });
+    const result = await db.insert(telegramPerformanceReportRuns).values({ settingKey: PERFORMANCE_SETTING_KEY, reportType, periodStart: window.start, periodEnd: window.end, revision, status: "running", winCount: outcomes.filter(item => item.result === "WIN").length, lossCount: outcomes.filter(item => item.result === "LOSS").length, totalPips: String(roundPips(outcomes.reduce((sum, item) => sum + (item.result === "WIN" ? item.pips : -item.pips), 0))), currentWinStreak: (() => { let value = 0; for (const item of outcomes.slice().reverse()) { if (item.result !== "WIN") break; value += 1; } return value; })(), messageHash: hash });
     runId = Number(result[0].insertId);
   } catch {
     return { ok: true, skipped: "already_recorded" as const, reportType, periodStart: window.start.toISOString() };

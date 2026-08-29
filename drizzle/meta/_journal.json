@@ -197,6 +197,13 @@
       "when": 1788039905787,
       "tag": "0027_tricky_bucky",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "5",
+      "when": 1788042199429,
+      "tag": "0028_loud_the_phantom",
+      "breakpoints": true
     }
   ]
 }

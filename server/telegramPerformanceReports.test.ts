@@ -35,9 +35,9 @@ describe("Telegram performance reports", () => {
     expect(daily).toContain("GEMINI QUANT BOT DAILY PERFORMANCE | 28 AUGUST");
     expect(weekly).toContain("GEMINI QUANT BOT WEEKLY PERFORMANCE | 24 AUGUST – 28 AUGUST");
     expect(weekly).toContain("🟢GOLD BUY : +54pips");
-    expect(weekly).toContain("🔴GOLD SELL : SL");
+    expect(weekly).toContain("🔴GOLD SELL : SL -10pips");
     expect(weekly).toContain("Total : 1 Win, 1 Loss");
-    expect(weekly).toContain("Win Pips : 44 Pips");
+    expect(weekly).toContain("Net Pips : 44 Pips");
     expect(weekly).toContain("0 WINSTREAKS ONGOING ✅");
   });
 });
