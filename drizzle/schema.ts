@@ -435,6 +435,10 @@ export const telegramDailySummarySettings = mysqlTable("telegramDailySummarySett
   ownerUserId: int("ownerUserId").notNull().references(() => users.id, { onDelete: "cascade" }),
   timezone: varchar("timezone", { length: 64 }).notNull().default("Asia/Kuala_Lumpur"),
   cronExpression: varchar("cronExpression", { length: 64 }).notNull().default("0 0 16 * * *"),
+  dailyPerformanceCronExpression: varchar("dailyPerformanceCronExpression", { length: 64 }).notNull().default("0 59 15 * * *"),
+  dailyPerformanceScheduleCronTaskUid: varchar("dailyPerformanceScheduleCronTaskUid", { length: 65 }),
+  weeklyPerformanceCronExpression: varchar("weeklyPerformanceCronExpression", { length: 64 }).notNull().default("0 0 1 * * 1"),
+  weeklyPerformanceScheduleCronTaskUid: varchar("weeklyPerformanceScheduleCronTaskUid", { length: 65 }),
   automaticDeliveryEnabled: mysqlEnum("automaticDeliveryEnabled", ["yes", "no"]).notNull().default("no"),
   killSwitchEngaged: mysqlEnum("killSwitchEngaged", ["yes", "no"]).notNull().default("yes"),
   sendWhenNoSignals: mysqlEnum("sendWhenNoSignals", ["yes", "no"]).notNull().default("no"),
@@ -467,6 +471,27 @@ export const telegramDailySummaryRuns = mysqlTable("telegramDailySummaryRuns", {
 ]);
 
 /** Append-only owner configuration and scheduled-run evidence for daily summaries. */
+export const telegramPerformanceReportRuns = mysqlTable("telegramPerformanceReportRuns", {
+  id: int("id").autoincrement().primaryKey(),
+  settingKey: varchar("settingKey", { length: 48 }).notNull().references(() => telegramDailySummarySettings.settingKey, { onDelete: "cascade" }),
+  reportType: mysqlEnum("reportType", ["daily", "weekly"]).notNull(),
+  periodStart: timestamp("periodStart").notNull(),
+  periodEnd: timestamp("periodEnd").notNull(),
+  status: mysqlEnum("status", ["running", "delivered", "failed", "skipped"]).notNull().default("running"),
+  winCount: int("winCount").notNull().default(0),
+  lossCount: int("lossCount").notNull().default(0),
+  totalPips: varchar("totalPips", { length: 32 }).notNull().default("0"),
+  currentWinStreak: int("currentWinStreak").notNull().default(0),
+  messageHash: varchar("messageHash", { length: 64 }),
+  telegramMessageId: varchar("telegramMessageId", { length: 64 }),
+  failureReason: varchar("failureReason", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
+}, table => [
+  uniqueIndex("tg_performance_report_period_unique").on(table.reportType, table.periodStart, table.periodEnd),
+  index("tg_performance_report_setting_created_idx").on(table.settingKey, table.createdAt),
+]);
+
 export const telegramDailySummaryAudits = mysqlTable("telegramDailySummaryAudits", {
   id: int("id").autoincrement().primaryKey(),
   settingKey: varchar("settingKey", { length: 48 }).notNull().references(() => telegramDailySummarySettings.settingKey, { onDelete: "cascade" }),

@@ -527,3 +527,26 @@
 - [x] Correct the summary workflow if a portal-side defect is confirmed and add regression coverage
 
 - [x] Send the owner-authorized delayed 28 August 2026 Telegram summary immediately and record its delivery outcome
+
+- [x] Record the supplied EAZY weekly-performance Telegram format as the target report layout
+- [x] Confirm whether the new format supplements or replaces the existing midnight daily summary
+- [x] Verify that future pips, wins, losses, and streak claims come only from recorded trade outcomes
+
+- [x] Add a daily performance report in the supplied EAZY-style layout, separate from the midnight notification summary
+- [x] Add a weekly performance report in the supplied EAZY-style layout
+- [x] Calculate pips, wins, losses, and streaks only from authenticated recorded trade outcomes
+- [x] Keep daily and weekly performance reports separate from the existing setup/lifecycle notification summary
+
+- [x] Use the confirmed XAUUSD convention: 10 points = 1 pip, with three-layer basket movement normalized rather than summed as independent pips
+- [x] Set the daily performance report target time to 23:59 GMT+8
+- [x] Set the weekly performance report target time to 09:00 GMT+8 after confirming the publication weekday
+
+- [x] Implement the confirmed daily performance report at 23:59 GMT+8
+- [x] Implement the confirmed weekly performance report at 09:00 GMT+8
+- [x] Preserve the existing midnight notification summary as a separate report type
+- [x] Add authenticated outcome fields needed for exact pips, wins, losses, and streak calculations
+
+- [ ] Create and link the recurring heartbeat task for daily performance reporting at 23:59 GMT+8
+- [ ] Create and link the recurring heartbeat task for weekly performance reporting at 09:00 GMT+8
+- [ ] Enable performance-report delivery only after verifying the owner Telegram setting and task UIDs
+- [ ] Run a non-delivery validation against recorded outcomes before the first scheduled post
