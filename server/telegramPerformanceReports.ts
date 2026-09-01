@@ -25,9 +25,9 @@ type DeliveredSetup = Pick<typeof telegramSignalEvents.$inferSelect, "id" | "sym
 type DeliveredLifecycle = Pick<typeof telegramSignalLifecycleUpdates.$inferSelect, "originalSignalEventId" | "stage" | "hitPrice" | "updatedAt">;
 
 function malaysiaParts(value: Date) {
-  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: PERFORMANCE_TIMEZONE, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(value);
+  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: PERFORMANCE_TIMEZONE, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", hourCycle: "h23" }).formatToParts(value);
   const get = (type: Intl.DateTimeFormatPartTypes) => parts.find(part => part.type === type)?.value ?? "";
-  return { year: Number(get("year")), month: Number(get("month")), day: Number(get("day")) };
+  return { year: Number(get("year")), month: Number(get("month")), day: Number(get("day")), hour: Number(get("hour")) };
 }
 
 function isoDate(year: number, month: number, day: number) {
@@ -42,11 +42,13 @@ function labelFromIso(value: string) {
 export function getPerformanceWindow(reportType: "daily" | "weekly", now: Date = new Date()) {
   const current = malaysiaParts(now);
   const currentLocalDay = new Date(Date.UTC(current.year, current.month - 1, current.day));
-  const localMidnightUtc = new Date(currentLocalDay.getTime() - 24 * 60 * 60 * 1000 + 16 * 60 * 60 * 1000);
+  const dailyReportDay = reportType === "daily" && current.hour < 1 ? new Date(currentLocalDay.getTime() - 24 * 60 * 60 * 1000) : currentLocalDay;
+  const reportLocalDay = reportType === "daily" ? dailyReportDay : currentLocalDay;
+  const localMidnightUtc = new Date(reportLocalDay.getTime() - 8 * 60 * 60 * 1000);
   const end = reportType === "daily" ? new Date(localMidnightUtc.getTime() + 24 * 60 * 60 * 1000) : new Date(localMidnightUtc.getTime() - 2 * 24 * 60 * 60 * 1000);
-  const start = new Date(end.getTime() - (reportType === "daily" ? 24 : 24 * 5) * 60 * 60 * 1000);
-  const periodStartLocal = reportType === "daily" ? currentLocalDay : new Date(currentLocalDay.getTime() - ((currentLocalDay.getUTCDay() || 7) - 1 + 7) * 24 * 60 * 60 * 1000);
-  const periodEndLocal = reportType === "daily" ? currentLocalDay : new Date(periodStartLocal.getTime() + 4 * 24 * 60 * 60 * 1000);
+  const start = reportType === "daily" ? localMidnightUtc : new Date(end.getTime() - 24 * 5 * 60 * 60 * 1000);
+  const periodStartLocal = reportType === "daily" ? reportLocalDay : new Date(currentLocalDay.getTime() - ((currentLocalDay.getUTCDay() || 7) - 1 + 7) * 24 * 60 * 60 * 1000);
+  const periodEndLocal = reportType === "daily" ? reportLocalDay : new Date(periodStartLocal.getTime() + 4 * 24 * 60 * 60 * 1000);
   const periodStartDate = isoDate(periodStartLocal.getUTCFullYear(), periodStartLocal.getUTCMonth() + 1, periodStartLocal.getUTCDate());
   const periodEndDate = isoDate(periodEndLocal.getUTCFullYear(), periodEndLocal.getUTCMonth() + 1, periodEndLocal.getUTCDate());
   return { start, end, periodStartDate, periodEndDate, label: reportType === "daily" ? labelFromIso(periodStartDate) : `${labelFromIso(periodStartDate)} – ${labelFromIso(periodEndDate)}` };

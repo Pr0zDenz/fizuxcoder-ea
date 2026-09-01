@@ -569,3 +569,7 @@
 - [x] Verify net pips equals winning pips minus stop-loss pips in formatter tests and previews
 
 - [x] Repost the corrected overdue weekly report exactly once after SL loss pips are displayed
+
+- [x] Investigate why the 1 September daily report appeared at 00:01 on 2 September instead of 23:59 on 1 September
+- [x] Correct the daily report task/window boundary so the 1 September report is not skipped or shifted
+- [x] Preview and publish the verified 1 September report exactly once

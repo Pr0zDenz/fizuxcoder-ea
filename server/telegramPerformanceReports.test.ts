@@ -10,6 +10,14 @@ describe("Telegram performance reports", () => {
     expect(window.label).toBe("28 AUGUST");
   });
 
+  it("treats a callback at 00:01 Malaysia time as the previous completed day", () => {
+    const window = getPerformanceWindow("daily", new Date("2026-09-01T16:01:00.000Z"));
+    expect(window.start.toISOString()).toBe("2026-08-31T16:00:00.000Z");
+    expect(window.end.toISOString()).toBe("2026-09-01T16:00:00.000Z");
+    expect(window.periodStartDate).toBe("2026-09-01");
+    expect(window.label).toBe("01 SEPTEMBER");
+  });
+
   it("uses the previous Monday-Friday trading week for the 09:00 Monday report", () => {
     const window = getPerformanceWindow("weekly", new Date("2026-08-31T01:00:00.000Z"));
     expect(window.start.toISOString()).toBe("2026-08-23T16:00:00.000Z");
