@@ -92,7 +92,7 @@ function copyHash(seed: { title: string; caption: string; contentKey: string; as
     language: "en_ms",
     assetUrl: seed.assetUrl ?? null,
     assetAlt: seed.assetAlt ?? null,
-    destinationUrl: "https://fizuxea-jxctlods.manus.space/portal",
+    destinationUrl: "https://ea.fizuxc0der.uk/",
     riskNotice: MARKETING_RISK_NOTICE,
   })).digest("hex");
 }
@@ -199,7 +199,7 @@ export async function prepareTelegramGrowthDrafts(ownerUserId: number) {
       language: "en_ms",
       assetUrl: null,
       assetAlt: null,
-      destinationUrl: "https://fizuxea-jxctlods.manus.space/portal",
+      destinationUrl: "https://ea.fizuxc0der.uk/",
       riskNotice: MARKETING_RISK_NOTICE,
       scheduledFor: null,
       status: "draft",
@@ -253,7 +253,7 @@ export async function prepareEcosystemTelegramGrowthDrafts(ownerUserId: number) 
       language: "en_ms",
       assetUrl: seed.assetUrl,
       assetAlt: seed.assetAlt,
-      destinationUrl: "https://fizuxea-jxctlods.manus.space/portal",
+      destinationUrl: "https://ea.fizuxc0der.uk/",
       riskNotice: MARKETING_RISK_NOTICE,
       scheduledFor: null,
       status: "draft",

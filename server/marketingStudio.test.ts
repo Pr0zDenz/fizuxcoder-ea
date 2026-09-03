@@ -178,7 +178,7 @@ describe("private marketing studio safeguards", () => {
     await expect(createEvergreenGeminiDraftAfterPublish({ item: draftItem({ id: 42, contentHash: "c".repeat(64), assetUrl: null, assetAlt: null }), actorUserId: 1 })).resolves.toEqual({ created: true, contentItemId: 777 });
     expect(insertValues).toHaveBeenCalledTimes(2);
     expect(insertValues.mock.calls[0][0]).toEqual(expect.objectContaining({ status: "draft", language: "en_ms", complianceStatus: "passed", complianceFlags: expect.stringContaining("evergreen_replenishment") }));
-    expect(insertValues.mock.calls[0][0].caption).toContain("portal");
+    expect(insertValues.mock.calls[0][0].caption).toContain("https://ea.fizuxc0der.uk/");
     expect(insertValues.mock.calls[1][0]).toEqual(expect.objectContaining({ action: "revised", note: expect.stringContaining("Fresh Gemini Bot EA copy replenished") }));
   });
 
@@ -204,7 +204,7 @@ describe("private marketing studio safeguards", () => {
     const { insertValues } = mockMissingDatabase();
 
     await expect(applyGeminiBotThreadsRevision(1)).resolves.toEqual({ created: 20, revised: 0, current: 0, skipped: 0, archived: 0 });
-    expect(insertValues).toHaveBeenCalledWith(expect.objectContaining({ title: "Nak automate MT5 dengan lebih teratur?", language: "en_ms", destinationUrl: "https://fizuxea-jxctlods.manus.space/portal", status: "draft", complianceStatus: "passed" }));
+    expect(insertValues).toHaveBeenCalledWith(expect.objectContaining({ title: "Nak automate MT5 dengan lebih teratur?", language: "en_ms", destinationUrl: "https://ea.fizuxc0der.uk/", status: "draft", complianceStatus: "passed" }));
     expect(insertValues).toHaveBeenCalledWith(expect.objectContaining({ actorUserId: 1, action: "revised", note: "Gemini Bot EA 20-day campaign created" }));
   });
 
@@ -213,10 +213,10 @@ describe("private marketing studio safeguards", () => {
 
     await expect(applyGeminiBotThreadsAdditions(1)).resolves.toEqual({ created: 5, current: 0, skipped: 0 });
     expect(GEMINI_BOT_THREADS_ADDITIONS).toHaveLength(5);
-    expect(insertValues).toHaveBeenCalledWith(expect.objectContaining({ language: "en_ms", destinationUrl: "https://fizuxea-jxctlods.manus.space/portal", status: "draft", complianceStatus: "passed" }));
+    expect(insertValues).toHaveBeenCalledWith(expect.objectContaining({ language: "en_ms", destinationUrl: "https://ea.fizuxc0der.uk/", status: "draft", complianceStatus: "passed" }));
     for (const draft of GEMINI_BOT_THREADS_ADDITIONS) {
       expect(draft.caption).toMatch(/Gemini Bot EA/i);
-      expect(draft.caption).toContain("https://fizuxea-jxctlods.manus.space/portal");
+      expect(draft.caption).toContain("https://ea.fizuxc0der.uk/");
       expect(draft.caption.length).toBeLessThanOrEqual(500);
       expect(draft.caption.match(/#[A-Za-z0-9_]+/g)?.length ?? 0).toBeGreaterThanOrEqual(3);
       expect(draft.caption.match(/#[A-Za-z0-9_]+/g)?.length ?? 0).toBeLessThanOrEqual(5);

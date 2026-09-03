@@ -573,3 +573,12 @@
 - [x] Investigate why the 1 September daily report appeared at 00:01 on 2 September instead of 23:59 on 1 September
 - [x] Correct the daily report task/window boundary so the 1 September report is not skipped or shifted
 - [x] Preview and publish the verified 1 September report exactly once
+
+- [x] Replace public landing-page URLs with https://ea.fizuxc0der.uk/ across all relevant website pages and CTAs
+- [x] Update approved Threads social-content templates and scheduled content links to the custom landing domain
+- [x] Preserve portal-only, checkout, licensing, and protected-download URLs where they are not public landing links
+- [x] Validate the custom-domain links and review any external-posting impact before publication
+
+- [x] Diagnose whether the custom-domain content migration completed before the process stalled
+- [x] Verify active and historical Threads content destinations after the stalled migration
+- [x] Complete URL, test, and build validation for the custom landing-domain update

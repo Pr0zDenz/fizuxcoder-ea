@@ -35,7 +35,7 @@ describe("Threads automatic publisher", () => {
     expect(calls).toHaveLength(2);
     expect(calls[0]?.[0]).toBe("https://graph.threads.com/v1.0/17841400000000000/threads");
     expect((calls[0]?.[1]?.body as URLSearchParams).get("media_type")).toBe("IMAGE");
-    expect((calls[0]?.[1]?.body as URLSearchParams).get("image_url")).toBe("https://fizuxea-jxctlods.manus.space/manus-storage/gemini-checklist.png");
+    expect((calls[0]?.[1]?.body as URLSearchParams).get("image_url")).toBe("https://ea.fizuxc0der.uk/manus-storage/gemini-checklist.png");
     expect((calls[1]?.[0])).toBe("https://graph.threads.com/v1.0/17841400000000000/threads_publish");
     expect((calls[1]?.[1]?.body as URLSearchParams).get("creation_id")).toBe("container-1");
   });

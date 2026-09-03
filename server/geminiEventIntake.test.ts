@@ -31,7 +31,7 @@ describe("Gemini VPS event intake", () => {
 
   it("keeps the event contract draft-only and portal-directed", async () => {
     const source = await import("./marketingStudio");
-    expect(source.GEMINI_EVENT_PORTAL_URL).toBe("https://fizuxea-jxctlods.manus.space/portal");
+    expect(source.GEMINI_EVENT_PORTAL_URL).toBe("https://ea.fizuxc0der.uk/");
     const fs = await import("node:fs/promises");
     const routeText = await fs.readFile(new URL("./geminiEventIntakeRoute.ts", import.meta.url), "utf8");
     const serviceText = await fs.readFile(new URL("./marketingStudio.ts", import.meta.url), "utf8");

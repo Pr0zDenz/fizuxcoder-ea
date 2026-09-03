@@ -2,7 +2,7 @@ import fs from "node:fs";
 
 const path = "server/marketingStudio.ts";
 const source = fs.readFileSync(path, "utf8");
-const portal = "https://fizuxea-jxctlods.manus.space/portal";
+const portal = "https://ea.fizuxc0der.uk/";
 const hashtags = [
   "#GeminiBotEA #MT5 #DemoFirst #TradingMalaysia",
   "#GeminiBotEA #XAUUSD #RiskManagement #MT5",

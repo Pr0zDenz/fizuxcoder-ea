@@ -49,7 +49,7 @@ async function parseResponse(response: Response) {
 function resolvedImageUrl(assetUrl?: string | null) {
   if (!assetUrl) return null;
   try {
-    const url = new URL(assetUrl, "https://fizuxea-jxctlods.manus.space");
+    const url = new URL(assetUrl, "https://ea.fizuxc0der.uk");
     if (url.protocol !== "https:") throw new Error("Image URL must use HTTPS");
     return url.toString();
   } catch {
