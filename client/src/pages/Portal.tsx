@@ -72,6 +72,7 @@ export default function Portal() {
           {isAuthenticated ? (
             <div className="flex items-center gap-3">
               <span className="hidden font-mono text-[10px] uppercase tracking-[.1em] text-[#66736f] sm:inline">{user?.email ?? user?.name ?? "Customer"}</span>
+              {user?.role === "admin" && <a href="/admin" data-testid="admin-centre-shortcut" className="button-primary !px-3 !py-2" aria-label="Open admin control centre"><ShieldCheck size={14} /> <span className="hidden sm:inline">Admin centre</span></a>}
               <button type="button" onClick={() => logout()} className="button-outline !px-3 !py-2"><LogOut size={14} /> Sign out</button>
             </div>
           ) : (

@@ -582,3 +582,7 @@
 - [x] Diagnose whether the custom-domain content migration completed before the process stalled
 - [x] Verify active and historical Threads content destinations after the stalled migration
 - [x] Complete URL, test, and build validation for the custom landing-domain update
+
+- [x] Add an admin-only shortcut from the main portal to the protected admin area/subdomain
+- [x] Verify standard customers cannot see the shortcut or access admin procedures
+- [x] Validate the change and resolve or document the current deployment quota failure
