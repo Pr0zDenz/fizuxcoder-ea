@@ -598,3 +598,7 @@
 - [ ] Prepare a protected MasterServer admin-trial endpoint for Gemini Bot EA
 - [ ] Connect the portal seven-day admin trial to the protected MasterServer trial path
 - [ ] Validate that MT5 account 1100543436 receives only the approved seven-day admin trial
+
+- [x] Prepare a patched MasterServer file or apply script for the Gemini admin-trial endpoint
+- [x] Provide and verify a safe Windows VPS stop, replace, restart, and route-probe procedure
+- [ ] Re-probe the live route and issue the seven-day Gemini trial after the VPS restart succeeds
