@@ -586,3 +586,15 @@
 - [x] Add an admin-only shortcut from the main portal to the protected admin area/subdomain
 - [x] Verify standard customers cannot see the shortcut or access admin procedures
 - [x] Validate the change and resolve or document the current deployment quota failure
+
+- [ ] Define and, if needed, create a payment-free admin-only trial entitlement for Gemini Bot EA
+- [ ] Keep the Gemini trial separate from ToyyibPay orders, customer entitlements, and production package-release records
+- [ ] Verify Gemini trial expiry, MT5 account binding, and admin-only access controls
+
+- [ ] Create a seven-day admin-only Gemini Bot EA trial for MT5 account 1100543436
+- [ ] Record the trial as non-payment, non-customer, and clearly labeled admin access
+- [ ] Verify the trial expiry and protected download/binding behavior
+
+- [ ] Prepare a protected MasterServer admin-trial endpoint for Gemini Bot EA
+- [ ] Connect the portal seven-day admin trial to the protected MasterServer trial path
+- [ ] Validate that MT5 account 1100543436 receives only the approved seven-day admin trial

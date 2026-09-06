@@ -41,6 +41,38 @@ function requiredFulfillmentConfig() {
   return { baseUrl, fulfillmentAdminKey };
 }
 
+export async function issueGeminiAdminTrial(input: { email: string; clientName: string; accountNumber: string; durationDays: 7 }) {
+  const { baseUrl, fulfillmentAdminKey } = requiredFulfillmentConfig();
+  let response: Response;
+  try {
+    response = await fetch(`${baseUrl}/admin/license/gemini-trial`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Fulfillment-Admin-Key": fulfillmentAdminKey,
+        "ngrok-skip-browser-warning": "1",
+      },
+      body: JSON.stringify({
+        email: input.email,
+        client_name: input.clientName,
+        product_id: "gemini-bot-ea",
+        account_number: input.accountNumber,
+        duration_days: input.durationDays,
+      }),
+    });
+  } catch {
+    throw new Error("The Master Server admin-trial endpoint is temporarily unreachable. Apply the VPS admin-trial patch and try again.");
+  }
+  const payload: unknown = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(messageFromPayload(payload) ?? "The Master Server rejected the Gemini admin trial.");
+  }
+  if (!payload || typeof payload !== "object" || !("account_number" in payload) || typeof payload.account_number !== "string" || !("expiry" in payload) || typeof payload.expiry !== "string") {
+    throw new Error("The Master Server returned an invalid Gemini admin-trial response.");
+  }
+  return payload as { account_number: string; replaced_account?: string | null; expiry: string; trial_label?: string };
+}
+
 export function getMasterServerPaymentCallbackUrl() {
   const { baseUrl } = requiredMasterServerConfig();
   return `${baseUrl}/payment_success`;

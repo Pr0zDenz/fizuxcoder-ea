@@ -14,6 +14,7 @@ import { getThreadsConnectionStatus } from "./threadsOAuth";
 import { storageGetSignedUrl, storagePut } from "./storage";
 import { getDb } from "./db";
 import { getAdminCommandCenterSnapshot } from "./adminCommandCenter";
+import { grantGeminiAdminTrial } from "./adminGeminiTrial";
 import { getTelegramSignalDashboard, sendTelegramConnectionTest, updateTelegramSignalSettings, updateTelegramSignalSource } from "./telegramSignals";
 import { createHeartbeatJob, updateHeartbeatJob } from "./_core/heartbeat";
 import { activateThreadsMarketingSchedule, approveInitialTelegramGrowthTemplateSet, engageThreadsMarketingKillSwitch, getThreadsMarketingAutomationStatus, getThreadsMarketingTaskUid, prepareEcosystemTelegramGrowthDrafts, prepareTelegramGrowthDrafts, setMarketingScheduleEligibility, verifyTelegramGrowthInviteLink, DEFAULT_THREADS_MARKETING_CRON } from "./threadsMarketingAutomation";
@@ -169,6 +170,7 @@ export const appRouter = router({
   }),
   admin: router({
     commandCenter: adminProcedure.query(() => getAdminCommandCenterSnapshot()),
+    grantGeminiAdminTrial: adminProcedure.input(z.object({ accountNumber: z.string().regex(/^\d{1,20}$/, "Enter a valid numeric MT5 account number"), durationDays: z.literal(7) })).mutation(({ ctx, input }) => grantGeminiAdminTrial({ adminUserId: ctx.user.id, ...input })),
     uploadPackage: adminProcedure.input(z.object({ productId: z.string().min(1), displayName: z.string().min(1).max(255), fileName: z.string().min(1).max(255), base64: z.string().min(1) })).mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database is unavailable" });
